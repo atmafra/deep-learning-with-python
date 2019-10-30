@@ -101,7 +101,7 @@ class Set:
     def output_size(self):
         """Returns the size of the output elements
         """
-        shape = self.output_data
+        shape = self.output_data.shape
         if shape is None:
             return 0
         if len(shape) == 1:
