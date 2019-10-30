@@ -1,8 +1,8 @@
 import numpy as np
 from keras.datasets import imdb
 
-from core import hyperparameters as hpp
 from core import network as net
+from core.hyperparameters import LayerHyperparameters, NetworkHyperparameters, OutputType, LayerPosition
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 from utils import history_utils as hutl
@@ -46,44 +46,51 @@ def load_corpus(num_words: int = 10000, verbose: bool = True) -> Corpus:
     return Corpus.from_datasets(training_inputs, training_outputs, test_inputs, test_outputs)
 
 
-def hyperparameters(input_size: int = 10000,
-                    activation: str = 'relu',
-                    output_activation: str = 'sigmoid',
-                    layer_units=None,
-                    loss: str = 'binary_crossentropy'):
+def hyperparameters(input_size: int,
+                    hidden_size: list,
+                    output_size: int,
+                    hidden_activation: str,
+                    output_activation: str,
+                    loss: str):
     """Defines the IMDB neural model hyper parameters
 
     Args:
-        input_size (int): input layer size (in units)
-        activation (str): hidden layers activation function string
-        output_activation (str): output activation function string
-        layer_units (list): list of number of units per layer
-        loss (str): loss function string
+        input_size        (int) : input layer size (in units)
+        hidden_size       (list): number of units in each hidden layer
+        output_size       (int) : output layer size (in units)
+        hidden_activation (str) : hidden layers activation function string
+        output_activation (str) : output activation function string
+        loss              (str) : loss function string
 
     """
-    if layer_units is None:
-        layer_units = [16, 16, 1]
-
-    total_layers = len(layer_units)
-    hidden_layers = total_layers - 2
+    hidden_layers = len(hidden_size)
 
     # layer hyper parameters list
-    input_layer_hparm = hpp.LayerHyperparameters(layer_units[0], activation, input_size)
+    input_layer_hparm = LayerHyperparameters(units=input_size,
+                                             position=LayerPosition.INPUT,
+                                             activation='linear')
     hidden_layers_hparm = []
-    for units in layer_units[1:1 + hidden_layers]:
-        hidden_layers_hparm.append(hpp.LayerHyperparameters(units=units, activation=activation))
-    output_layer_hparm = hpp.LayerHyperparameters(layer_units[-1], output_activation)
+
+    for size in hidden_size:
+        hidden_layers_hparm.append(LayerHyperparameters(units=size,
+                                                        position=LayerPosition.HIDDEN,
+                                                        activation=hidden_activation))
+
+    output_layer_hparm = LayerHyperparameters(units=output_size,
+                                              position=LayerPosition.OUTPUT,
+                                              activation=output_activation)
+
     layer_hparm_list = [input_layer_hparm] + hidden_layers_hparm + [output_layer_hparm]
 
     # network hyper parameters
-    hparm = hpp.NetworkHyperparameters(input_size=input_size, output_size=1,
-                                       output_type=hpp.OutputType.BOOLEAN,
-                                       layer_hyperparameters_list=layer_hparm_list,
-                                       optimizer='rmsprop',
-                                       learning_rate=0.001,
-                                       loss=loss,
-                                       metrics=['accuracy']
-                                       )
+    hparm = NetworkHyperparameters(input_size=input_size, output_size=1,
+                                   output_type=OutputType.BOOLEAN,
+                                   layer_hyperparameters_list=layer_hparm_list,
+                                   optimizer='rmsprop',
+                                   learning_rate=0.001,
+                                   loss=loss,
+                                   metrics=['accuracy']
+                                   )
     return hparm
 
 
@@ -92,8 +99,10 @@ def run():
     corpus = load_corpus(num_words=num_words)
 
     imdb_hyperparameters_1 = hyperparameters(input_size=num_words,
-                                             activation='relu',
-                                             layer_units=[16, 16, 1],
+                                             hidden_size=[16, 16],
+                                             output_size=1,
+                                             hidden_activation='relu',
+                                             output_activation='sigmoid',
                                              loss='binary_crossentropy')
 
     imdb_nnet_1 = net.create_network(imdb_hyperparameters_1)
@@ -116,9 +125,12 @@ def run():
     (test_loss_1, test_accuracy_1) = net.test_network(imdb_nnet_1, corpus.test_set)
 
     imdb_hyperparameters_2 = hyperparameters(input_size=num_words,
-                                             activation='relu',
-                                             layer_units=[16, 16, 16, 1],
+                                             hidden_size=[16, 16, 16],
+                                             output_size=1,
+                                             hidden_activation='relu',
+                                             output_activation='sigmoid',
                                              loss='binary_crossentropy')
+
     imdb_nnet_2 = net.create_network(imdb_hyperparameters_2)
 
     history_2 = net.train_network(network=imdb_nnet_2,

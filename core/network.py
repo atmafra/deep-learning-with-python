@@ -1,7 +1,7 @@
 from keras import models, layers, Model
 from keras.callbacks import History
 
-from core.hyperparameters import NetworkHyperparameters
+from core.hyperparameters import NetworkHyperparameters, LayerPosition
 from core.sets import Set
 
 
@@ -13,26 +13,40 @@ def create_network(network_hparm: NetworkHyperparameters):
 
     """
     network = models.Sequential()
+    input_shape = None
+    first_layer: bool = True
+    first_hidden_layer: bool = True
 
     # layers
     for layer_hparm in network_hparm.layer_hyperparameters_list:
 
-        if layer_hparm.input_shape is not None:
-            network.add(layers.Dense(
-                units=layer_hparm.units,
-                activation=layer_hparm.activation,
-                input_shape=layer_hparm.input_shape))
+        if first_layer:
+
+            if layer_hparm.position != LayerPosition.INPUT:
+                raise RuntimeError("First layer must be an input layer")
+
+            input_shape = (layer_hparm.units,)
+            first_layer = False
 
         else:
-            network.add(layers.Dense(
-                units=layer_hparm.units,
-                activation=layer_hparm.activation))
+
+            if layer_hparm.position == LayerPosition.INPUT:
+                raise RuntimeError("Network must have only one input layer")
+
+            if first_hidden_layer:
+                network.add(layers.Dense(units=layer_hparm.units,
+                                         activation=layer_hparm.activation,
+                                         input_shape=input_shape))
+                first_hidden_layer = False
+
+            else:
+                network.add(layers.Dense(units=layer_hparm.units,
+                                         activation=layer_hparm.activation))
 
     # compile the network
-    network.compile(
-        optimizer=network_hparm.optimizer,
-        loss=network_hparm.loss,
-        metrics=network_hparm.metrics)
+    network.compile(optimizer=network_hparm.optimizer,
+                    loss=network_hparm.loss,
+                    metrics=network_hparm.metrics)
 
     return network
 

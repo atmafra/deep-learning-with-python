@@ -1,8 +1,8 @@
 import numpy as np
 from keras.datasets import reuters
 
-from core import hyperparameters as hpp
 from core import network as net
+from core.hyperparameters import LayerHyperparameters, NetworkHyperparameters, OutputType, LayerPosition
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 from utils import history_utils as hplt
@@ -43,37 +43,41 @@ def load(num_words: int = 10000, encoding_schema: str = 'one-hot', verbose: bool
 
 
 def hyperparameters(input_size: int,
+                    hidden_size: list,
                     output_size: int,
                     hidden_activation: str = 'relu',
                     output_activation: str = 'softmax',
-                    layer_units=None,
                     loss: str = 'categorical_crossentropy'):
     """ IMDB neural network hyperparameters
     """
-    if layer_units is None:
-        layer_units = [64, 64, output_size]
 
-    total_layers = len(layer_units)
-    hidden_layers = total_layers - 2
+    # layers hyperparameters
+    input_layer_hparm = LayerHyperparameters(units=input_size,
+                                             position=LayerPosition.INPUT,
+                                             activation='linear')
 
-    # layer hyper parameters list
-    input_layer_hparm = hpp.LayerHyperparameters(layer_units[0], hidden_activation, input_size)
     hidden_layers_hparm = []
-    for units in layer_units[1:1 + hidden_layers]:
-        hidden_layers_hparm.append(hpp.LayerHyperparameters(units=units, activation=hidden_activation))
-    output_layer_hparm = hpp.LayerHyperparameters(layer_units[-1], output_activation)
+    for size in hidden_size:
+        hidden_layers_hparm.append(LayerHyperparameters(units=size,
+                                                        position=LayerPosition.HIDDEN,
+                                                        activation=hidden_activation))
+
+    output_layer_hparm = LayerHyperparameters(units=output_size,
+                                              position=LayerPosition.OUTPUT,
+                                              activation=output_activation)
+
     layer_hparm_list = [input_layer_hparm] + hidden_layers_hparm + [output_layer_hparm]
 
-    # network hyper parameters
-    hparm = hpp.NetworkHyperparameters(input_size=input_size,
-                                       output_size=output_size,
-                                       output_type=hpp.OutputType.CATEGORICAL,
-                                       layer_hyperparameters_list=layer_hparm_list,
-                                       optimizer='rmsprop',
-                                       learning_rate=0.001,
-                                       loss=loss,
-                                       metrics=['accuracy']
-                                       )
+    # network hyperparameters
+    hparm = NetworkHyperparameters(input_size=input_size,
+                                   output_size=output_size,
+                                   output_type=OutputType.CATEGORICAL,
+                                   layer_hyperparameters_list=layer_hparm_list,
+                                   optimizer='rmsprop',
+                                   learning_rate=0.001,
+                                   loss=loss,
+                                   metrics=['accuracy']
+                                   )
     return hparm
 
 
@@ -92,10 +96,10 @@ def run(num_words: int = 10000, encoding_schema: str = 'one-hot'):
     # categories = len(train_labels[0])
     categories = 46
     reuters_hparm = hyperparameters(input_size=num_words,
+                                    hidden_size=[64, 64, 64],
                                     output_size=categories,
                                     hidden_activation='relu',
                                     output_activation='softmax',
-                                    layer_units=[64, 64, 64, categories],
                                     loss=loss)
 
     reuters_nnet = net.create_network(reuters_hparm)

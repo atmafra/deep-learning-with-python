@@ -2,9 +2,9 @@ import numpy as np
 from keras.datasets import mnist
 from keras.utils import to_categorical
 
-from core import hyperparameters as hpp
 from core import network as net
 from core import sets
+from core.hyperparameters import NetworkHyperparameters, LayerHyperparameters, OutputType, LayerPosition
 from utils import history_utils as hutl
 
 
@@ -48,19 +48,20 @@ def load_corpus(verbose: bool = True) -> sets.Corpus:
     return corpus
 
 
-def hyperparameters() -> hpp.NetworkHyperparameters:
+def hyperparameters() -> NetworkHyperparameters:
     input_size = 28 * 28
     hidden_layer_units = 16
     num_labels = 10
     learning_rate = 0.001
 
-    input_layer_hparm = hpp.LayerHyperparameters(hidden_layer_units, 'relu', input_size)
-    output_layer_hparm = hpp.LayerHyperparameters(num_labels, 'softmax')
+    input_layer_hparm = LayerHyperparameters(input_size, LayerPosition.INPUT, 'linear')
+    hidden_layer_hparm = LayerHyperparameters(hidden_layer_units, LayerPosition.HIDDEN, 'relu')
+    output_layer_hparm = LayerHyperparameters(num_labels, LayerPosition.OUTPUT, 'softmax')
     layer_hparm_list = [input_layer_hparm, output_layer_hparm]
     loss = 'categorical_crossentropy'
 
-    mnist_hparm = hpp.NetworkHyperparameters(input_size=input_size, output_size=num_labels,
-                                             output_type=hpp.OutputType.CATEGORICAL,
+    mnist_hparm = NetworkHyperparameters(input_size=input_size, output_size=num_labels,
+                                             output_type=OutputType.CATEGORICAL,
                                              layer_hyperparameters_list=layer_hparm_list,
                                              optimizer='rmsprop',
                                              learning_rate=learning_rate,

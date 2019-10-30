@@ -1,8 +1,8 @@
 import numpy as np
 from keras.datasets import boston_housing as boston
 
-from core import hyperparameters as hpp
 from core import network as net
+from core.hyperparameters import LayerPosition, LayerHyperparameters, NetworkHyperparameters, OutputType
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 from utils import history_utils as hutl
@@ -13,52 +13,56 @@ def load(num_words: int = 10000, encoding_schema: str = 'one-hot', verbose: bool
         print('Loading Boston Housing dataset...')
 
     corpus = boston.load_data()
-    (train_data, train_values), (test_data, test_output) = dsu.separate_corpus(corpus)
+    (train_inputs, train_outputs), (test_inputs, test_outputs) = dsu.separate_corpus(corpus)
 
     # normalization of the training and test data
-    dsu.normalize(train_data, test_data)
+    dsu.normalize(train_inputs, test_inputs)
 
     if verbose:
-        print('Training examples:', len(train_data))
-        print('Test examples    :', len(test_data))
-        print('Minimum price    : {:.2f}'.format(np.min(train_values)))
-        print('Average price    : {:.2f}'.format(np.average(train_values)))
-        print('Maximum price    : {:.2f}'.format(np.max(train_values)))
+        print('Training examples:', len(train_inputs))
+        print('Test examples    :', len(test_inputs))
+        print('Minimum price    : {:.2f}'.format(np.min(train_outputs)))
+        print('Average price    : {:.2f}'.format(np.average(train_outputs)))
+        print('Maximum price    : {:.2f}'.format(np.max(train_outputs)))
 
-    return (train_data, train_values), (test_data, test_output)
+    return (train_inputs, train_outputs), (test_inputs, test_outputs)
 
 
 def hyperparameters(input_size: int,
-                    output_size: int = 1,
-                    hidden_activation: str = 'relu',
-                    output_activation: str = 'linear',
-                    layer_units=None,
+                    hidden_size: list,
+                    output_size: int,
+                    hidden_activation: str,
+                    output_activation: str,
                     loss: str = 'mse'):
     """ Boston Housing neural network hyperparameters
     """
-    if layer_units is None:
-        layer_units = [64, 64, output_size]
-
-    total_layers = len(layer_units)
-    hidden_layers = total_layers - 2
 
     # layer hyper parameters list
-    input_layer_hparm = hpp.LayerHyperparameters(layer_units[0], hidden_activation, input_size)
+    input_layer_hparm = LayerHyperparameters(units=input_size,
+                                             position=LayerPosition.INPUT,
+                                             activation='linear')
+
     hidden_layers_hparm = []
-    for units in layer_units[1:1 + hidden_layers]:
-        hidden_layers_hparm.append(hpp.LayerHyperparameters(units=units, activation=hidden_activation))
-    output_layer_hparm = hpp.LayerHyperparameters(layer_units[-1], output_activation)
+    for size in hidden_size:
+        hidden_layers_hparm.append(LayerHyperparameters(units=size,
+                                                        position=LayerPosition.HIDDEN,
+                                                        activation=hidden_activation))
+
+    output_layer_hparm = LayerHyperparameters(units=output_size,
+                                              position=LayerPosition.OUTPUT,
+                                              activation=output_activation)
+
     layer_hparm_list = [input_layer_hparm] + hidden_layers_hparm + [output_layer_hparm]
 
     # network hyper parameters
-    hparm = hpp.NetworkHyperparameters(input_size=input_size,
-                                       output_size=output_size,
-                                       output_type=hpp.OutputType.DECIMAL,
-                                       layer_hyperparameters_list=layer_hparm_list,
-                                       optimizer='rmsprop',
-                                       learning_rate=0.001,
-                                       loss=loss,
-                                       metrics=['mae'])
+    hparm = NetworkHyperparameters(input_size=input_size,
+                                   output_size=output_size,
+                                   output_type=OutputType.DECIMAL,
+                                   layer_hyperparameters_list=layer_hparm_list,
+                                   optimizer='rmsprop',
+                                   learning_rate=0.001,
+                                   loss=loss,
+                                   metrics=['mae'])
     return hparm
 
 
@@ -69,12 +73,14 @@ def run():
     # define hyper parameters and create the neural network
     # input_size = train_data.shape[1]
     input_size = corpus.input_size()
+    hidden_size = [64, 64]
     output_size = corpus.output_size()
+
     boston_hparm = hyperparameters(input_size=input_size,
+                                   hidden_size=hidden_size,
                                    output_size=output_size,
                                    hidden_activation='relu',
                                    output_activation='linear',
-                                   layer_units=[64, 64, 1],
                                    loss='mse')
 
     # create and compile the network

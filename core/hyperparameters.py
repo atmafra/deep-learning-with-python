@@ -48,16 +48,11 @@ class LayerHyperparameters:
         self.units = units
         self.position = position
         self.activation = activation
-        self.input_shape = None
-        if self.position == LayerPosition.INPUT:
-            self.input_shape = (self.units,)
 
     def to_dict(self):
         """Returns the layer hyperparameters as a dictionary
         """
-        layer_dict = {'units': self.units, 'activation': self.activation}
-        if self.input_shape is not None:
-            layer_dict['input_shape'] = self.input_shape
+        layer_dict = {'units': self.units, 'type': self.position.name, 'activation': self.activation}
         return layer_dict
 
     def to_json(self):
@@ -66,7 +61,9 @@ class LayerHyperparameters:
 
 class NetworkHyperparameters:
 
-    def __init__(self, input_size: int, output_size: int,
+    def __init__(self,
+                 input_size: int,
+                 output_size: int,
                  output_type: OutputType,
                  layer_hyperparameters_list: list,
                  optimizer: str = default_optimizer,
