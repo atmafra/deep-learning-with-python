@@ -2,7 +2,7 @@ import numpy as np
 from keras.datasets import reuters
 
 from core import network as net
-from core.hyperparameters import LayerHyperparameters, NetworkHyperparameters, OutputType, LayerPosition
+from core.hyperparameters import LayerHyperparameters, NetworkHyperparameters, NetworkOutputType, LayerPosition
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 from utils import history_utils as hplt
@@ -71,7 +71,7 @@ def hyperparameters(input_size: int,
     # network hyperparameters
     hparm = NetworkHyperparameters(input_size=input_size,
                                    output_size=output_size,
-                                   output_type=OutputType.CATEGORICAL,
+                                   output_type=NetworkOutputType.CATEGORICAL,
                                    layer_hyperparameters_list=layer_hparm_list,
                                    optimizer='rmsprop',
                                    learning_rate=0.001,

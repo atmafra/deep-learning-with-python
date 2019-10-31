@@ -2,14 +2,14 @@ import json
 from enum import Enum
 
 
-class OutputType(Enum):
+class NetworkOutputType(Enum):
     BOOLEAN = 1
     CATEGORICAL = 2
     DECIMAL = 3
 
     class EnumEncoder(json.JSONEncoder):
         def default(self, obj):
-            if type(obj) in OutputType.values():
+            if type(obj) in NetworkOutputType.values():
                 return {"__enum__": str(obj)}
             return json.JSONEncoder.default(self, obj)
 
@@ -23,9 +23,9 @@ class LayerPosition(Enum):
 default_learning_rate: float = 0.001
 default_optimizer: str = 'rmsprop'
 default_loss: dict = {
-    OutputType.BOOLEAN: 'binary_crossentropy',
-    OutputType.CATEGORICAL: 'categorical_crossentropy',
-    OutputType.DECIMAL: 'mean_squared_error'
+    NetworkOutputType.BOOLEAN: 'binary_crossentropy',
+    NetworkOutputType.CATEGORICAL: 'categorical_crossentropy',
+    NetworkOutputType.DECIMAL: 'mean_squared_error'
 }
 
 
@@ -64,7 +64,7 @@ class NetworkHyperparameters:
     def __init__(self,
                  input_size: int,
                  output_size: int,
-                 output_type: OutputType,
+                 output_type: NetworkOutputType,
                  layer_hyperparameters_list: list,
                  optimizer: str = default_optimizer,
                  learning_rate: float = default_learning_rate,

@@ -2,7 +2,7 @@ import numpy as np
 from keras.datasets import boston_housing as boston
 
 from core import network as net
-from core.hyperparameters import LayerPosition, LayerHyperparameters, NetworkHyperparameters, OutputType
+from core.hyperparameters import LayerPosition, LayerHyperparameters, NetworkHyperparameters, NetworkOutputType
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 from utils import history_utils as hutl
@@ -57,7 +57,7 @@ def hyperparameters(input_size: int,
     # network hyper parameters
     hparm = NetworkHyperparameters(input_size=input_size,
                                    output_size=output_size,
-                                   output_type=OutputType.DECIMAL,
+                                   output_type=NetworkOutputType.DECIMAL,
                                    layer_hyperparameters_list=layer_hparm_list,
                                    optimizer='rmsprop',
                                    learning_rate=0.001,

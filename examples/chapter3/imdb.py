@@ -2,7 +2,7 @@ import numpy as np
 from keras.datasets import imdb
 
 from core import network as net
-from core.hyperparameters import LayerHyperparameters, NetworkHyperparameters, OutputType, LayerPosition
+from core.hyperparameters import LayerHyperparameters, NetworkHyperparameters, NetworkOutputType, LayerPosition
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 from utils import history_utils as hutl
@@ -84,7 +84,7 @@ def hyperparameters(input_size: int,
 
     # network hyper parameters
     hparm = NetworkHyperparameters(input_size=input_size, output_size=1,
-                                   output_type=OutputType.BOOLEAN,
+                                   output_type=NetworkOutputType.BOOLEAN,
                                    layer_hyperparameters_list=layer_hparm_list,
                                    optimizer='rmsprop',
                                    learning_rate=0.001,

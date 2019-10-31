@@ -4,7 +4,7 @@ from keras.utils import to_categorical
 
 from core import network as net
 from core import sets
-from core.hyperparameters import NetworkHyperparameters, LayerHyperparameters, OutputType, LayerPosition
+from core.hyperparameters import NetworkHyperparameters, LayerHyperparameters, NetworkOutputType, LayerPosition
 from utils import history_utils as hutl
 
 
@@ -61,12 +61,12 @@ def hyperparameters() -> NetworkHyperparameters:
     loss = 'categorical_crossentropy'
 
     mnist_hparm = NetworkHyperparameters(input_size=input_size, output_size=num_labels,
-                                             output_type=OutputType.CATEGORICAL,
-                                             layer_hyperparameters_list=layer_hparm_list,
-                                             optimizer='rmsprop',
-                                             learning_rate=learning_rate,
-                                             loss='categorical_crossentropy',
-                                             metrics=['accuracy'])
+                                         output_type=NetworkOutputType.CATEGORICAL,
+                                         layer_hyperparameters_list=layer_hparm_list,
+                                         optimizer='rmsprop',
+                                         learning_rate=learning_rate,
+                                         loss='categorical_crossentropy',
+                                         metrics=['accuracy'])
     return mnist_hparm
 
 
