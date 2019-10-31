@@ -34,7 +34,6 @@ layer_hyperparameters_2 = [
     {'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
     {'units': 1, 'position': LayerPosition.OUTPUT, 'activation': output_activation}]
 
-
 if __name__ == '__main__':
     word_index = imdb.get_word_index()
     reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
@@ -119,10 +118,8 @@ def run():
 
     corpus = load_corpus(num_words=num_words)
 
-    imdb_hyperparameters_1 = hyperparameters(network_hyperparameters=network_hyperparameters,
-                                             layer_hyperparameters=layer_hyperparameters_1)
-
-    imdb_nnet_1 = net.create_network(imdb_hyperparameters_1)
+    imdb_nnet_1 = net.create_network(hyperparameters(network_hyperparameters=network_hyperparameters,
+                                                     layer_hyperparameters=layer_hyperparameters_1))
 
     epochs = 20
     batch_size = 512
@@ -141,10 +138,8 @@ def run():
     hutl.plot_accuracy_dict(history_1.history, title='IMDB 1: Training and Validation Accuracies')
     (test_loss_1, test_accuracy_1) = net.test_network(imdb_nnet_1, corpus.test_set)
 
-    imdb_hyperparameters_2 = hyperparameters(network_hyperparameters=network_hyperparameters,
-                                             layer_hyperparameters=layer_hyperparameters_2)
-
-    imdb_nnet_2 = net.create_network(imdb_hyperparameters_2)
+    imdb_nnet_2 = net.create_network(hyperparameters(network_hyperparameters=network_hyperparameters,
+                                                     layer_hyperparameters=layer_hyperparameters_2))
 
     history_2 = net.train_network(network=imdb_nnet_2,
                                   training_set=training_set_remaining,
