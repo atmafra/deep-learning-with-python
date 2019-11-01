@@ -43,11 +43,19 @@ def plot_2_metrics(metric1_values: np.array,
                    metric1_style: str = 'b',
                    metric2_style: str = 'r',
                    x_label: str = 'Epochs',
-                   y_label: str = 'Loss'):
+                   y_label: str = 'Loss',
+                   clear: bool = True):
     """ Plots two metrics
     """
     epochs = range(1, len(metric1_values) + 1)
-    plt.clf()
+
+    if clear:
+        plt.clf()
+        plt.title(title)
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.legend()
+        plt.grid()
 
     if metric1_values is not None:
         plt.plot(epochs, metric1_values, metric1_style, label=metric1_label)
@@ -55,6 +63,33 @@ def plot_2_metrics(metric1_values: np.array,
     if metric2_values is not None:
         plt.plot(epochs, metric2_values, metric2_style, label=metric2_label)
 
+    plt.show()
+
+
+def plot_metrics_list(metric_values_list: list,
+                      metric_labels_list: list,
+                      metric_style_list: list,
+                      title: str,
+                      x_label: str = 'Epochs',
+                      y_label: str = 'Loss'):
+    """ Plots a list of metrics
+    """
+    epochs = range(1, len(metric_values_list[0]) + 1)
+
+    for i in range(0, len(metric_values_list)):
+        metric_values = metric_values_list[i]
+
+        metric_style = ''
+        if len(metric_style_list) > i:
+            metric_style = metric_style_list[i]
+
+        metric_label = ''
+        if len(metric_labels_list) > i:
+            metric_label = metric_labels_list[i]
+
+        plt.plot(epochs, metric_values, metric_style, label=metric_label)
+
+    plt.clf()
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -70,9 +105,10 @@ def plot_2_metrics_dict(history_metrics: dict,
                         metric1_label: str,
                         metric2_label: str,
                         metric1_style: str = 'b',
-                        metric2_style: str = 'r',
+                        metric2_style: str = 'bo',
                         x_label: str = 'Epochs',
-                        y_label: str = 'Loss'):
+                        y_label: str = 'Loss',
+                        clear: bool = False):
     """ Plots two metrics
     """
     metric1_values = None
@@ -92,7 +128,8 @@ def plot_2_metrics_dict(history_metrics: dict,
                    metric1_style=metric1_style,
                    metric2_style=metric2_style,
                    x_label=x_label,
-                   y_label=y_label)
+                   y_label=y_label,
+                   clear=clear)
 
 
 def plot_2_metrics_history(history: History,
@@ -104,7 +141,8 @@ def plot_2_metrics_history(history: History,
                            metric1_style: str = 'b',
                            metric2_style: str = 'r',
                            x_label: str = 'Epochs',
-                           y_label: str = 'Loss'):
+                           y_label: str = 'Loss',
+                           clear: bool = False):
     """ Plots two metrics
     """
     plot_2_metrics_dict(history.history,
@@ -114,7 +152,8 @@ def plot_2_metrics_history(history: History,
                         metric1_style=metric1_style,
                         metric2_style=metric2_style,
                         x_label=x_label,
-                        y_label=y_label)
+                        y_label=y_label,
+                        clear=clear)
 
 
 def plot_loss(history: History,
@@ -131,7 +170,8 @@ def plot_loss(history: History,
 
 
 def plot_loss_dict(history_metrics: dict,
-                   title: str = 'Training and Validation Losses'):
+                   title: str = 'Training and Validation Losses',
+                   clear: bool = False):
     """ Plot the evolution of the loss function
     """
     loss_training = None
@@ -148,12 +188,14 @@ def plot_loss_dict(history_metrics: dict,
                    title=title,
                    metric1_label='Training loss',
                    metric2_label='Validation loss',
-                   y_label='Loss')
+                   y_label='Loss',
+                   clear=clear)
 
 
 def plot_accuracy(accuracy_training: np.array,
                   accuracy_validation: np.array,
-                  title: str = 'Training and Validation Accuracies'):
+                  title: str = 'Training and Validation Accuracies',
+                  clear: bool = False):
     """ Plot the evolution of the accuracy
     """
     plot_2_metrics(metric1_values=accuracy_training,
@@ -161,11 +203,13 @@ def plot_accuracy(accuracy_training: np.array,
                    title=title,
                    metric1_label='Training accuracy',
                    metric2_label='Validation accuracy',
-                   y_label='Accuracy')
+                   y_label='Accuracy',
+                   clear=clear)
 
 
 def plot_accuracy_dict(history_metrics: dict,
-                       title: str = 'Training and Validation Accuracies'):
+                       title: str = 'Training and Validation Accuracies',
+                       clear: bool = False):
     """ Plot the evolution of the accuracy
     """
     plot_2_metrics_dict(history_metrics=history_metrics,
@@ -174,7 +218,56 @@ def plot_accuracy_dict(history_metrics: dict,
                         title=title,
                         metric1_label='Training accuracy',
                         metric2_label='Validation accuracy',
-                        y_label='Accuracy')
+                        y_label='Accuracy',
+                        clear=clear)
+
+
+def plot_loss_list(history_metrics_list: list,
+                   labels_list: list,
+                   title: str = 'Loss Evolution',
+                   plot_training: bool = True,
+                   plot_validation: bool = True):
+    """ Plot the compared evolution of the accuracies
+    """
+    clear = True
+    metric_values_list = []
+
+    for history in history_metrics_list:
+
+        if plot_training:
+            metric_values_list.append(history.history['loss'])
+
+        if plot_validation:
+            metric_values_list.append(history.history['val_loss'])
+
+    plot_metrics_list(metric_values_list=metric_values_list,
+                      metric_labels_list=labels_list,
+                      metric_style_list=[],
+                      title='Loss')
+
+
+def plot_accuracy_list(history_metrics_list: list,
+                       labels_list: list,
+                       title: str = 'Accuracy Evolution',
+                       plot_training: bool = True,
+                       plot_validation: bool = True):
+    """ Plot the compared evolution of the accuracies
+    """
+    clear = True
+    metric_values_list = []
+
+    for history in history_metrics_list:
+
+        if plot_training:
+            metric_values_list.append(history.history['accuracy'])
+
+        if plot_validation:
+            metric_values_list.append(history.history['val_accuracy'])
+
+    plot_metrics_list(metric_values_list=metric_values_list,
+                      metric_labels_list=labels_list,
+                      metric_style_list=[],
+                      title='Accuracy')
 
 
 def plot_mae(mae_training: np.array,
