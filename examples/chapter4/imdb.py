@@ -152,7 +152,7 @@ def run():
 
     # training parameters
     validation_set_size = 10000
-    epochs = 5
+    epochs = 20
     batch_size = 512
     shuffle = True
 
@@ -203,15 +203,15 @@ def run():
 
     hutl.plot_loss_list(history_metrics_list=[history_small, history_medium, history_large],
                         labels_list=legends,
-                        title='Validation Loss',
-                        plot_training=False,
-                        plot_validation=True)
-
-    hutl.plot_loss_list(history_metrics_list=[history_small, history_medium, history_large],
-                        labels_list=legends,
                         title='Training Loss',
                         plot_training=True,
                         plot_validation=False)
+
+    hutl.plot_loss_list(history_metrics_list=[history_small, history_medium, history_large],
+                        labels_list=legends,
+                        title='Validation Loss',
+                        plot_training=False,
+                        plot_validation=True)
 
     # hutl.plot_accuracy_dict(history_small.history, title='IMDB SMALL: Training and Validation Accuracies')
     # hutl.plot_accuracy_dict(history_medium.history, title='IMDB MEDIUM: Training and Validation Accuracies')

@@ -74,6 +74,7 @@ def plot_metrics_list(metric_values_list: list,
                       y_label: str = 'Loss'):
     """ Plots a list of metrics
     """
+    plt.clf()
     epochs = range(1, len(metric_values_list[0]) + 1)
 
     for i in range(0, len(metric_values_list)):
@@ -89,7 +90,6 @@ def plot_metrics_list(metric_values_list: list,
 
         plt.plot(epochs, metric_values, metric_style, label=metric_label)
 
-    plt.clf()
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -243,7 +243,7 @@ def plot_loss_list(history_metrics_list: list,
     plot_metrics_list(metric_values_list=metric_values_list,
                       metric_labels_list=labels_list,
                       metric_style_list=[],
-                      title='Loss')
+                      title=title)
 
 
 def plot_accuracy_list(history_metrics_list: list,
