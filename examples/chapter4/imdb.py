@@ -199,19 +199,32 @@ def run():
     print("loss     =", test_loss_large)
     print("accuracy = {:.2%}".format(test_accuracy_large))
 
+    metrics = [history_small, history_medium, history_large]
     legends = ['small network', 'medium network', 'large network']
 
-    hutl.plot_loss_list(history_metrics_list=[history_small, history_medium, history_large],
+    hutl.plot_loss_list(history_metrics_list=metrics,
                         labels_list=legends,
                         title='Training Loss',
                         plot_training=True,
                         plot_validation=False)
 
-    hutl.plot_loss_list(history_metrics_list=[history_small, history_medium, history_large],
+    hutl.plot_loss_list(history_metrics_list=metrics,
                         labels_list=legends,
                         title='Validation Loss',
                         plot_training=False,
                         plot_validation=True)
+
+    hutl.plot_accuracy_list(history_metrics_list=metrics,
+                            labels_list=legends,
+                            title='Training Accuracy',
+                            plot_training=True,
+                            plot_validation=False)
+
+    hutl.plot_accuracy_list(history_metrics_list=metrics,
+                            labels_list=legends,
+                            title='Validation Accuracy',
+                            plot_training=False,
+                            plot_validation=True)
 
     # hutl.plot_accuracy_dict(history_small.history, title='IMDB SMALL: Training and Validation Accuracies')
     # hutl.plot_accuracy_dict(history_medium.history, title='IMDB MEDIUM: Training and Validation Accuracies')
