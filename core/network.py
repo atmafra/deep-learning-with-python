@@ -1,7 +1,7 @@
 from keras import models, layers, Model
 from keras.callbacks import History
 
-from core.hyperparameters import NetworkHyperparameters, LayerPosition
+from core.hyperparameters import NetworkHyperparameters, LayerPosition, LayerType
 from core.sets import Set
 
 
@@ -34,14 +34,24 @@ def create_network(network_hparm: NetworkHyperparameters):
                 raise RuntimeError("Network must have only one input layer")
 
             if first_hidden_layer:
-                network.add(layers.Dense(units=layer_hparm.units,
-                                         activation=layer_hparm.activation,
-                                         input_shape=input_shape))
+
+                if layer_hparm.layer_type == LayerType.DENSE:
+                    network.add(layers.Dense(units=layer_hparm.units,
+                                             activation=layer_hparm.activation,
+                                             input_shape=input_shape))
+
                 first_hidden_layer = False
 
             else:
-                network.add(layers.Dense(units=layer_hparm.units,
-                                         activation=layer_hparm.activation))
+                if layer_hparm.layer_type == LayerType.DENSE:
+                    network.add(layers.Dense(units=layer_hparm.units,
+                                             activation=layer_hparm.activation))
+
+                if layer_hparm.layer_type == LayerType.DROPOUT:
+                    dropout_rate = 0.25
+                    if 'dropout_rate' in layer_hparm.kwargs:
+                        dropout_rate = layer_hparm.kwargs['dropout_rate']
+                    network.add(layers.Dropout(dropout_rate))
 
     # compile the network
     network.compile(optimizer=network_hparm.optimizer,

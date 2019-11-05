@@ -20,6 +20,17 @@ class LayerPosition(Enum):
     OUTPUT = 3
 
 
+class LayerType(Enum):
+    DENSE = 1
+    DROPOUT = 2
+
+
+class KernelRegularizer(Enum):
+    NONE = 1
+    L1 = 2
+    L1L2 = 3
+
+
 default_learning_rate: float = 0.001
 default_optimizer: str = 'rmsprop'
 default_loss: dict = {
@@ -34,25 +45,36 @@ class LayerHyperparameters:
     """
 
     def __init__(self,
+                 layer_type: LayerType,
                  units: int,
                  position: LayerPosition,
-                 activation: str):
+                 activation: str,
+                 **kwargs):
         """Creates a new layer hyper parameters definition object
 
         Args:
-            units      (int)          : number of layer units (neurons)
-            position   (LayerPosition): layer position
-            activation (str)          : type of activation function
+            layer_type (LayerType): Layer Type (dense, dropout,...)
+            units (int): number of layer units (neurons)
+            position (LayerPosition): layer position
+            activation (str): type of activation function
+            parameters (dict): additional parameters
+            **kwargs: additional configurations
 
         """
+        self.layer_type = layer_type
         self.units = units
         self.position = position
         self.activation = activation
+        self.kwargs = kwargs
 
     def to_dict(self):
         """Returns the layer hyperparameters as a dictionary
         """
-        layer_dict = {'units': self.units, 'type': self.position.name, 'activation': self.activation}
+        layer_dict = {'layer_type': self.layer_type.name,
+                      'units': self.units,
+                      'position': self.position.name,
+                      'activation': self.activation}
+
         return layer_dict
 
     def to_json(self):

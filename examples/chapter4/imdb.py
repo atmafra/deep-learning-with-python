@@ -2,7 +2,8 @@ import numpy as np
 from keras.datasets import imdb
 
 from core import network as net
-from core.hyperparameters import LayerPosition, LayerHyperparameters, NetworkHyperparameters, NetworkOutputType
+from core.hyperparameters import LayerPosition, LayerHyperparameters, NetworkHyperparameters, NetworkOutputType, \
+    LayerType
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 from utils import history_utils as hutl
@@ -27,22 +28,33 @@ network_configuration_global = {
     'metrics': ['accuracy']}
 
 layers_configuration_small = [
-    {'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
-    {'units': 4, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'units': 4, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'units': output_size, 'position': LayerPosition.OUTPUT, 'activation': output_activation}]
-
+    {'layer_type': LayerType.DENSE, 'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
+    {'layer_type': LayerType.DENSE, 'units': 4, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': 4, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'position': LayerPosition.OUTPUT,
+     'activation': output_activation}]
 layers_configuration_medium = [
-    {'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
-    {'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'units': output_size, 'position': LayerPosition.OUTPUT, 'activation': output_activation}]
+    {'layer_type': LayerType.DENSE, 'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'position': LayerPosition.OUTPUT,
+     'activation': output_activation}]
 
 layers_configuration_large = [
-    {'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
-    {'units': 512, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'units': 512, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'units': output_size, 'position': LayerPosition.OUTPUT, 'activation': output_activation}]
+    {'layer_type': LayerType.DENSE, 'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
+    {'layer_type': LayerType.DENSE, 'units': 512, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': 512, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'position': LayerPosition.OUTPUT,
+     'activation': output_activation}]
+
+layers_configuration_medium_dropout = [
+    {'layer_type': LayerType.DENSE, 'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
+    {'layer_type': LayerType.DROPOUT, 'dropout_rate': 0.5},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
+    {'layer_type': LayerType.DROPOUT, 'dropout_rate': 0.5},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'position': LayerPosition.OUTPUT,
+     'activation': output_activation}]
 
 if __name__ == '__main__':
     word_index = imdb.get_word_index()
@@ -94,7 +106,8 @@ def hyperparameters(network_hyperparameters: dict, layer_hyperparameters: list):
 
     for layer in layer_hyperparameters:
         layer_hyperparameter_list.append(
-            LayerHyperparameters(units=layer['units'],
+            LayerHyperparameters(layer_type=LayerType.DENSE,
+                                 units=layer['units'],
                                  position=layer['position'],
                                  activation=layer['activation']))
 
