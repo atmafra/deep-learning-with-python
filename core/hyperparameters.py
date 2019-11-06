@@ -21,8 +21,9 @@ class LayerPosition(Enum):
 
 
 class LayerType(Enum):
-    DENSE = 1
-    DROPOUT = 2
+    INPUT = 1
+    DENSE = 2
+    DROPOUT = 3
 
 
 class KernelRegularizer(Enum):
@@ -44,36 +45,22 @@ class LayerHyperparameters:
     """Layer hyper parameters
     """
 
-    def __init__(self,
-                 layer_type: LayerType,
-                 units: int,
-                 position: LayerPosition,
-                 activation: str,
-                 **kwargs):
+    def __init__(self, layer_type: LayerType, **kwargs):
         """Creates a new layer hyper parameters definition object
 
         Args:
             layer_type (LayerType): Layer Type (dense, dropout,...)
-            units (int): number of layer units (neurons)
-            position (LayerPosition): layer position
-            activation (str): type of activation function
-            parameters (dict): additional parameters
             **kwargs: additional configurations
 
         """
-        self.layer_type = layer_type
-        self.units = units
-        self.position = position
-        self.activation = activation
-        self.kwargs = kwargs
+        self._layer_type = layer_type
+        self._parameters = kwargs['kwargs']
 
     def to_dict(self):
         """Returns the layer hyperparameters as a dictionary
         """
         layer_dict = {'layer_type': self.layer_type.name,
-                      'units': self.units,
-                      'position': self.position.name,
-                      'activation': self.activation}
+                      'parameters': self.parameters}
 
         return layer_dict
 
@@ -90,7 +77,8 @@ class NetworkHyperparameters:
                  layer_hyperparameters_list: list,
                  optimizer: str = default_optimizer,
                  learning_rate: float = default_learning_rate,
-                 loss: str = None, metrics: list = None):
+                 loss: str = None,
+                 metrics: list = None):
 
         """ Parameterized constructor
         """
@@ -110,7 +98,6 @@ class NetworkHyperparameters:
     def to_dict(self):
         network_dict = {'input_size': self.input_size,
                         'output_size': self.output_size,
-                        # 'output_type': self.output_type,
                         'optimizer': self.optimizer,
                         'learning_rate': self.learning_rate}
         if self.loss is not None:

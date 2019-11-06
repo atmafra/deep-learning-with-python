@@ -2,7 +2,7 @@ import numpy as np
 from keras.datasets import imdb
 
 from core import network as net
-from core.hyperparameters import LayerPosition, LayerHyperparameters, NetworkHyperparameters, NetworkOutputType, \
+from core.hyperparameters import NetworkOutputType, \
     LayerType
 from core.sets import Corpus
 from utils import dataset_utils as dsu
@@ -27,38 +27,27 @@ network_configuration_global = {
     'loss': 'binary_crossentropy',
     'metrics': ['accuracy']}
 
-layers_configuration_small = [
-    {'layer_type': LayerType.DENSE, 'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
-    {'layer_type': LayerType.DENSE, 'units': 4, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'layer_type': LayerType.DENSE, 'units': 4, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'position': LayerPosition.OUTPUT,
-     'activation': output_activation}]
-layers_configuration_medium = [
-    {'layer_type': LayerType.DENSE, 'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'position': LayerPosition.OUTPUT,
-     'activation': output_activation}]
+layer_configuration_small = [
+    {'layer_type': LayerType.DENSE, 'units': 4, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': LayerType.DENSE, 'units': 4, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
 
-layers_configuration_large = [
-    {'layer_type': LayerType.DENSE, 'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
-    {'layer_type': LayerType.DENSE, 'units': 512, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'layer_type': LayerType.DENSE, 'units': 512, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'position': LayerPosition.OUTPUT,
-     'activation': output_activation}]
+layer_configuration_medium = [
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
 
-layers_configuration_medium_dropout = [
-    {'layer_type': LayerType.DENSE, 'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
+layer_configuration_large = [
+    {'layer_type': LayerType.DENSE, 'units': 512, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': LayerType.DENSE, 'units': 512, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+
+layer_configuration_medium_dropout = [
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
     {'layer_type': LayerType.DROPOUT, 'dropout_rate': 0.5},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
     {'layer_type': LayerType.DROPOUT, 'dropout_rate': 0.5},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'position': LayerPosition.OUTPUT,
-     'activation': output_activation}]
-
-if __name__ == '__main__':
-    word_index = imdb.get_word_index()
-    reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
 
 
 def load_corpus(words: int = 10000, verbose: bool = True) -> Corpus:
@@ -93,38 +82,8 @@ def load_corpus(words: int = 10000, verbose: bool = True) -> Corpus:
     return Corpus.from_datasets(training_inputs, training_outputs, test_inputs, test_outputs)
 
 
-def hyperparameters(network_hyperparameters: dict, layer_hyperparameters: list):
-    """Defines the IMDB neural model hyper parameters
-
-    Args:
-        network_hyperparameters (dict): neural network hyperparameters
-        layer_hyperparameters (list): list of layer hyperparameters
-
-    """
-    # layer hyper parameters list
-    layer_hyperparameter_list = []
-
-    for layer in layer_hyperparameters:
-        layer_hyperparameter_list.append(
-            LayerHyperparameters(layer_type=LayerType.DENSE,
-                                 units=layer['units'],
-                                 position=layer['position'],
-                                 activation=layer['activation']))
-
-    # network hyper parameters
-    net_hparm = NetworkHyperparameters(input_size=network_hyperparameters['input_size'],
-                                       output_size=network_hyperparameters['output_size'],
-                                       output_type=network_hyperparameters['output_type'],
-                                       optimizer=network_hyperparameters['optimizer'],
-                                       learning_rate=network_hyperparameters['learning_rate'],
-                                       loss=network_hyperparameters['loss'],
-                                       metrics=network_hyperparameters['metrics'],
-                                       layer_hyperparameters_list=layer_hyperparameter_list)
-    return net_hparm
-
-
 def run_configuration(network_configuration: dict,
-                      layers_configuration: list,
+                      layer_configuration_list: list,
                       corpus: Corpus,
                       validation_set_size: int = 10000,
                       epochs: int = 20,
@@ -133,9 +92,8 @@ def run_configuration(network_configuration: dict,
     """Runs a particular configuration of network and layer parameters
     """
     # create the neural network
-    neural_network = net.create_network(
-        hyperparameters(network_hyperparameters=network_configuration,
-                        layer_hyperparameters=layers_configuration))
+    neural_network = net.create_network(network_configuration=network_configuration,
+                                        layer_configuration_list=layer_configuration_list)
 
     # split the training set to get the validation set
     validation_set, training_set_remaining = corpus.get_validation_set(validation_set_size)
@@ -157,9 +115,9 @@ def run_configuration(network_configuration: dict,
 def run():
     global num_words
     global network_configuration_global
-    global layers_configuration_small
-    global layers_configuration_medium
-    global layers_configuration_large
+    global layer_configuration_small
+    global layer_configuration_medium
+    global layer_configuration_large
 
     corpus = load_corpus(words=num_words)
 
@@ -170,19 +128,19 @@ def run():
     shuffle = True
 
     # small configuration
-    test_loss_small, test_accuracy_small, history_small = \
-        run_configuration(network_configuration=network_configuration_global,
-                          layers_configuration=layers_configuration_small,
-                          corpus=corpus,
-                          validation_set_size=validation_set_size,
-                          epochs=epochs,
-                          batch_size=batch_size,
-                          shuffle=shuffle)
+    # test_loss_small, test_accuracy_small, history_small = \
+    #     run_configuration(network_configuration=network_configuration_global,
+    #                       layer_configuration=layer_configuration_small,
+    #                       corpus=corpus,
+    #                       validation_set_size=validation_set_size,
+    #                       epochs=epochs,
+    #                       batch_size=batch_size,
+    #                       shuffle=shuffle)
 
     # medium configuration
     test_loss_medium, test_accuracy_medium, history_medium = \
         run_configuration(network_configuration=network_configuration_global,
-                          layers_configuration=layers_configuration_medium,
+                          layer_configuration_list=layer_configuration_medium,
                           corpus=corpus,
                           validation_set_size=validation_set_size,
                           epochs=epochs,
@@ -190,30 +148,45 @@ def run():
                           shuffle=shuffle)
 
     # large configuration
-    test_loss_large, test_accuracy_large, history_large = \
+    # test_loss_large, test_accuracy_large, history_large = \
+    #     run_configuration(network_configuration=network_configuration_global,
+    #                       layer_configuration=layer_configuration_large,
+    #                       corpus=corpus,
+    #                       validation_set_size=validation_set_size,
+    #                       epochs=epochs,
+    #                       batch_size=batch_size,
+    #                       shuffle=shuffle)
+
+    # medium configuration
+    test_loss_medium_dropout, test_accuracy_medium_dropout, history_medium_dropout = \
         run_configuration(network_configuration=network_configuration_global,
-                          layers_configuration=layers_configuration_large,
+                          layer_configuration_list=layer_configuration_medium_dropout,
                           corpus=corpus,
                           validation_set_size=validation_set_size,
                           epochs=epochs,
                           batch_size=batch_size,
                           shuffle=shuffle)
-
     # print results
-    print("\nSmall Network")
-    print("loss     =", test_loss_small)
-    print("accuracy = {:.2%}".format(test_accuracy_small))
+    # print("\nSmall Network")
+    # print("loss     =", test_loss_small)
+    # print("accuracy = {:.2%}".format(test_accuracy_small))
 
     print("\nMedium Network")
     print("loss     =", test_loss_medium)
     print("accuracy = {:.2%}".format(test_accuracy_medium))
 
-    print("\nLarge Network")
-    print("loss     =", test_loss_large)
-    print("accuracy = {:.2%}".format(test_accuracy_large))
+    # print("\nLarge Network")
+    # print("loss     =", test_loss_large)
+    # print("accuracy = {:.2%}".format(test_accuracy_large))
 
-    metrics = [history_small, history_medium, history_large]
-    legends = ['small network', 'medium network', 'large network']
+    print("\nMedium Network with Dropout")
+    print("loss     =", test_loss_medium_dropout)
+    print("accuracy = {:.2%}".format(test_accuracy_medium_dropout))
+
+    # metrics = [history_small, history_medium, history_large]
+    # legends = ['small network', 'medium network', 'large network']
+    metrics = [history_medium, history_medium_dropout]
+    legends = ['medium network', 'medium network with dropout']
 
     hutl.plot_loss_list(history_metrics_list=metrics,
                         labels_list=legends,

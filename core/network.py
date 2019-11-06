@@ -1,62 +1,52 @@
 from keras import models, layers, Model
 from keras.callbacks import History
 
-from core.hyperparameters import NetworkHyperparameters, LayerPosition, LayerType
+from core.hyperparameters import LayerType
 from core.sets import Set
 
 
-def create_network(network_hparm: NetworkHyperparameters):
+def create_layer(**kwargs):
+    """Creates a layer according to the hyperparameters
+    """
+    layer_type = kwargs.get('layer_type')
+
+    # Input
+    if layer_type == LayerType.INPUT:
+        # return layers.Input(layer_configuration)
+        pass
+
+    # Dense
+    elif layer_type == LayerType.DENSE:
+        return layers.Dense(kwargs)
+
+    # Dropout
+    elif layer_type == LayerType.DROPOUT:
+        return layers.Dropout(kwargs)
+
+    # Unknown
+    else:
+        raise NotImplementedError('Unknown layer type')
+
+
+def create_network(network_configuration: dict,
+                   layer_configuration_list: list):
     """Creates a neural network according to its hyper parameters
 
     Args:
-        network_hparm (NetworkHyperparameters): neural network hyper parameters
+        network_configuration (dict): neural network hyperparameters
+        layer_configuration_list (list): list of layer hyperparameters
 
     """
     network = models.Sequential()
-    input_shape = None
-    first_layer: bool = True
-    first_hidden_layer: bool = True
 
     # layers
-    for layer_hparm in network_hparm.layer_hyperparameters_list:
-
-        if first_layer:
-
-            if layer_hparm.position != LayerPosition.INPUT:
-                raise RuntimeError("First layer must be an input layer")
-
-            input_shape = (layer_hparm.units,)
-            first_layer = False
-
-        else:
-
-            if layer_hparm.position == LayerPosition.INPUT:
-                raise RuntimeError("Network must have only one input layer")
-
-            if first_hidden_layer:
-
-                if layer_hparm.layer_type == LayerType.DENSE:
-                    network.add(layers.Dense(units=layer_hparm.units,
-                                             activation=layer_hparm.activation,
-                                             input_shape=input_shape))
-
-                first_hidden_layer = False
-
-            else:
-                if layer_hparm.layer_type == LayerType.DENSE:
-                    network.add(layers.Dense(units=layer_hparm.units,
-                                             activation=layer_hparm.activation))
-
-                if layer_hparm.layer_type == LayerType.DROPOUT:
-                    dropout_rate = 0.25
-                    if 'dropout_rate' in layer_hparm.kwargs:
-                        dropout_rate = layer_hparm.kwargs['dropout_rate']
-                    network.add(layers.Dropout(dropout_rate))
+    for layer_configuration in layer_configuration_list:
+        network.add(create_layer(layer_configuration))
 
     # compile the network
-    network.compile(optimizer=network_hparm.optimizer,
-                    loss=network_hparm.loss,
-                    metrics=network_hparm.metrics)
+    network.compile(optimizer=network_configuration.get('optimizer'),
+                    loss=network_configuration.get('loss'),
+                    metrics=network_configuration.get('metrics'))
 
     return network
 
