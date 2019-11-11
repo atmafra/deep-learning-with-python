@@ -1,71 +1,6 @@
 import json
-from enum import Enum
 
-
-class NetworkOutputType(Enum):
-    BOOLEAN = 1
-    CATEGORICAL = 2
-    DECIMAL = 3
-
-    class EnumEncoder(json.JSONEncoder):
-        def default(self, obj):
-            if type(obj) in NetworkOutputType.values():
-                return {"__enum__": str(obj)}
-            return json.JSONEncoder.default(self, obj)
-
-
-class LayerPosition(Enum):
-    INPUT = 1
-    HIDDEN = 2
-    OUTPUT = 3
-
-
-class LayerType(Enum):
-    INPUT = 1
-    DENSE = 2
-    DROPOUT = 3
-
-
-class KernelRegularizer(Enum):
-    NONE = 1
-    L1 = 2
-    L1L2 = 3
-
-
-default_learning_rate: float = 0.001
-default_optimizer: str = 'rmsprop'
-default_loss: dict = {
-    NetworkOutputType.BOOLEAN: 'binary_crossentropy',
-    NetworkOutputType.CATEGORICAL: 'categorical_crossentropy',
-    NetworkOutputType.DECIMAL: 'mean_squared_error'
-}
-
-
-class LayerHyperparameters:
-    """Layer hyper parameters
-    """
-
-    def __init__(self, layer_type: LayerType, **kwargs):
-        """Creates a new layer hyper parameters definition object
-
-        Args:
-            layer_type (LayerType): Layer Type (dense, dropout,...)
-            **kwargs: additional configurations
-
-        """
-        self._layer_type = layer_type
-        self._parameters = kwargs['kwargs']
-
-    def to_dict(self):
-        """Returns the layer hyperparameters as a dictionary
-        """
-        layer_dict = {'layer_type': self.layer_type.name,
-                      'parameters': self.parameters}
-
-        return layer_dict
-
-    def to_json(self):
-        return json.dumps(self.to_dict())
+from core.network import NetworkOutputType
 
 
 class NetworkHyperparameters:
@@ -75,8 +10,8 @@ class NetworkHyperparameters:
                  output_size: int,
                  output_type: NetworkOutputType,
                  layer_hyperparameters_list: list,
-                 optimizer: str = default_optimizer,
-                 learning_rate: float = default_learning_rate,
+                 optimizer: str = None,
+                 learning_rate: float = None,
                  loss: str = None,
                  metrics: list = None):
 
@@ -87,7 +22,7 @@ class NetworkHyperparameters:
         self.output_type = output_type
         self.loss = None
         if loss is None:
-            self.loss = default_loss[output_type]
+            self.loss = None #default_loss[output_type]
         else:
             self.loss = loss
         self.layer_hyperparameters_list = layer_hyperparameters_list

@@ -1,9 +1,9 @@
 import numpy as np
+from keras import regularizers
 from keras.datasets import imdb
 
 from core import network as net
-from core.hyperparameters import NetworkOutputType, \
-    LayerType
+from core.network import NetworkOutputType, LayerType
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 from utils import history_utils as hutl
@@ -27,26 +27,56 @@ network_configuration_global = {
     'loss': 'binary_crossentropy',
     'metrics': ['accuracy']}
 
-layer_configuration_small = [
+config_small = [
     {'layer_type': LayerType.DENSE, 'units': 4, 'activation': hidden_activation, 'input_shape': (input_size,)},
     {'layer_type': LayerType.DENSE, 'units': 4, 'activation': hidden_activation},
     {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
 
-layer_configuration_medium = [
+config_medium = [
     {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
     {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
     {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
 
-layer_configuration_large = [
+config_large = [
     {'layer_type': LayerType.DENSE, 'units': 512, 'activation': hidden_activation, 'input_shape': (input_size,)},
     {'layer_type': LayerType.DENSE, 'units': 512, 'activation': hidden_activation},
     {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
 
-layer_configuration_medium_dropout = [
+config_medium_dropout = [
     {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
-    {'layer_type': LayerType.DROPOUT, 'dropout_rate': 0.5},
+    {'layer_type': LayerType.DROPOUT, 'rate': 0.5},
     {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
-    {'layer_type': LayerType.DROPOUT, 'dropout_rate': 0.5},
+    {'layer_type': LayerType.DROPOUT, 'rate': 0.5},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+
+config_medium_wreg_l1 = [
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+     'kernel_regularizer': regularizers.l1(0.001)},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+     'kernel_regularizer': regularizers.l1(0.001)},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+
+config_medium_wreg_l2 = [
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+     'kernel_regularizer': regularizers.l2(0.001)},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+     'kernel_regularizer': regularizers.l2(0.001)},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+
+config_medium_wreg_l1_l2 = [
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+     'kernel_regularizer': regularizers.l1_l2(l1=0.001, l2=0.001)},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+     'kernel_regularizer': regularizers.l1_l2(l1=0.001, l2=0.001)},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+
+config_medium_dropout_wreg_l2 = [
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+     'kernel_regularizer': regularizers.l2(0.001)},
+    {'layer_type': LayerType.DROPOUT, 'rate': 0.5},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+     'kernel_regularizer': regularizers.l2(0.001)},
+    {'layer_type': LayerType.DROPOUT, 'rate': 0.5},
     {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
 
 
@@ -115,9 +145,9 @@ def run_configuration(network_configuration: dict,
 def run():
     global num_words
     global network_configuration_global
-    global layer_configuration_small
-    global layer_configuration_medium
-    global layer_configuration_large
+    global config_small
+    global config_medium
+    global config_large
 
     corpus = load_corpus(words=num_words)
 
@@ -140,7 +170,7 @@ def run():
     # medium configuration
     test_loss_medium, test_accuracy_medium, history_medium = \
         run_configuration(network_configuration=network_configuration_global,
-                          layer_configuration_list=layer_configuration_medium,
+                          layer_configuration_list=config_medium,
                           corpus=corpus,
                           validation_set_size=validation_set_size,
                           epochs=epochs,
@@ -157,15 +187,56 @@ def run():
     #                       batch_size=batch_size,
     #                       shuffle=shuffle)
 
-    # medium configuration
+    # medium configuration with dropout
     test_loss_medium_dropout, test_accuracy_medium_dropout, history_medium_dropout = \
         run_configuration(network_configuration=network_configuration_global,
-                          layer_configuration_list=layer_configuration_medium_dropout,
+                          layer_configuration_list=config_medium_dropout,
                           corpus=corpus,
                           validation_set_size=validation_set_size,
                           epochs=epochs,
                           batch_size=batch_size,
                           shuffle=shuffle)
+
+    # medium configuration with weight regularization L1
+    test_loss_medium_wreg_l1, test_accuracy_medium_wreg_l1, history_medium_wreg_l1 = \
+        run_configuration(network_configuration=network_configuration_global,
+                          layer_configuration_list=config_medium_wreg_l1,
+                          corpus=corpus,
+                          validation_set_size=validation_set_size,
+                          epochs=epochs,
+                          batch_size=batch_size,
+                          shuffle=shuffle)
+
+    # medium configuration with weight regularization L2
+    test_loss_medium_wreg_l2, test_accuracy_medium_wreg_l2, history_medium_wreg_l2 = \
+        run_configuration(network_configuration=network_configuration_global,
+                          layer_configuration_list=config_medium_wreg_l2,
+                          corpus=corpus,
+                          validation_set_size=validation_set_size,
+                          epochs=epochs,
+                          batch_size=batch_size,
+                          shuffle=shuffle)
+
+    # medium configuration with weight regularization L1 and L2
+    test_loss_medium_wreg_l1_l2, test_accuracy_medium_wreg_l1_l2, history_medium_wreg_l1_l2 = \
+        run_configuration(network_configuration=network_configuration_global,
+                          layer_configuration_list=config_medium_wreg_l1_l2,
+                          corpus=corpus,
+                          validation_set_size=validation_set_size,
+                          epochs=epochs,
+                          batch_size=batch_size,
+                          shuffle=shuffle)
+
+    # medium configuration with dropout and weight regularization L2
+    test_loss_medium_dropout_wreg_l2, test_accuracy_medium_dropout_wreg_l2, history_medium_dropout_wreg_l2 = \
+        run_configuration(network_configuration=network_configuration_global,
+                          layer_configuration_list=config_medium_dropout_wreg_l2,
+                          corpus=corpus,
+                          validation_set_size=validation_set_size,
+                          epochs=epochs,
+                          batch_size=batch_size,
+                          shuffle=shuffle)
+
     # print results
     # print("\nSmall Network")
     # print("loss     =", test_loss_small)
@@ -183,10 +254,32 @@ def run():
     print("loss     =", test_loss_medium_dropout)
     print("accuracy = {:.2%}".format(test_accuracy_medium_dropout))
 
+    print("\nMedium Network with Weight Regularization L1")
+    print("loss     =", test_loss_medium_wreg_l1)
+    print("accuracy = {:.2%}".format(test_accuracy_medium_wreg_l1))
+
+    print("\nMedium Network with Weight Regularization L2")
+    print("loss     =", test_loss_medium_wreg_l2)
+    print("accuracy = {:.2%}".format(test_accuracy_medium_wreg_l2))
+
+    print("\nMedium Network with Weight Regularizations L1 and L2")
+    print("loss     =", test_loss_medium_wreg_l1_l2)
+    print("accuracy = {:.2%}".format(test_accuracy_medium_wreg_l1_l2))
+
+    print("\nMedium Network with Dropout and Weight Regularization L2")
+    print("loss     =", test_loss_medium_dropout_wreg_l2)
+    print("accuracy = {:.2%}".format(test_accuracy_medium_dropout_wreg_l2))
+
     # metrics = [history_small, history_medium, history_large]
     # legends = ['small network', 'medium network', 'large network']
-    metrics = [history_medium, history_medium_dropout]
-    legends = ['medium network', 'medium network with dropout']
+    metrics = [history_medium, history_medium_dropout, history_medium_wreg_l1, history_medium_wreg_l2,
+               history_medium_wreg_l1_l2, history_medium_dropout_wreg_l2]
+
+    legends = ['medium network', 'medium with dropout',
+               'medium with weight regularization L1',
+               'medium with weight regularization L2',
+               'medium with weight regularization L1 and L2',
+               'medium with dropout and weight regularization L2']
 
     hutl.plot_loss_list(history_metrics_list=metrics,
                         labels_list=legends,
@@ -211,7 +304,3 @@ def run():
                             title='Validation Accuracy',
                             plot_training=False,
                             plot_validation=True)
-
-    # hutl.plot_accuracy_dict(history_small.history, title='IMDB SMALL: Training and Validation Accuracies')
-    # hutl.plot_accuracy_dict(history_medium.history, title='IMDB MEDIUM: Training and Validation Accuracies')
-    # hutl.plot_accuracy_dict(history_medium.history, title='IMDB LARGE: Training and Validation Accuracies')

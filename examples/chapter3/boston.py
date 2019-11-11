@@ -2,7 +2,7 @@ import numpy as np
 from keras.datasets import boston_housing as boston
 
 from core import network as net
-from core.hyperparameters import LayerPosition, LayerHyperparameters, NetworkHyperparameters, NetworkOutputType
+from core.network import LayerType, NetworkOutputType
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 from utils import history_utils as hutl
@@ -28,42 +28,26 @@ def load(num_words: int = 10000, encoding_schema: str = 'one-hot', verbose: bool
     return (train_inputs, train_outputs), (test_inputs, test_outputs)
 
 
-def hyperparameters(input_size: int,
-                    hidden_size: list,
-                    output_size: int,
-                    hidden_activation: str,
-                    output_activation: str,
-                    loss: str = 'mse'):
+def hyperparameters(input_size: int, output_size: int):
     """ Boston Housing neural network hyperparameters
     """
-
-    # layer hyper parameters list
-    input_layer_hparm = LayerHyperparameters(units=input_size,
-                                             position=LayerPosition.INPUT,
-                                             activation='linear')
-
-    hidden_layers_hparm = []
-    for size in hidden_size:
-        hidden_layers_hparm.append(LayerHyperparameters(units=size,
-                                                        position=LayerPosition.HIDDEN,
-                                                        activation=hidden_activation))
-
-    output_layer_hparm = LayerHyperparameters(units=output_size,
-                                              position=LayerPosition.OUTPUT,
-                                              activation=output_activation)
-
-    layer_hparm_list = [input_layer_hparm] + hidden_layers_hparm + [output_layer_hparm]
-
     # network hyper parameters
-    hparm = NetworkHyperparameters(input_size=input_size,
-                                   output_size=output_size,
-                                   output_type=NetworkOutputType.DECIMAL,
-                                   layer_hyperparameters_list=layer_hparm_list,
-                                   optimizer='rmsprop',
-                                   learning_rate=0.001,
-                                   loss=loss,
-                                   metrics=['mae'])
-    return hparm
+    network_configuration = {
+        'input_size': input_size,
+        'output_size': output_size,
+        'output_type': NetworkOutputType.DECIMAL,
+        'optimizer': 'rmsprop',
+        'learning_rate': 0.001,
+        'loss': 'mse',
+        'metrics': ['mae']}
+
+    # layer hyperparameters list
+    layers_configuration = [
+        {'layer_type': LayerType.DENSE, 'units': 64, 'activation': 'relu', 'input_shape': (input_size,)},
+        {'layer_type': LayerType.DENSE, 'units': 64, 'activation': 'relu'},
+        {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'linear'}]
+
+    return network_configuration, layers_configuration
 
 
 def run():
@@ -73,18 +57,14 @@ def run():
     # define hyper parameters and create the neural network
     # input_size = train_data.shape[1]
     input_size = corpus.input_size()
-    hidden_size = [64, 64]
     output_size = corpus.output_size()
 
-    boston_hparm = hyperparameters(input_size=input_size,
-                                   hidden_size=hidden_size,
-                                   output_size=output_size,
-                                   hidden_activation='relu',
-                                   output_activation='linear',
-                                   loss='mse')
+    network_configuration, layers_configuration = \
+        hyperparameters(input_size=input_size, output_size=output_size)
 
     # create and compile the network
-    boston_nnet = net.create_network(boston_hparm)
+    boston_nnet = net.create_network(network_configuration=network_configuration,
+                                     layer_configuration_list=layers_configuration)
 
     # train the neural network
     history_list = net.train_network_k_fold(network=boston_nnet,

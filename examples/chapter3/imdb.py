@@ -1,8 +1,9 @@
 import numpy as np
+from keras import regularizers
 from keras.datasets import imdb
 
 from core import network as net
-from core.hyperparameters import LayerPosition, LayerHyperparameters, NetworkHyperparameters, NetworkOutputType
+from core.network import NetworkOutputType, LayerType
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 from utils import history_utils as hutl
@@ -14,6 +15,9 @@ output_size = 1
 hidden_activation = 'relu'
 output_activation = 'sigmoid'
 
+word_index = {}
+reverse_word_index = {}
+
 network_configuration_global = {
     'input_size': input_size,
     'output_size': output_size,
@@ -23,22 +27,16 @@ network_configuration_global = {
     'loss': 'binary_crossentropy',
     'metrics': ['accuracy']}
 
-layer_hyperparameters_1_global = [
-    {'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
-    {'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'units': output_size, 'position': LayerPosition.OUTPUT, 'activation': output_activation}]
+layers_config_1 = [
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
 
-layer_hyperparameters_2_global = [
-    {'units': input_size, 'position': LayerPosition.INPUT, 'activation': 'linear'},
-    {'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'units': 16, 'position': LayerPosition.HIDDEN, 'activation': hidden_activation},
-    {'units': output_size, 'position': LayerPosition.OUTPUT, 'activation': output_activation}]
-
-if __name__ == '__main__':
-    word_index = imdb.get_word_index()
-    reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
+layers_config_2 = [
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
 
 
 def load_corpus(words: int = 10000, verbose: bool = True) -> Corpus:
@@ -73,83 +71,101 @@ def load_corpus(words: int = 10000, verbose: bool = True) -> Corpus:
     return Corpus.from_datasets(training_inputs, training_outputs, test_inputs, test_outputs)
 
 
-def hyperparameters(network_hyperparameters: dict, layer_hyperparameters: list):
-    """Defines the IMDB neural model hyper parameters
-
-    Args:
-        network_hyperparameters (dict): neural network hyperparameters
-        layer_hyperparameters (list): list of layer hyperparameters
-
+def run_configuration(network_configuration: dict,
+                      layer_configuration_list: list,
+                      corpus: Corpus,
+                      validation_set_size: int = 10000,
+                      epochs: int = 20,
+                      batch_size: int = 512,
+                      shuffle: bool = True):
+    """Runs a particular configuration of network and layer parameters
     """
-    # layer hyper parameters list
-    layer_hyperparameter_list = []
+    # create the neural network
+    neural_network = net.create_network(network_configuration=network_configuration,
+                                        layer_configuration_list=layer_configuration_list)
 
-    for layer in layer_hyperparameters:
-        layer_hyperparameter_list.append(
-            LayerHyperparameters(units=layer['units'],
-                                 position=layer['position'],
-                                 activation=layer['activation']))
+    # split the training set to get the validation set
+    validation_set, training_set_remaining = corpus.get_validation_set(validation_set_size)
 
-    # network hyper parameters
-    net_hparm = NetworkHyperparameters(input_size=network_hyperparameters['input_size'],
-                                       output_size=network_hyperparameters['output_size'],
-                                       output_type=network_hyperparameters['output_type'],
-                                       optimizer=network_hyperparameters['optimizer'],
-                                       learning_rate=network_hyperparameters['learning_rate'],
-                                       loss=network_hyperparameters['loss'],
-                                       metrics=network_hyperparameters['metrics'],
-                                       layer_hyperparameters_list=layer_hyperparameter_list)
-    return net_hparm
+    # train the neural network
+    history = net.train_network(network=neural_network,
+                                training_set=training_set_remaining,
+                                epochs=epochs,
+                                batch_size=batch_size,
+                                shuffle=shuffle,
+                                validation_set=validation_set)
+
+    # evaluate the neural network
+    (test_loss, test_accuracy) = net.test_network(neural_network, corpus.test_set)
+
+    return test_loss, test_accuracy, history
 
 
 def run():
     global num_words
     global network_configuration_global
-    global layer_hyperparameters_1_global
-    global layer_hyperparameters_2_global
+    global layers_config_1
+    global layers_config_2
 
     corpus = load_corpus(words=num_words)
 
-    imdb_nnet_1 = net.create_network(
-        hyperparameters(network_hyperparameters=network_hyperparameters_global,
-                        layer_hyperparameters=layer_hyperparameters_1_global))
-
+    # training parameters
+    validation_set_size = 10000
     epochs = 20
     batch_size = 512
     shuffle = True
-    validation_set_size = 10000
 
-    validation_set, training_set_remaining = corpus.get_validation_set(validation_set_size)
+    # configuration 1
+    test_loss_1, test_accuracy_1, history_1 = \
+        run_configuration(network_configuration=network_configuration_global,
+                          layer_configuration_list=layers_config_1,
+                          corpus=corpus,
+                          validation_set_size=validation_set_size,
+                          epochs=epochs,
+                          batch_size=batch_size,
+                          shuffle=shuffle)
 
-    history_1 = net.train_network(network=imdb_nnet_1,
-                                  training_set=training_set_remaining,
-                                  epochs=epochs,
-                                  batch_size=batch_size,
-                                  shuffle=shuffle,
-                                  validation_set=validation_set)
+    # configuration 2
+    test_loss_2, test_accuracy_2, history_2 = \
+        run_configuration(network_configuration=network_configuration_global,
+                          layer_configuration_list=layers_config_2,
+                          corpus=corpus,
+                          validation_set_size=validation_set_size,
+                          epochs=epochs,
+                          batch_size=batch_size,
+                          shuffle=shuffle)
 
-    hutl.plot_accuracy_dict(history_1.history, title='IMDB 1: Training and Validation Accuracies')
-    (test_loss_1, test_accuracy_1) = net.test_network(imdb_nnet_1, corpus.test_set)
-
-    imdb_nnet_2 = net.create_network(
-        hyperparameters(network_hyperparameters=network_hyperparameters_global,
-                        layer_hyperparameters=layer_hyperparameters_2_global))
-
-    history_2 = net.train_network(network=imdb_nnet_2,
-                                  training_set=training_set_remaining,
-                                  epochs=epochs,
-                                  batch_size=batch_size,
-                                  shuffle=shuffle,
-                                  validation_set=validation_set)
-
-    hutl.plot_accuracy_dict(history_2.history, title='IMDB 2: Training and Validation Accuracies')
-    (test_loss_2, test_accuracy_2) = net.test_network(imdb_nnet_2, corpus.test_set)
-
-    # print results
-    print("\nNetwork 1")
+    print("\nNetwork Configuration 1")
     print("loss     =", test_loss_1)
     print("accuracy = {:.2%}".format(test_accuracy_1))
 
-    print("\nNetwork 2")
+    print("\nNetwork Configuration 2")
     print("loss     =", test_loss_2)
     print("accuracy = {:.2%}".format(test_accuracy_2))
+
+    metrics = [history_1, history_2]
+    legends = ['configuration 1', 'configuration 2']
+
+    hutl.plot_loss_list(history_metrics_list=metrics,
+                        labels_list=legends,
+                        title='Training Loss',
+                        plot_training=True,
+                        plot_validation=False)
+
+    hutl.plot_loss_list(history_metrics_list=metrics,
+                        labels_list=legends,
+                        title='Validation Loss',
+                        plot_training=False,
+                        plot_validation=True)
+
+    hutl.plot_accuracy_list(history_metrics_list=metrics,
+                            labels_list=legends,
+                            title='Training Accuracy',
+                            plot_training=True,
+                            plot_validation=False)
+
+    hutl.plot_accuracy_list(history_metrics_list=metrics,
+                            labels_list=legends,
+                            title='Validation Accuracy',
+                            plot_training=False,
+                            plot_validation=True)

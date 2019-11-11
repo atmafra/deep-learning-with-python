@@ -1,27 +1,83 @@
+from enum import Enum
+
 from keras import models, layers, Model
 from keras.callbacks import History
 
-from core.hyperparameters import LayerType
 from core.sets import Set
 
 
-def create_layer(**kwargs):
-    """Creates a layer according to the hyperparameters
+class NetworkOutputType(Enum):
+    BOOLEAN = 1
+    CATEGORICAL = 2
+    DECIMAL = 3
+
+
+class LayerPosition(Enum):
+    INPUT = 1
+    HIDDEN = 2
+    OUTPUT = 3
+
+
+class LayerType(Enum):
+    INPUT = 1
+    DENSE = 2
+    DROPOUT = 3
+    OUTPUT = 4
+
+
+default_optimizer: str = 'rmsprop'
+default_learning_rate: float = 0.001
+default_loss: dict = {
+    NetworkOutputType.BOOLEAN: 'binary_crossentropy',
+    NetworkOutputType.CATEGORICAL: 'categorical_crossentropy',
+    NetworkOutputType.DECIMAL: 'mean_squared_error'
+}
+
+
+def extract_parameter(parameters: dict, parameter: str):
+    """Extracts a particular parameter from a parameters dictionary
+
+    Args:
+        parameters (dict): parameter dictionary
+        parameter (str): parameter key to be extracted
+
     """
-    layer_type = kwargs.get('layer_type')
+    if parameter not in parameters:
+        return None
+
+    parameter_value = parameters.get(parameter)
+    del parameters[parameter]
+    return parameter_value
+
+
+def create_layer(parameters: dict):
+    """Creates a layer according to the hyperparameters
+
+    Args:
+        parameters (dict): hyperparameters dictionary
+
+    """
+    if 'layer_type' not in parameters:
+        raise ValueError('layer_type not defined')
+
+    layer_type = extract_parameter(parameters, 'layer_type')
 
     # Input
     if layer_type == LayerType.INPUT:
-        # return layers.Input(layer_configuration)
         pass
 
     # Dense
     elif layer_type == LayerType.DENSE:
-        return layers.Dense(kwargs)
+        return layers.Dense(**parameters)
 
     # Dropout
     elif layer_type == LayerType.DROPOUT:
-        return layers.Dropout(kwargs)
+        rate = extract_parameter(parameters, 'rate')
+        return layers.Dropout(rate=rate, **parameters)
+
+    # Output
+    elif layer_type == LayerType.OUTPUT:
+        pass
 
     # Unknown
     else:
@@ -41,12 +97,17 @@ def create_network(network_configuration: dict,
 
     # layers
     for layer_configuration in layer_configuration_list:
-        network.add(create_layer(layer_configuration))
+        layer = create_layer(layer_configuration)
+        if layer is not None:
+            network.add(layer)
 
     # compile the network
-    network.compile(optimizer=network_configuration.get('optimizer'),
-                    loss=network_configuration.get('loss'),
-                    metrics=network_configuration.get('metrics'))
+    output_type: NetworkOutputType = network_configuration.get('output_type')
+    loss = network_configuration.get('loss', default_loss[output_type])
+    optimizer = network_configuration.get('optimizer', default_optimizer)
+    metrics = network_configuration.get('metrics')
+
+    network.compile(optimizer=optimizer, loss=loss, metrics=metrics)
 
     return network
 
@@ -58,15 +119,15 @@ def train_network(
         shuffle: bool,
         training_set: Set,
         validation_set: Set = None) -> History:
-    """Train the neural network, returning the evolution of the training metricsj
+    """Train the neural network, returning the evolution of the training metrics
 
     Args:
-        network        (Model) : neural network model to be trained
-        epochs         (int)   : number of training epochs
-        batch_size     (int)   : training batch size
-        shuffle        (bool)  : shuffle training set before training
-        training_set   (Set)   : training set
-        validation_set (Set)   : validation set
+        network (Model): neural network model to be trained
+        epochs (int): number of training epochs
+        batch_size (int): training batch size
+        shuffle (bool): shuffle training set before training
+        training_set (Set): training set
+        validation_set (Set): validation set
 
     """
     if shuffle:
@@ -80,12 +141,11 @@ def train_network(
     else:
         validation_data = validation_set.to_datasets()
 
-    history = network.fit(
-        x=working_training_set.input_data,
-        y=working_training_set.output_data,
-        epochs=epochs,
-        batch_size=batch_size,
-        validation_data=validation_data)
+    history = network.fit(x=working_training_set.input_data,
+                          y=working_training_set.output_data,
+                          epochs=epochs,
+                          batch_size=batch_size,
+                          validation_data=validation_data)
 
     return history
 
@@ -100,12 +160,12 @@ def train_network_k_fold(
     """Train the neural network model using k-fold cross-validation
 
     Args:
-        network      (Model) : neural network model to be trained
-        epochs       (int)   : number of passes through the training set
-        batch_size   (int)   : training batch size
-        k            (int)   : number of partitions in k-fold cross-validation
-        shuffle      (bool)  : shuffle the training set before k splitting
-        training_set (Set)   : training data set
+        network (Model): neural network model to be trained
+        epochs (int): number of passes through the training set
+        batch_size (int): training batch size
+        k (int): number of partitions in k-fold cross-validation
+        shuffle (bool): shuffle the training set before k splitting
+        training_set (Set): training data set
 
     """
     all_histories = []

@@ -1,9 +1,8 @@
 import numpy as np
 from keras.datasets import reuters
 
-from core import network as net
-from core.hyperparameters import LayerHyperparameters, NetworkHyperparameters, NetworkOutputType, LayerPosition
-from core.sets import Corpus
+from core import network as net, sets
+from core.network import LayerType, NetworkOutputType
 from utils import dataset_utils as dsu
 from utils import history_utils as hplt
 
@@ -16,8 +15,8 @@ def load(num_words: int = 10000, encoding_schema: str = 'one-hot', verbose: bool
     if verbose:
         print('Loading Reuters dataset...')
 
-    corpus = reuters.load_data(num_words=num_words)
-    (train_data, train_labels), (test_data, test_labels) = dsu.separate_corpus(corpus)
+    dataset = reuters.load_data(num_words=num_words)
+    (train_data, train_labels), (test_data, test_labels) = dsu.separate_corpus(dataset)
 
     # vectorization of the input data
     train_data = dsu.one_hot_encode(train_data, num_words)
@@ -34,77 +33,69 @@ def load(num_words: int = 10000, encoding_schema: str = 'one-hot', verbose: bool
         train_labels = np.array(train_labels)
         test_labels = np.array(test_labels)
 
+    corpus = sets.Corpus.from_datasets(train_data, train_labels, test_data, test_labels)
+
     if verbose:
         print('Training phrases:', len(train_data))
         print('Test phrases    :', len(test_data))
+        print('Input size      :', corpus.input_size())
         print('Categories      :', categories)
 
-    return (train_data, train_labels), (test_data, test_labels)
+    return corpus
 
 
-def hyperparameters(input_size: int,
-                    hidden_size: list,
-                    output_size: int,
-                    hidden_activation: str = 'relu',
-                    output_activation: str = 'softmax',
-                    loss: str = 'categorical_crossentropy'):
+def hyperparameters(input_size: int, output_size: int):
     """ IMDB neural network hyperparameters
     """
+    # network hyperparameters
+    loss = 'categorical_crossentropy'
+
+    network_configuration = {
+        'input_size': input_size,
+        'output_size': output_size,
+        'output_type': NetworkOutputType.CATEGORICAL,
+        'optimizer': 'rmsprop',
+        'learning_rate': 0.001,
+        'loss': loss,
+        'metrics': ['accuracy']}
 
     # layers hyperparameters
-    input_layer_hparm = LayerHyperparameters(units=input_size,
-                                             position=LayerPosition.INPUT,
-                                             activation='linear')
+    hidden_activation = 'relu'
+    output_activation = 'softmax'
 
-    hidden_layers_hparm = []
-    for size in hidden_size:
-        hidden_layers_hparm.append(LayerHyperparameters(units=size,
-                                                        position=LayerPosition.HIDDEN,
-                                                        activation=hidden_activation))
+    layers_configuration = [
+        {'layer_type': LayerType.DENSE, 'units': 64, 'activation': hidden_activation, 'input_shape': (input_size,)},
+        {'layer_type': LayerType.DENSE, 'units': 64, 'activation': hidden_activation},
+        {'layer_type': LayerType.DENSE, 'units': 64, 'activation': hidden_activation},
+        {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
 
-    output_layer_hparm = LayerHyperparameters(units=output_size,
-                                              position=LayerPosition.OUTPUT,
-                                              activation=output_activation)
-
-    layer_hparm_list = [input_layer_hparm] + hidden_layers_hparm + [output_layer_hparm]
-
-    # network hyperparameters
-    hparm = NetworkHyperparameters(input_size=input_size,
-                                   output_size=output_size,
-                                   output_type=NetworkOutputType.CATEGORICAL,
-                                   layer_hyperparameters_list=layer_hparm_list,
-                                   optimizer='rmsprop',
-                                   learning_rate=0.001,
-                                   loss=loss,
-                                   metrics=['accuracy']
-                                   )
-    return hparm
+    return network_configuration, layers_configuration
 
 
 def run(num_words: int = 10000, encoding_schema: str = 'one-hot'):
     # load corpus
-    loss = 'categorical_crossentropy'
-    if encoding_schema == 'int-array':
+    if encoding_schema == 'one-hot':
+        loss = 'categorical_crossentropy'
+
+    elif encoding_schema == 'int-array':
         loss = 'sparse_categorical_crossentropy'
-    corpus = Corpus.from_tuple(load(num_words=num_words, encoding_schema=encoding_schema))
 
-    # split validation set
-    split_size = 1000
-    validation_set, training_set_remaining = corpus.training_set.split(size=split_size)
+    # corpus = sets.Corpus.from_tuple(load(num_words=num_words, encoding_schema=encoding_schema))
+    corpus = load(num_words=num_words, encoding_schema=encoding_schema)
 
-    # define hyper parameters and create the neural network
-    # categories = len(train_labels[0])
-    categories = 46
-    reuters_hparm = hyperparameters(input_size=num_words,
-                                    hidden_size=[64, 64, 64],
-                                    output_size=categories,
-                                    hidden_activation='relu',
-                                    output_activation='softmax',
-                                    loss=loss)
+    # load hyperparameters
+    input_size = corpus.input_size()
+    output_size = corpus.output_size()
+    network_configuration, layers_configuration = hyperparameters(input_size, output_size)
 
-    reuters_nnet = net.create_network(reuters_hparm)
+    # create the neural network
+    reuters_nnet = net.create_network(network_configuration=network_configuration,
+                                      layer_configuration_list=layers_configuration)
 
     # train the neural network
+    validation_set_size = 1000
+    validation_set, training_set_remaining = corpus.training_set.split(size=validation_set_size)
+
     history = net.train_network(network=reuters_nnet,
                                 training_set=training_set_remaining,
                                 epochs=20,

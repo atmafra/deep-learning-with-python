@@ -4,7 +4,7 @@ from keras.utils import to_categorical
 
 from core import network as net
 from core import sets
-from core.hyperparameters import NetworkHyperparameters, LayerHyperparameters, NetworkOutputType, LayerPosition
+from core.network import LayerType, NetworkOutputType
 from utils import history_utils as hutl
 
 
@@ -20,12 +20,13 @@ def normalize(image_set: np.array) -> np.array:
 
 
 def load_corpus(verbose: bool = True) -> sets.Corpus:
+    """Loads the MNIST corpus from public repositories
+    """
     if verbose:
         print("Loading MNIST dataset...")
 
     corpus = sets.Corpus.from_tuple(mnist.load_data())
 
-    # (train_images, train_labels), (test_images, test_labels) = dsu.split_corpus(corpus)
     train_set_size = corpus.training_set.length
     image_shape = corpus.training_set.input_data.shape
     image_array_dim = image_shape[0] * image_shape[1]
@@ -48,36 +49,45 @@ def load_corpus(verbose: bool = True) -> sets.Corpus:
     return corpus
 
 
-def hyperparameters() -> NetworkHyperparameters:
-    input_size = 28 * 28
+def hyperparameters(input_size: int, output_size) -> (dict, list):
     hidden_layer_units = 16
-    num_labels = 10
+    hidden_layer_activation = 'relu'
     learning_rate = 0.001
 
-    input_layer_hparm = LayerHyperparameters(input_size, LayerPosition.INPUT, 'linear')
-    hidden_layer_hparm = LayerHyperparameters(hidden_layer_units, LayerPosition.HIDDEN, 'relu')
-    output_layer_hparm = LayerHyperparameters(num_labels, LayerPosition.OUTPUT, 'softmax')
-    layer_hparm_list = [input_layer_hparm, output_layer_hparm]
+    network_configuration = {
+        'input_size': input_size,
+        'output_size': output_size,
+        'output_type': NetworkOutputType.CATEGORICAL,
+        'optimizer': 'rmsprop',
+        'learning_rate': learning_rate,
+        'loss': 'categorical_crossentropy',
+        'metrics': ['accuracy']}
+
+    layers_configuration = [
+        {'layer_type': LayerType.DENSE, 'units': hidden_layer_units, 'activation': hidden_layer_activation,
+         'input_shape': (input_size,)},
+        {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'softmax'}]
+
     loss = 'categorical_crossentropy'
 
-    mnist_hparm = NetworkHyperparameters(input_size=input_size, output_size=num_labels,
-                                         output_type=NetworkOutputType.CATEGORICAL,
-                                         layer_hyperparameters_list=layer_hparm_list,
-                                         optimizer='rmsprop',
-                                         learning_rate=learning_rate,
-                                         loss='categorical_crossentropy',
-                                         metrics=['accuracy'])
-    return mnist_hparm
+    return network_configuration, layers_configuration
 
 
 def run():
-    hidden_layer_units = 512
+    """Runs the MNIST digit recognition example
+    """
+    num_labels = 10
+    corpus = load_corpus()
+    input_size = corpus.input_size()
+    output_size = corpus.output_size()
+
+    network_configuration, layers_configuration = hyperparameters(input_size, output_size)
+
+    mnist_nnet = net.create_network(network_configuration=network_configuration,
+                                    layer_configuration_list=layers_configuration)
+
     epochs = 20
     batch_size = 128
-
-    corpus = load_corpus()
-    mnist_hyperparameters = hyperparameters()
-    mnist_nnet = net.create_network(mnist_hyperparameters)
 
     history = net.train_network(network=mnist_nnet,
                                 training_set=corpus.training_set,
@@ -87,5 +97,6 @@ def run():
 
     hutl.plot_loss_dict(history.history, title='MNIST: Training Loss')
     (test_loss, test_accuracy) = net.test_network(mnist_nnet, corpus.test_set)
+
     print("Test loss     =", test_loss)
     print("Test accuracy = {:.2%}".format(test_accuracy))
