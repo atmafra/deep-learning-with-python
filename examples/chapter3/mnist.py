@@ -1,11 +1,11 @@
 import numpy as np
+from keras import optimizers
 from keras.datasets import mnist
 from keras.utils import to_categorical
 
-from core import network as net
 from core import sets
+from core.experiment import Trial
 from core.network import LayerType, NetworkOutputType
-from utils import history_utils as hutl
 
 
 def to_array(image_set: np.array) -> np.array:
@@ -49,9 +49,15 @@ def load_corpus(verbose: bool = True) -> sets.Corpus:
     return corpus
 
 
-def hyperparameters(input_size: int, output_size) -> (dict, list):
+def hyperparameters(input_size: int, output_size):
+    """Loads the experiment hyperparameters
+    """
     hidden_layer_units = 16
     hidden_layer_activation = 'relu'
+    learning_rate = 0.001
+    epochs = 20
+    batch_size = 128
+    shuffle = True
     learning_rate = 0.001
 
     network_configuration = {
@@ -68,9 +74,21 @@ def hyperparameters(input_size: int, output_size) -> (dict, list):
          'input_shape': (input_size,)},
         {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'softmax'}]
 
+    training_configuration = {
+        'keras': {
+            'compile': {
+                'optimizer': optimizers.RMSprop(lr=learning_rate),
+                'loss': 'binary_crossentropy',
+                'metrics': ['accuracy']},
+            'fit': {
+                'epochs': epochs,
+                'batch_size': batch_size,
+                'shuffle': shuffle}},
+        'validation_set_size': 0}
+
     loss = 'categorical_crossentropy'
 
-    return network_configuration, layers_configuration
+    return network_configuration, layers_configuration, training_configuration
 
 
 def run():
@@ -81,22 +99,11 @@ def run():
     input_size = corpus.input_size()
     output_size = corpus.output_size()
 
-    network_configuration, layers_configuration = hyperparameters(input_size, output_size)
+    network_configuration, layers_configuration, training_configuration = \
+        hyperparameters(input_size, output_size)
 
-    mnist_nnet = net.create_network(network_configuration=network_configuration,
-                                    layer_configuration_list=layers_configuration)
+    trial = Trial(name="MNIST", corpus=corpus,
+                  layers_configuration_list=layers_configuration,
+                  training_configuration=training_configuration)
 
-    epochs = 20
-    batch_size = 128
-
-    history = net.train_network(network=mnist_nnet,
-                                training_set=corpus.training_set,
-                                epochs=epochs,
-                                shuffle=True,
-                                batch_size=batch_size)
-
-    hutl.plot_loss_dict(history.history, title='MNIST: Training Loss')
-    (test_loss, test_accuracy) = net.test_network(mnist_nnet, corpus.test_set)
-
-    print("Test loss     =", test_loss)
-    print("Test accuracy = {:.2%}".format(test_accuracy))
+    trial.run(print_results=True, plot_history=True)

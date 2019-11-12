@@ -107,7 +107,7 @@ def plot_2_metrics_dict(history_metrics: dict,
                         metric1_style: str = 'b',
                         metric2_style: str = 'bo',
                         x_label: str = 'Epochs',
-                        y_label: str = 'Loss',
+                        y_label: str = '',
                         clear: bool = False):
     """ Plots two metrics
     """
@@ -141,7 +141,7 @@ def plot_2_metrics_history(history: History,
                            metric1_style: str = 'b',
                            metric2_style: str = 'r',
                            x_label: str = 'Epochs',
-                           y_label: str = 'Loss',
+                           y_label: str = '',
                            clear: bool = False):
     """ Plots two metrics
     """
@@ -243,6 +243,7 @@ def plot_loss_list(history_metrics_list: list,
     plot_metrics_list(metric_values_list=metric_values_list,
                       metric_labels_list=labels_list,
                       metric_style_list=[],
+                      y_label='accuracy',
                       title=title)
 
 
@@ -267,7 +268,8 @@ def plot_accuracy_list(history_metrics_list: list,
     plot_metrics_list(metric_values_list=metric_values_list,
                       metric_labels_list=labels_list,
                       metric_style_list=[],
-                      title='Accuracy')
+                      y_label='accuracy',
+                      title=title)
 
 
 def plot_mae(mae_training: np.array,

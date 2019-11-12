@@ -1,7 +1,6 @@
 from enum import Enum
 
 from keras import models, layers, Model
-from keras.callbacks import History
 
 from core.sets import Set
 
@@ -30,8 +29,7 @@ default_learning_rate: float = 0.001
 default_loss: dict = {
     NetworkOutputType.BOOLEAN: 'binary_crossentropy',
     NetworkOutputType.CATEGORICAL: 'categorical_crossentropy',
-    NetworkOutputType.DECIMAL: 'mean_squared_error'
-}
+    NetworkOutputType.DECIMAL: 'mean_squared_error' }
 
 
 def get_parameters(parameters: dict, parameter_list: list, delete_parameter: bool = False) -> dict:
@@ -157,11 +155,11 @@ def train_network(network: Model,
     else:
         validation_data = validation_set.to_datasets()
 
-    compile_parameters = get_parameter(get_parameter(training_configuration, 'keras'), 'compile')
-    fit_parameters = get_parameter(get_parameter(training_configuration, 'keras'), 'fit')
-
+    keras_parameters = get_parameter(training_configuration, 'keras')
+    compile_parameters = get_parameter(keras_parameters, 'compile')
     network.compile(**compile_parameters)
 
+    fit_parameters = get_parameter(keras_parameters, 'fit')
     history = network.fit(x=working_training_set.input_data,
                           y=working_training_set.output_data,
                           validation_data=validation_data,
