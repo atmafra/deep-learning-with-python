@@ -34,6 +34,39 @@ default_loss: dict = {
 }
 
 
+def get_parameters(parameters: dict, parameter_list: list, delete_parameter: bool = False) -> dict:
+    """Get the list of parameter values by its keys
+    """
+    parameter_values = {}
+    for parameter in parameter_list:
+        if parameter not in parameters:
+            parameter_values[parameter] = None
+            continue
+
+        parameter_values[parameter] = parameters.get(parameter)
+        if delete_parameter:
+            del parameters[parameter]
+
+    return parameter_values
+
+
+def get_parameter(parameters: dict, parameter: str):
+    if parameter not in parameters:
+        raise RuntimeError('parameter {} is not in parameters list'.format(parameter))
+    return parameters.get(parameter)
+
+
+def extract_parameters(parameters: dict, parameter_list: list) -> dict:
+    """Extracts a list of parameter values from a parameters dictionary
+
+    Args:
+        parameters (dict): parameter dictionary
+        parameter_list (list): parameter key list to be extracted
+
+    """
+    return get_parameters(parameters, parameter_list, delete_parameter=True)
+
+
 def extract_parameter(parameters: dict, parameter: str):
     """Extracts a particular parameter from a parameters dictionary
 
@@ -42,12 +75,8 @@ def extract_parameter(parameters: dict, parameter: str):
         parameter (str): parameter key to be extracted
 
     """
-    if parameter not in parameters:
-        return None
-
-    parameter_value = parameters.get(parameter)
-    del parameters[parameter]
-    return parameter_value
+    parameter_values = extract_parameters(parameters, [parameter])
+    return parameter_values[parameter]
 
 
 def create_layer(parameters: dict):
@@ -84,12 +113,10 @@ def create_layer(parameters: dict):
         raise NotImplementedError('Unknown layer type')
 
 
-def create_network(network_configuration: dict,
-                   layer_configuration_list: list):
+def create_network(layer_configuration_list: list):
     """Creates a neural network according to its hyper parameters
 
     Args:
-        network_configuration (dict): neural network hyperparameters
         layer_configuration_list (list): list of layer hyperparameters
 
     """
@@ -101,35 +128,24 @@ def create_network(network_configuration: dict,
         if layer is not None:
             network.add(layer)
 
-    # compile the network
-    output_type: NetworkOutputType = network_configuration.get('output_type')
-    loss = network_configuration.get('loss', default_loss[output_type])
-    optimizer = network_configuration.get('optimizer', default_optimizer)
-    metrics = network_configuration.get('metrics')
-
-    network.compile(optimizer=optimizer, loss=loss, metrics=metrics)
-
     return network
 
 
-def train_network(
-        network: Model,
-        epochs: int,
-        batch_size: int,
-        shuffle: bool,
-        training_set: Set,
-        validation_set: Set = None) -> History:
+def train_network(network: Model,
+                  training_configuration: dict,
+                  training_set: Set,
+                  validation_set: Set = None):
     """Train the neural network, returning the evolution of the training metrics
 
     Args:
         network (Model): neural network model to be trained
-        epochs (int): number of training epochs
-        batch_size (int): training batch size
-        shuffle (bool): shuffle training set before training
+        training_configuration (dict): training algorithm parameters
         training_set (Set): training set
         validation_set (Set): validation set
 
     """
+    shuffle = extract_parameter(training_configuration, 'shuffle')
+
     if shuffle:
         working_training_set = training_set.copy()
         working_training_set.shuffle()
@@ -141,31 +157,32 @@ def train_network(
     else:
         validation_data = validation_set.to_datasets()
 
+    compile_parameters = get_parameter(get_parameter(training_configuration, 'keras'), 'compile')
+    fit_parameters = get_parameter(get_parameter(training_configuration, 'keras'), 'fit')
+
+    network.compile(**compile_parameters)
+
     history = network.fit(x=working_training_set.input_data,
                           y=working_training_set.output_data,
-                          epochs=epochs,
-                          batch_size=batch_size,
-                          validation_data=validation_data)
+                          validation_data=validation_data,
+                          **fit_parameters)
 
     return history
 
 
-def train_network_k_fold(
-        network: Model,
-        epochs: int,
-        batch_size: int,
-        k: int,
-        shuffle: bool,
-        training_set: Set) -> list:
+def train_network_k_fold(network: Model,
+                         training_configuration: dict,
+                         training_set: Set,
+                         k: int,
+                         shuffle: bool):
     """Train the neural network model using k-fold cross-validation
 
     Args:
         network (Model): neural network model to be trained
-        epochs (int): number of passes through the training set
-        batch_size (int): training batch size
+        training_configuration (dict): training parameters
+        training_set (Set): training data set
         k (int): number of partitions in k-fold cross-validation
         shuffle (bool): shuffle the training set before k splitting
-        training_set (Set): training data set
 
     """
     all_histories = []
@@ -181,13 +198,10 @@ def train_network_k_fold(
         # build the model and train the current fold
         network.build()
 
-        fold_history = train_network(
-            network=network,
-            epochs=epochs,
-            batch_size=batch_size,
-            shuffle=False,
-            training_set=training_set_remaining,
-            validation_set=validation_set)
+        fold_history = train_network(network=network,
+                                     training_set=training_set_remaining,
+                                     validation_set=validation_set,
+                                     training_configuration=training_configuration)
 
         all_histories.append(fold_history)
 

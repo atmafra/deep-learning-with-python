@@ -166,7 +166,8 @@ class Corpus:
             start (int) : split training set from this position on
 
         """
-        return self.training_set.split(size=size, start=start)
+        training_set_copy = self.training_set.copy()
+        return training_set_copy.split(size=size, start=start)
 
     def get_validation_set_k_fold(self, fold: int, k: int):
         """Splits the training set to extract a validation set according to

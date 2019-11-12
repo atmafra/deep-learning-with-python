@@ -146,6 +146,8 @@ def plot_2_metrics_history(history: History,
     """ Plots two metrics
     """
     plot_2_metrics_dict(history.history,
+                        metric1=metric1,
+                        metric2=metric2,
                         title=title,
                         metric1_label=metric1_label,
                         metric2_label=metric2_label,
@@ -192,19 +194,17 @@ def plot_loss_dict(history_metrics: dict,
                    clear=clear)
 
 
-def plot_accuracy(accuracy_training: np.array,
-                  accuracy_validation: np.array,
-                  title: str = 'Training and Validation Accuracies',
-                  clear: bool = False):
-    """ Plot the evolution of the accuracy
+def plot_accuracy(history: History,
+                  title: str = 'Training and Validation Accuracies'):
+    """ Plot the evolution of the loss function
     """
-    plot_2_metrics(metric1_values=accuracy_training,
-                   metric2_values=accuracy_validation,
-                   title=title,
-                   metric1_label='Training accuracy',
-                   metric2_label='Validation accuracy',
-                   y_label='Accuracy',
-                   clear=clear)
+    plot_2_metrics_history(history=history,
+                           title=title,
+                           metric1='accuracy',
+                           metric2='val_accuracy',
+                           metric1_label='Training accuracy',
+                           metric2_label='Validation accuracy',
+                           y_label='Accuracy')
 
 
 def plot_accuracy_dict(history_metrics: dict,
