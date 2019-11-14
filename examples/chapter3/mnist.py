@@ -4,8 +4,8 @@ from keras.datasets import mnist
 from keras.utils import to_categorical
 
 from core import sets
-from core.experiment import Trial
-from core.network import LayerType, NetworkOutputType
+from core.experiment import Experiment
+from core.network import LayerType
 
 
 def to_array(image_set: np.array) -> np.array:
@@ -49,25 +49,23 @@ def load_corpus(verbose: bool = True) -> sets.Corpus:
     return corpus
 
 
-def hyperparameters(input_size: int, output_size):
+def load_hyperparameters(input_size: int, output_size: int):
     """Loads the experiment hyperparameters
     """
+    # layer parameters
     hidden_layer_units = 16
     hidden_layer_activation = 'relu'
+
+    # compile parameters
     learning_rate = 0.001
+    optimizer = optimizers.RMSprop(lr=learning_rate)
+    loss = 'categorical_crossentropy'
+    metrics = ['accuracy']
+
+    # training parameters
     epochs = 20
     batch_size = 128
     shuffle = True
-    learning_rate = 0.001
-
-    network_configuration = {
-        'input_size': input_size,
-        'output_size': output_size,
-        'output_type': NetworkOutputType.CATEGORICAL,
-        'optimizer': 'rmsprop',
-        'learning_rate': learning_rate,
-        'loss': 'categorical_crossentropy',
-        'metrics': ['accuracy']}
 
     layers_configuration = [
         {'layer_type': LayerType.DENSE, 'units': hidden_layer_units, 'activation': hidden_layer_activation,
@@ -77,9 +75,9 @@ def hyperparameters(input_size: int, output_size):
     training_configuration = {
         'keras': {
             'compile': {
-                'optimizer': optimizers.RMSprop(lr=learning_rate),
-                'loss': 'binary_crossentropy',
-                'metrics': ['accuracy']},
+                'optimizer': optimizer,
+                'loss': loss,
+                'metrics': metrics},
             'fit': {
                 'epochs': epochs,
                 'batch_size': batch_size,
@@ -88,7 +86,8 @@ def hyperparameters(input_size: int, output_size):
 
     loss = 'categorical_crossentropy'
 
-    return network_configuration, layers_configuration, training_configuration
+    # return network_configuration, layers_configuration, training_configuration
+    return layers_configuration, training_configuration
 
 
 def run():
@@ -96,14 +95,12 @@ def run():
     """
     num_labels = 10
     corpus = load_corpus()
-    input_size = corpus.input_size()
-    output_size = corpus.output_size()
 
-    network_configuration, layers_configuration, training_configuration = \
-        hyperparameters(input_size, output_size)
+    layers_configuration, training_configuration = \
+        load_hyperparameters(input_size=corpus.input_size, output_size=corpus.output_size)
 
-    trial = Trial(name="MNIST", corpus=corpus,
-                  layers_configuration_list=layers_configuration,
-                  training_configuration=training_configuration)
+    experiment = Experiment(name="MNIST", corpus=corpus,
+                            layers_configuration_list=layers_configuration,
+                            training_configuration=training_configuration)
 
-    trial.run(print_results=True, plot_history=True)
+    experiment.run(print_results=True, plot_history=True)

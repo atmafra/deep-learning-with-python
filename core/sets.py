@@ -11,7 +11,6 @@ class Set:
         output_data (np.array): output data array
 
     """
-
     def __init__(self,
                  input_data: np.array,
                  output_data: np.array = None):
@@ -93,11 +92,13 @@ class Set:
         """
         return self.input_data, self.output_data
 
+    @property
     def input_size(self):
         """Returns the size of the input elements
         """
         return self.input_data.shape[1]
 
+    @property
     def output_size(self):
         """Returns the size of the output elements
         """
@@ -180,12 +181,14 @@ class Corpus:
         """
         return self.training_set.split_k_fold(fold=fold, k=k)
 
+    @property
     def input_size(self):
         """Returns the size of the input elements
         """
-        return self.training_set.input_size()
+        return self.training_set.input_size
 
+    @property
     def output_size(self):
         """Returns the size of the output elements
         """
-        return self.training_set.output_size()
+        return self.training_set.output_size

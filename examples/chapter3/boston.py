@@ -55,9 +55,8 @@ def run():
     corpus = Corpus.from_tuple(load())
 
     # define hyper parameters and create the neural network
-    # input_size = train_data.shape[1]
-    input_size = corpus.input_size()
-    output_size = corpus.output_size()
+    input_size = corpus.input_size
+    output_size = corpus.output_size
 
     network_configuration, layers_configuration = \
         hyperparameters(input_size=input_size, output_size=output_size)

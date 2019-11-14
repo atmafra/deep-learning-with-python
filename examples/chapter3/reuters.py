@@ -1,17 +1,19 @@
 import numpy as np
+from keras import optimizers
 from keras.datasets import reuters
 
-from core import network as net, sets
-from core.network import LayerType, NetworkOutputType
+from core import sets
+from core.experiment import Experiment
+from core.network import LayerType
+from core.sets import Corpus
 from utils import dataset_utils as dsu
-from utils import history_utils as hplt
 
 if __name__ == '__main__':
     word_index = reuters.get_word_index()
     reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
 
 
-def load(num_words: int = 10000, encoding_schema: str = 'one-hot', verbose: bool = True):
+def load_corpus(num_words: int, encoding_schema: str, verbose: bool = True):
     if verbose:
         print('Loading Reuters dataset...')
 
@@ -38,30 +40,36 @@ def load(num_words: int = 10000, encoding_schema: str = 'one-hot', verbose: bool
     if verbose:
         print('Training phrases:', len(train_data))
         print('Test phrases    :', len(test_data))
-        print('Input size      :', corpus.input_size())
+        print('Input size      :', corpus.input_size)
         print('Categories      :', categories)
 
     return corpus
 
 
-def hyperparameters(input_size: int, output_size: int):
-    """ IMDB neural network hyperparameters
+def load_experiment(corpus: Corpus, encoding_schema):
+    """ Reuters neural network hyperparameters and experiments configuration
     """
     # network hyperparameters
-    loss = 'categorical_crossentropy'
-
-    network_configuration = {
-        'input_size': input_size,
-        'output_size': output_size,
-        'output_type': NetworkOutputType.CATEGORICAL,
-        'optimizer': 'rmsprop',
-        'learning_rate': 0.001,
-        'loss': loss,
-        'metrics': ['accuracy']}
-
-    # layers hyperparameters
+    input_size = corpus.input_size
+    output_size = corpus.output_size
     hidden_activation = 'relu'
     output_activation = 'softmax'
+
+    # optimization hyperparameters
+    optimizer = 'rmsprop'
+    learning_rate = 0.001
+    metrics = ['accuracy']
+    loss = None
+    if encoding_schema == 'one-hot':
+        loss = 'categorical_crossentropy'
+    elif encoding_schema == 'int-array':
+        loss = 'sparse_categorical_crossentropy'
+
+    # training parameters
+    epochs = 20
+    batch_size = 512
+    shuffle = True
+    validation_set_size = 1000
 
     layers_configuration = [
         {'layer_type': LayerType.DENSE, 'units': 64, 'activation': hidden_activation, 'input_shape': (input_size,)},
@@ -69,43 +77,34 @@ def hyperparameters(input_size: int, output_size: int):
         {'layer_type': LayerType.DENSE, 'units': 64, 'activation': hidden_activation},
         {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
 
-    return network_configuration, layers_configuration
+    training_configuration = {
+        'keras': {
+            'compile': {
+                'optimizer': optimizers.RMSprop(lr=learning_rate),
+                'loss': loss,
+                'metrics': metrics},
+            'fit': {
+                'epochs': epochs,
+                'batch_size': batch_size,
+                'shuffle': shuffle}},
+        'validation_set_size': validation_set_size}
+
+    experiment = Experiment(name="Reuters (encoding schema: {})".format(encoding_schema),
+                            corpus=corpus,
+                            layers_configuration_list=layers_configuration,
+                            training_configuration=training_configuration)
+
+    return experiment
 
 
-def run(num_words: int = 10000, encoding_schema: str = 'one-hot'):
-    # load corpus
-    if encoding_schema == 'one-hot':
-        loss = 'categorical_crossentropy'
+def run(num_words: int = 10000):
 
-    elif encoding_schema == 'int-array':
-        loss = 'sparse_categorical_crossentropy'
+    # one-hot encoding experiment
+    # corpus_one_hot = load_corpus(num_words=num_words, encoding_schema='one-hot')
+    # experiment_one_hot = load_experiment(corpus=corpus_one_hot, encoding_schema='one-hot')
+    # experiment_one_hot.run(print_results=True, plot_history=True)
 
-    # corpus = sets.Corpus.from_tuple(load(num_words=num_words, encoding_schema=encoding_schema))
-    corpus = load(num_words=num_words, encoding_schema=encoding_schema)
-
-    # load hyperparameters
-    input_size = corpus.input_size()
-    output_size = corpus.output_size()
-    network_configuration, layers_configuration = hyperparameters(input_size, output_size)
-
-    # create the neural network
-    reuters_nnet = net.create_network(network_configuration=network_configuration,
-                                      layer_configuration_list=layers_configuration)
-
-    # train the neural network
-    validation_set_size = 1000
-    validation_set, training_set_remaining = corpus.training_set.split(size=validation_set_size)
-
-    history = net.train_network(network=reuters_nnet,
-                                training_set=training_set_remaining,
-                                epochs=20,
-                                batch_size=128,
-                                shuffle=True,
-                                validation_set=validation_set)
-
-    (test_loss, test_accuracy) = net.test_network(reuters_nnet, corpus.test_set)
-    print("loss     =", test_loss)
-    print("accuracy = {:.2%}".format(test_accuracy))
-
-    hplt.plot_accuracy_dict(history.history,
-                            title='Reuters {}: Training and Validation Accuracies'.format(encoding_schema))
+    # int-array encoding experiment
+    corpus_int_array = load_corpus(num_words=num_words, encoding_schema='int-array')
+    experiment_int_array = load_experiment(corpus=corpus_int_array, encoding_schema='int-array')
+    experiment_int_array.run(print_results=True, plot_history=True)

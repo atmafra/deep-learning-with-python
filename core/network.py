@@ -150,7 +150,7 @@ def train_network(network: Model,
     else:
         working_training_set = training_set
 
-    if validation_set is None:
+    if validation_set is None or validation_set.length == 0:
         validation_data = None
     else:
         validation_data = validation_set.to_datasets()

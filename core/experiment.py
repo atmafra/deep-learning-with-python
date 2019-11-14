@@ -4,17 +4,18 @@ from core.sets import Corpus
 from utils.history_utils import plot_loss, plot_accuracy
 
 
-class Trial:
+class Experiment:
 
     def __init__(self,
                  name: str,
                  corpus: Corpus,
                  layers_configuration_list: list,
                  training_configuration: dict):
-        """Creates a new Trial to evaluate the performance of a specific
+        """Creates a new Experiment to evaluate the performance of a specific
            combination of data and training hyperparameters
 
         Args:
+            name (str): name of the
             corpus (Corpus): the training and test sets to be used
             layers_configuration_list (list): list of layer configurations that represent the network
             training_configuration (dict): training configuration parameters
@@ -99,18 +100,18 @@ class Trial:
         return self.__test_loss, self.__test_accuracy, self.__history
 
 
-class Experiment:
+class ExperimentPlan:
 
-    def __init__(self, name: str, trials: list):
-        """Creates a new Experiment from a list of trials
+    def __init__(self, name: str, experiments: list):
+        """Creates a new Experiment Plan from a list of Experiments
 
         Args:
-            name (str): name of the experiment
-            trials (dict): list of Trial objects that are part of the Experiment
+            name (str): name of the experiment plan
+            experiments (list): list of experiments that take part of the plan
 
         """
         self.__name = name
-        self.__trial_list = trials
+        self.__experiment_list = experiments
 
     @property
     def name(self):
@@ -122,8 +123,8 @@ class Experiment:
 
         """Runs all the experiments
         """
-        for trial in self.__trial_list:
-            trial.run()
+        for experiment in self.__experiment_list:
+            experiment.run()
 
         if plot_training_loss:
             self.plot_loss(title="Training Loss", training=True, validation=False)
@@ -140,7 +141,7 @@ class Experiment:
         history_list = []
         labels_list = []
 
-        for trial in self.__trial_list:
+        for trial in self.__experiment_list:
             history_list.append(trial.history)
             labels_list.append(trial.name)
 
@@ -159,7 +160,7 @@ class Experiment:
         history_list = []
         labels_list = []
 
-        for trial in self.__trial_list:
+        for trial in self.__experiment_list:
             history_list.append(trial.history)
             labels_list.append(trial.name)
 

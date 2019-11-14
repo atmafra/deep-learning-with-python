@@ -43,7 +43,7 @@ def plot_2_metrics(metric1_values: np.array,
                    metric1_style: str = 'b',
                    metric2_style: str = 'r',
                    x_label: str = 'Epochs',
-                   y_label: str = 'Loss',
+                   y_label: str = '',
                    clear: bool = True):
     """ Plots two metrics
     """
@@ -51,11 +51,16 @@ def plot_2_metrics(metric1_values: np.array,
 
     if clear:
         plt.clf()
-        plt.title(title)
-        plt.xlabel(x_label)
+
+    if metric2_values is None:
+        plt.ylabel(metric1_label)
+    else:
         plt.ylabel(y_label)
         plt.legend()
-        plt.grid()
+
+    plt.title(title)
+    plt.xlabel(x_label)
+    plt.grid()
 
     if metric1_values is not None:
         plt.plot(epochs, metric1_values, metric1_style, label=metric1_label)
@@ -158,8 +163,7 @@ def plot_2_metrics_history(history: History,
                         clear=clear)
 
 
-def plot_loss(history: History,
-              title: str = 'Training and Validation Losses'):
+def plot_loss(history: History, title: str = 'Loss'):
     """ Plot the evolution of the loss function
     """
     plot_2_metrics_history(history=history,
@@ -194,8 +198,7 @@ def plot_loss_dict(history_metrics: dict,
                    clear=clear)
 
 
-def plot_accuracy(history: History,
-                  title: str = 'Training and Validation Accuracies'):
+def plot_accuracy(history: History, title: str = 'Accuracy'):
     """ Plot the evolution of the loss function
     """
     plot_2_metrics_history(history=history,
