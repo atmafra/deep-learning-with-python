@@ -21,7 +21,10 @@ class LayerType(Enum):
     INPUT = 1
     DENSE = 2
     DROPOUT = 3
-    OUTPUT = 4
+    CONV_2D = 4
+    MAX_POOLING_2D = 5
+    FLATTEN = 6
+    OUTPUT = 7
 
 
 class ValidationStrategy(Enum):
@@ -127,6 +130,21 @@ def create_layer(parameters: dict):
     elif layer_type == LayerType.DROPOUT:
         rate = extract_parameter(parameters, 'rate')
         return layers.Dropout(rate=rate, **parameters)
+
+    # Convolutional 2D
+    elif layer_type == LayerType.CONV_2D:
+        filters = extract_parameter(parameters, 'filters')
+        kernel_size = extract_parameter(parameters, 'kernel_size')
+        return layers.Conv2D(filters=filters, kernel_size=kernel_size)
+
+    # Max Pooling 2D
+    elif layer_type == LayerType.MAX_POOLING_2D:
+        pool_size = extract_parameter(parameters, 'pool_size')
+        return layers.MaxPooling2D(pool_size=pool_size)
+
+    # Flatten
+    elif layer_type == LayerType.FLATTEN:
+        return layers.Flatten()
 
     # Output
     elif layer_type == LayerType.OUTPUT:

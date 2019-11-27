@@ -6,6 +6,7 @@ from keras.utils import to_categorical
 from core import sets
 from core.experiment import Experiment
 from core.network import LayerType, ValidationStrategy
+from core.sets import Corpus
 
 
 def to_array(image_set: np.array) -> np.array:
@@ -45,14 +46,16 @@ def load_corpus(verbose: bool = True) -> sets.Corpus:
         print("train set size   :", train_set_size, "images")
         print("test set size    :", test_set_size, "images")
 
-    corpus = sets.Corpus.from_datasets(train_images, train_labels, test_images, test_labels)
+    corpus = Corpus.from_datasets(train_images, train_labels, test_images, test_labels)
     return corpus
 
 
-def load_hyperparameters(input_size: int, output_size: int):
+def load_experiment(corpus: Corpus):
     """Loads the experiment hyperparameters
     """
     # layer parameters
+    input_size = corpus.input_size
+    output_size = corpus.output_size
     hidden_layer_units = 16
     hidden_layer_activation = 'relu'
 
@@ -87,8 +90,12 @@ def load_hyperparameters(input_size: int, output_size: int):
 
     loss = 'categorical_crossentropy'
 
-    # return network_configuration, layers_configuration, training_configuration
-    return layers_configuration, training_configuration
+    experiment = Experiment(name="MNIST",
+                            corpus=corpus,
+                            layers_configuration_list=layers_configuration,
+                            training_configuration=training_configuration)
+
+    return experiment
 
 
 def run():
@@ -96,12 +103,5 @@ def run():
     """
     num_labels = 10
     corpus = load_corpus()
-
-    layers_configuration, training_configuration = \
-        load_hyperparameters(input_size=corpus.input_size, output_size=corpus.output_size)
-
-    experiment = Experiment(name="MNIST", corpus=corpus,
-                            layers_configuration_list=layers_configuration,
-                            training_configuration=training_configuration)
-
-    experiment.run(print_results=True, plot_history=True)
+    experiment = load_experiment(corpus=corpus)
+    experiment.run(print_results=True, plot_history=True, display_progress_bars=True)

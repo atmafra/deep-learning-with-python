@@ -1,7 +1,7 @@
 from keras import regularizers, optimizers
 
 from core.experiment import Experiment, ExperimentPlan
-from core.network import NetworkOutputType, LayerType, ValidationStrategy
+from core.network import LayerType, ValidationStrategy
 from core.sets import Corpus
 
 num_words = 10000
@@ -17,11 +17,6 @@ epochs = 20
 batch_size = 512
 validation_set_size = 10000
 shuffle = True
-
-network_configuration_global = {
-    'input_size': input_size,
-    'output_size': output_size,
-    'output_type': NetworkOutputType.BOOLEAN}
 
 training_configuration_global = {
     'keras': {
