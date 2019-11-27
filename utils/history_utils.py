@@ -52,22 +52,17 @@ def plot_2_metrics(metric1_values: np.array,
     if clear:
         plt.clf()
 
-    if metric2_values is None:
-        plt.ylabel(metric1_label)
-    else:
-        plt.ylabel(y_label)
-        plt.legend()
-
-    plt.title(title)
-    plt.xlabel(x_label)
-    plt.grid()
-
     if metric1_values is not None:
         plt.plot(epochs, metric1_values, metric1_style, label=metric1_label)
 
     if metric2_values is not None:
         plt.plot(epochs, metric2_values, metric2_style, label=metric2_label)
 
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.title(title)
+    plt.grid()
+    plt.legend()
     plt.show()
 
 
@@ -172,6 +167,7 @@ def plot_loss(history: History, title: str = 'Loss'):
                            metric2='val_loss',
                            metric1_label='Training loss',
                            metric2_label='Validation loss',
+                           x_label='Epochs',
                            y_label='Loss')
 
 
@@ -246,7 +242,7 @@ def plot_loss_list(history_metrics_list: list,
     plot_metrics_list(metric_values_list=metric_values_list,
                       metric_labels_list=labels_list,
                       metric_style_list=[],
-                      y_label='accuracy',
+                      y_label='Loss',
                       title=title)
 
 
@@ -271,7 +267,7 @@ def plot_accuracy_list(history_metrics_list: list,
     plot_metrics_list(metric_values_list=metric_values_list,
                       metric_labels_list=labels_list,
                       metric_style_list=[],
-                      y_label='accuracy',
+                      y_label='Accuracy',
                       title=title)
 
 
@@ -287,7 +283,7 @@ def plot_mae(mae_training: np.array,
                    metric2_label='Validation MAE',
                    metric1_style='b',
                    metric2_style='r',
-                   y_label='MAE')
+                   y_label='Mean Absolute Error (MAE)')
 
 
 def plot_mae_dict(history_metrics: dict,
@@ -308,7 +304,8 @@ def plot_mae_dict(history_metrics: dict,
                    title=title,
                    metric1_label='Training MAE',
                    metric2_label='Validation MAE',
-                   y_label='MAE')
+                   x_label='Epochs',
+                   y_label='Mean Absolute Error (MAE)')
 
 
 def merge_history_metrics(history_list: list):

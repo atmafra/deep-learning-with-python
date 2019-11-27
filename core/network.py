@@ -24,16 +24,28 @@ class LayerType(Enum):
     OUTPUT = 4
 
 
+class ValidationStrategy(Enum):
+    NO_VALIDATION = 1
+    CROSS_VALIDATION = 2
+    K_FOLD_CROSS_VALIDATION = 3
+
+
 default_optimizer: str = 'rmsprop'
 default_learning_rate: float = 0.001
 default_loss: dict = {
     NetworkOutputType.BOOLEAN: 'binary_crossentropy',
     NetworkOutputType.CATEGORICAL: 'categorical_crossentropy',
-    NetworkOutputType.DECIMAL: 'mean_squared_error' }
+    NetworkOutputType.DECIMAL: 'mean_squared_error'}
 
 
 def get_parameters(parameters: dict, parameter_list: list, delete_parameter: bool = False) -> dict:
     """Get the list of parameter values by its keys
+
+    Args:
+        parameters: parameters dictionary
+        parameter_list: list of parameters to be retrieved
+        delete_parameter: delete parameter from parameters dictionary after retrieval
+
     """
     parameter_values = {}
     for parameter in parameter_list:
@@ -48,14 +60,27 @@ def get_parameters(parameters: dict, parameter_list: list, delete_parameter: boo
     return parameter_values
 
 
-def get_parameter(parameters: dict, parameter: str):
+def get_parameter(parameters: dict, parameter: str, mandatory: bool = True):
+    """Gets a single parameter from a parameters dictionary
+
+    Args:
+        parameters: parameters dictionary
+        parameter: parameter key to be retrieved
+        mandatory: raise an error if parameter is not found
+
+    """
     if parameter not in parameters:
-        raise RuntimeError('parameter {} is not in parameters list'.format(parameter))
+        if mandatory:
+            raise RuntimeError('parameter {} is not in parameters list'.format(parameter))
+        else:
+            return None
+
     return parameters.get(parameter)
 
 
 def extract_parameters(parameters: dict, parameter_list: list) -> dict:
     """Extracts a list of parameter values from a parameters dictionary
+       deleting from the original parameter dictionary
 
     Args:
         parameters (dict): parameter dictionary
@@ -67,10 +92,11 @@ def extract_parameters(parameters: dict, parameter_list: list) -> dict:
 
 def extract_parameter(parameters: dict, parameter: str):
     """Extracts a particular parameter from a parameters dictionary
+       deleting the parameter from the dictionary
 
     Args:
-        parameters (dict): parameter dictionary
-        parameter (str): parameter key to be extracted
+        parameters: parameter dictionary
+        parameter: parameter key to be extracted
 
     """
     parameter_values = extract_parameters(parameters, [parameter])
@@ -132,7 +158,8 @@ def create_network(layer_configuration_list: list):
 def train_network(network: Model,
                   training_configuration: dict,
                   training_set: Set,
-                  validation_set: Set = None):
+                  validation_set: Set = None,
+                  verbose: bool = True):
     """Train the neural network, returning the evolution of the training metrics
 
     Args:
@@ -140,9 +167,12 @@ def train_network(network: Model,
         training_configuration (dict): training algorithm parameters
         training_set (Set): training set
         validation_set (Set): validation set
+        verbose (bool): display training progress bars if True
 
     """
     shuffle = extract_parameter(training_configuration, 'shuffle')
+    validation = get_parameter(training_configuration, 'validation')
+    validation_strategy = get_parameter(validation, 'strategy')
 
     if shuffle:
         working_training_set = training_set.copy()
@@ -150,9 +180,8 @@ def train_network(network: Model,
     else:
         working_training_set = training_set
 
-    if validation_set is None or validation_set.length == 0:
-        validation_data = None
-    else:
+    validation_data = None
+    if validation_set is not None:
         validation_data = validation_set.to_datasets()
 
     keras_parameters = get_parameter(training_configuration, 'keras')
@@ -163,6 +192,7 @@ def train_network(network: Model,
     history = network.fit(x=working_training_set.input_data,
                           y=working_training_set.output_data,
                           validation_data=validation_data,
+                          verbose=verbose,
                           **fit_parameters)
 
     return history
@@ -172,7 +202,8 @@ def train_network_k_fold(network: Model,
                          training_configuration: dict,
                          training_set: Set,
                          k: int,
-                         shuffle: bool):
+                         shuffle: bool,
+                         verbose: bool = True):
     """Train the neural network model using k-fold cross-validation
 
     Args:
@@ -181,6 +212,7 @@ def train_network_k_fold(network: Model,
         training_set (Set): training data set
         k (int): number of partitions in k-fold cross-validation
         shuffle (bool): shuffle the training set before k splitting
+        verbose (bool): display training progress bars if True
 
     """
     all_histories = []
@@ -199,19 +231,39 @@ def train_network_k_fold(network: Model,
         fold_history = train_network(network=network,
                                      training_set=training_set_remaining,
                                      validation_set=validation_set,
-                                     training_configuration=training_configuration)
+                                     training_configuration=training_configuration,
+                                     verbose=verbose)
 
         all_histories.append(fold_history)
 
     return all_histories
 
 
-def test_network(network: Model, test_set: Set):
+def test_network(network: Model,
+                 test_set: Set,
+                 verbose: bool = True) -> dict:
     """Evaluates all the test inputs according to the current network
 
     Args:
         network (Model): neural network model to be tested
         test_set (Set): test set to be used for metrics evaluation
+        verbose (bool): display evaluation progress bar if True
 
     """
-    return network.evaluate(test_set.input_data, test_set.output_data)
+    result = network.evaluate(x=test_set.input_data,
+                              y=test_set.output_data,
+                              batch_size=None,
+                              verbose=verbose,
+                              sample_weight=None,
+                              steps=None,
+                              callbacks=None,
+                              max_queue_size=10,
+                              workers=1,
+                              use_multiprocessing=False)
+    metrics = {}
+    i = 0
+    for name in network.metrics_names:
+        metrics[name] = result[i]
+        i = i + 1
+
+    return metrics

@@ -1,7 +1,7 @@
 from keras import regularizers, optimizers
 
 from core.experiment import Experiment, ExperimentPlan
-from core.network import NetworkOutputType, LayerType
+from core.network import NetworkOutputType, LayerType, ValidationStrategy
 from core.sets import Corpus
 
 num_words = 10000
@@ -33,7 +33,9 @@ training_configuration_global = {
             'epochs': epochs,
             'batch_size': batch_size,
             'shuffle': shuffle}},
-    'validation_set_size': validation_set_size}
+    'validation': {
+        'strategy': ValidationStrategy.CROSS_VALIDATION,
+        'set_size': validation_set_size}}
 
 # Network Configuration
 imdb_small = [
@@ -248,7 +250,8 @@ def load_experiments(corpus: Corpus):
     # Experiment: effects of combining L1 and L2 weight regularization methods
     trials_list_comparison = [_medium, _medium_dropout_40, _medium_wreg_l1_0001, _medium_wreg_l2_0001,
                               _medium_wreg_l1_l2]
-    experiment_comparison = ExperimentPlan(name="Comparison: Overfitting Techniques", experiments=trials_list_comparison)
+    experiment_comparison = ExperimentPlan(name="Comparison: Overfitting Techniques",
+                                           experiments=trials_list_comparison)
 
     experiments = {"dropout": experiment_dropout,
                    "weight_regularization_l1": experiment_wreg_l1,

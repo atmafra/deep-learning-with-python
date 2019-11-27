@@ -5,7 +5,7 @@ from keras.utils import to_categorical
 
 from core import sets
 from core.experiment import Experiment
-from core.network import LayerType
+from core.network import LayerType, ValidationStrategy
 
 
 def to_array(image_set: np.array) -> np.array:
@@ -82,7 +82,8 @@ def load_hyperparameters(input_size: int, output_size: int):
                 'epochs': epochs,
                 'batch_size': batch_size,
                 'shuffle': shuffle}},
-        'validation_set_size': 0}
+        'validation': {
+            'strategy': ValidationStrategy.NO_VALIDATION}}
 
     loss = 'categorical_crossentropy'
 

@@ -11,6 +11,7 @@ class Set:
         output_data (np.array): output data array
 
     """
+
     def __init__(self,
                  input_data: np.array,
                  output_data: np.array = None):
@@ -77,10 +78,11 @@ class Set:
         Args:
             fold (int) : current fold to be split (n-th fold in k total folds)
             k    (int) : total number of folds
+
         """
         if fold > k:
-            raise ValueError('Fold ({}) cannot be greater than K ({}) in k-fold validation'
-                             .format(fold, k))
+            raise ValueError('Fold ({}) cannot be greater than K ({}) in k-fold validation'.format(fold, k))
+
         set_length = self.length
         num_samples_fold = set_length // k
         start = fold * num_samples_fold
@@ -108,6 +110,22 @@ class Set:
         if len(shape) == 1:
             return 1
         return shape[1]
+
+    @property
+    def count_unique_values(self):
+        return dsu.count_unique_values(self.output_data)
+
+    @property
+    def min_output(self):
+        return np.min(self.output_data)
+
+    @property
+    def max_output(self):
+        return np.max(self.output_data)
+
+    @property
+    def average_output(self):
+        return np.average(self.output_data)
 
 
 class Corpus:
@@ -192,3 +210,21 @@ class Corpus:
         """Returns the size of the output elements
         """
         return self.training_set.output_size
+
+    @property
+    def count_categories(self):
+        """Returns the number of distinct labels in the output data
+        """
+        return self.training_set.count_unique_values
+
+    @property
+    def min_ouptut(self):
+        return self.training_set.min_output
+
+    @property
+    def max_output(self):
+        return self.training_set.max_output
+
+    @property
+    def average_output(self):
+        return self.training_set.average_output

@@ -3,7 +3,7 @@ from keras import optimizers
 from keras.datasets import imdb
 
 from core.experiment import Experiment, ExperimentPlan
-from core.network import LayerType
+from core.network import LayerType, ValidationStrategy
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 
@@ -84,7 +84,9 @@ def load_experiments(corpus: Corpus):
                 'epochs': epochs,
                 'batch_size': batch_size,
                 'shuffle': shuffle}},
-        'validation_set_size': validation_set_size}
+        'validation': {
+            'strategy': ValidationStrategy.CROSS_VALIDATION,
+            'set_size': validation_set_size}}
 
     experiment1 = Experiment(name='2 Hidden Layers, 16 units each',
                              corpus=corpus,
@@ -105,7 +107,10 @@ def load_experiments(corpus: Corpus):
 def run():
     corpus = load_corpus(words=num_words)
     experiment_plan = load_experiments(corpus=corpus)
-    experiment_plan.run(print_results=True, plot_training_loss=False, plot_training_accuracy=False)
+    experiment_plan.run(print_results=True,
+                        plot_training_loss=False,
+                        plot_training_accuracy=False,
+                        display_progress_bars=True)
 
     experiment_plan.plot_loss("Training Loss", training=True, validation=False)
     experiment_plan.plot_loss("Validation Loss", training=False, validation=True)

@@ -1,7 +1,6 @@
-import core.network as net
 import utils.history_utils as hutl
+from core.network import *
 from core.sets import Corpus
-from utils.history_utils import plot_loss, plot_accuracy
 
 
 class Experiment:
@@ -26,11 +25,13 @@ class Experiment:
         self.__layers_configuration_list: list = layers_configuration_list
         self.__training_configuration: dict = training_configuration
         self.__training_set = None
+        self.__validation_strategy = ValidationStrategy.NO_VALIDATION
         self.__validation_set = None
         self.__neural_network = None
         self.__history = None
         self.__test_loss = None
         self.__test_accuracy = None
+        self.__test_mae = None
 
     @property
     def name(self):
@@ -48,41 +49,93 @@ class Experiment:
     def test_accuracy(self):
         return self.__test_accuracy
 
+    @property
+    def test_mae(self):
+        return self.__test_mae
+
     def prepare_sets(self):
         """Prepare the training and the validation sets for training
         """
-        validation_set_size = net.get_parameter(self.__training_configuration, 'validation_set_size')
-        self.__validation_set, self.__training_set = self.__corpus.get_validation_set(validation_set_size)
+        validation = get_parameter(self.__training_configuration, 'validation')
+        validation_strategy = get_parameter(validation, 'strategy')
+
+        if validation_strategy in \
+                (ValidationStrategy.NO_VALIDATION, ValidationStrategy.K_FOLD_CROSS_VALIDATION):
+            self.__training_set = self.__corpus.training_set
+            self.__validation_set = None
+
+        elif validation_strategy == ValidationStrategy.CROSS_VALIDATION:
+            validation_set_size = get_parameter(validation, 'set_size')
+            self.__validation_set, self.__training_set = self.__corpus.get_validation_set(validation_set_size)
 
     def create_network(self):
         """Creates the neural network according to the layers configuration list
         """
-        self.__neural_network = net.create_network(layer_configuration_list=self.__layers_configuration_list)
+        self.__neural_network = create_network(layer_configuration_list=self.__layers_configuration_list)
 
-    def train(self):
-        self.__history = net.train_network(network=self.__neural_network,
+    def train(self, display_progress_bars: bool = True):
+        """Trains the neural network
+        """
+        validation = get_parameter(self.__training_configuration, 'validation')
+        strategy = get_parameter(validation, 'strategy')
+
+        if strategy == ValidationStrategy.NO_VALIDATION:
+            self.__history = train_network(network=self.__neural_network,
                                            training_configuration=self.__training_configuration,
                                            training_set=self.__training_set,
-                                           validation_set=self.__validation_set)
+                                           validation_set=None,
+                                           verbose=display_progress_bars)
 
-    def evaluate(self):
+        elif strategy == ValidationStrategy.CROSS_VALIDATION:
+            self.__history = train_network(network=self.__neural_network,
+                                           training_configuration=self.__training_configuration,
+                                           training_set=self.__training_set,
+                                           validation_set=self.__validation_set,
+                                           verbose=display_progress_bars)
+
+        elif strategy == ValidationStrategy.K_FOLD_CROSS_VALIDATION:
+            k = get_parameter(validation, 'k')
+            shuffle = get_parameter(validation, 'shuffle')
+            all_histories = train_network_k_fold(network=self.__neural_network,
+                                                 training_configuration=self.__training_configuration,
+                                                 training_set=self.__training_set,
+                                                 k=k, shuffle=shuffle,
+                                                 verbose=display_progress_bars)
+            self.__history = hutl.merge_history_metrics(all_histories)
+
+    def evaluate(self, display_progress_bars: bool = True):
         """Evaluate the neural network
         """
-        (self.__test_loss, self.__test_accuracy) = \
-            net.test_network(self.__neural_network, self.__corpus.test_set)
+        test_results = test_network(network=self.__neural_network,
+                                    test_set=self.__corpus.test_set,
+                                    verbose=display_progress_bars)
+
+        self.__test_loss = get_parameter(parameters=test_results, parameter='loss', mandatory=True)
+        self.__test_accuracy = get_parameter(parameters=test_results, parameter='accuracy', mandatory=False)
+        self.__test_mae = get_parameter(parameters=test_results, parameter='mae', mandatory=False)
 
     def plot_loss(self):
-        plot_loss(history=self.__history)
+        hutl.plot_loss(history=self.__history,
+                       title='Training and Validation Loss',
+                       )
 
     def plot_accuracy(self):
-        plot_accuracy(history=self.__history)
+        hutl.plot_accuracy(history=self.__history, title='Training and Validation Accuracy')
 
-    def print_result(self):
+    def print_test_results(self):
+        """Print the result of the training session
+        """
         print("\n{}".format(self.__name))
-        print("loss     = {:.6}".format(self.__test_loss))
-        print("accuracy = {:.2%}".format(self.__test_accuracy))
+        print("Test loss     = {:.6}".format(self.__test_loss))
+        if self.__test_accuracy is not None:
+            print("Test accuracy = {:.2%}".format(self.__test_accuracy))
+        if self.__test_mae is not None:
+            print("Test MAE      = {}".format(self.__test_mae))
 
-    def run(self, print_results: bool = True, plot_history: bool = False):
+    def run(self,
+            print_results: bool = True,
+            plot_history: bool = False,
+            display_progress_bars: bool = True):
         """Runs the experiment
         """
         self.prepare_sets()
@@ -91,13 +144,10 @@ class Experiment:
         self.evaluate()
 
         if print_results:
-            self.print_result()
+            self.print_test_results()
 
         if plot_history:
             self.plot_loss()
-            self.plot_accuracy()
-
-        return self.__test_loss, self.__test_accuracy, self.__history
 
 
 class ExperimentPlan:
@@ -117,9 +167,11 @@ class ExperimentPlan:
     def name(self):
         return self.__name
 
-    def run(self, print_results: bool = False,
+    def run(self,
+            print_results: bool = False,
             plot_training_loss: bool = False,
-            plot_training_accuracy: bool = False):
+            plot_training_accuracy: bool = False,
+            display_progress_bars: bool = True):
 
         """Runs all the experiments
         """

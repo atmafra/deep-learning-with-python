@@ -48,7 +48,10 @@ def run():
 
     # runs the selected experiment
     experiment = experiments["comparison"]
-    experiment.run(print_results=True, plot_training_loss=False, plot_training_accuracy=False)
+    experiment.run(print_results=True,
+                   plot_training_loss=False,
+                   plot_training_accuracy=False,
+                   display_progress_bars=True)
 
     # plots the results
     experiment.plot_loss("Training Loss", training=True, validation=False)
