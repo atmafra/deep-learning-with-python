@@ -1,6 +1,6 @@
 from keras import optimizers
 
-from core.experiment import Experiment
+from core.experiment import Experiment, ExperimentPlan
 from core.network import LayerType, ValidationStrategy
 from core.sets import Corpus
 
@@ -30,13 +30,33 @@ mnist_dense = [
      'input_shape': input_shape_array},
     {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'softmax'}]
 
-mnist_conv = [
+mnist_conv_max_pooling = [
     {'layer_type': LayerType.CONV_2D, 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
      'input_shape': input_shape_image},
     {'layer_type': LayerType.MAX_POOLING_2D, 'pool_size': (2, 2)},
     {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
     {'layer_type': LayerType.MAX_POOLING_2D, 'pool_size': (2, 2)},
     {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    {'layer_type': LayerType.FLATTEN},
+    {'layer_type': LayerType.DENSE, 'units': 64, 'activation': 'relu'},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'softmax'}]
+
+mnist_conv_avg_pooling = [
+    {'layer_type': LayerType.CONV_2D, 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
+     'input_shape': input_shape_image},
+    {'layer_type': LayerType.AVERAGE_POOLING_2D, 'pool_size': (2, 2)},
+    {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    {'layer_type': LayerType.AVERAGE_POOLING_2D, 'pool_size': (2, 2)},
+    {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    {'layer_type': LayerType.FLATTEN},
+    {'layer_type': LayerType.DENSE, 'units': 64, 'activation': 'relu'},
+    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'softmax'}]
+
+mnist_conv_strided = [
+    {'layer_type': LayerType.CONV_2D, 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
+     'stride': 2, 'input_shape': input_shape_image},
+    {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu', 'stride': 2},
+    {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu', 'stride': 2},
     {'layer_type': LayerType.FLATTEN},
     {'layer_type': LayerType.DENSE, 'units': 64, 'activation': 'relu'},
     {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'softmax'}]
@@ -55,17 +75,30 @@ training_configuration = {
         'strategy': ValidationStrategy.NO_VALIDATION}}
 
 
-def load_experiment(corpus: Corpus):
+def load_experiment_plan(corpus: Corpus) -> ExperimentPlan:
     """Loads the experiment hyperparameters
     """
-    experiment_dense = Experiment(name="MNIST Dense",
-                                  corpus=corpus,
-                                  layers_configuration_list=mnist_dense,
-                                  training_configuration=training_configuration)
+    # experiment_dense = Experiment(name="MNIST Dense",
+    #                               corpus=corpus,
+    #                               layers_configuration_list=mnist_dense,
+    #                               training_configuration=training_configuration)
+    experiment_conv_max_pooling = Experiment(name="MNIST Convolutional (2x2 Max Polling)",
+                                             corpus=corpus,
+                                             layers_configuration_list=mnist_conv_max_pooling,
+                                             training_configuration=training_configuration)
 
-    experiment_conv = Experiment(name="MNIST Convolutional",
-                                 corpus=corpus,
-                                 layers_configuration_list=mnist_conv,
-                                 training_configuration=training_configuration)
+    experiment_conv_avg_pooling = Experiment(name="MNIST Convolutional (2x2 Average Polling)",
+                                             corpus=corpus,
+                                             layers_configuration_list=mnist_conv_avg_pooling,
+                                             training_configuration=training_configuration)
 
-    return experiment_conv
+    experiment_conv_strided = Experiment(name="MNIST Convolutional (2x2 Strided)",
+                                         corpus=corpus,
+                                         layers_configuration_list=mnist_conv_strided,
+                                         training_configuration=training_configuration)
+
+    experiment_list = [experiment_conv_max_pooling,
+                       experiment_conv_avg_pooling,
+                       experiment_conv_strided]
+
+    return ExperimentPlan(name="MNIST Convolutional Experiments", experiments=experiment_list)

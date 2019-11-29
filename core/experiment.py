@@ -56,8 +56,8 @@ class Experiment:
     def prepare_sets(self):
         """Prepare the training and the validation sets for training
         """
-        validation = get_parameter(self.__training_configuration, 'validation')
-        validation_strategy = get_parameter(validation, 'strategy')
+        validation = putl.get_parameter(self.__training_configuration, 'validation')
+        validation_strategy = putl.get_parameter(validation, 'strategy')
 
         if validation_strategy in \
                 (ValidationStrategy.NO_VALIDATION, ValidationStrategy.K_FOLD_CROSS_VALIDATION):
@@ -65,7 +65,7 @@ class Experiment:
             self.__validation_set = None
 
         elif validation_strategy == ValidationStrategy.CROSS_VALIDATION:
-            validation_set_size = get_parameter(validation, 'set_size')
+            validation_set_size = putl.get_parameter(validation, 'set_size')
             self.__validation_set, self.__training_set = self.__corpus.get_validation_set(validation_set_size)
 
     def create_network(self):
@@ -76,8 +76,8 @@ class Experiment:
     def train(self, display_progress_bars: bool = True):
         """Trains the neural network
         """
-        validation = get_parameter(self.__training_configuration, 'validation')
-        strategy = get_parameter(validation, 'strategy')
+        validation = putl.get_parameter(self.__training_configuration, 'validation')
+        strategy = putl.get_parameter(validation, 'strategy')
 
         if strategy == ValidationStrategy.NO_VALIDATION:
             self.__history = train_network(network=self.__neural_network,
@@ -94,8 +94,8 @@ class Experiment:
                                            verbose=display_progress_bars)
 
         elif strategy == ValidationStrategy.K_FOLD_CROSS_VALIDATION:
-            k = get_parameter(validation, 'k')
-            shuffle = get_parameter(validation, 'shuffle')
+            k = putl.get_parameter(validation, 'k')
+            shuffle = putl.get_parameter(validation, 'shuffle')
             all_histories = train_network_k_fold(network=self.__neural_network,
                                                  training_configuration=self.__training_configuration,
                                                  training_set=self.__training_set,
@@ -110,14 +110,12 @@ class Experiment:
                                     test_set=self.__corpus.test_set,
                                     verbose=display_progress_bars)
 
-        self.__test_loss = get_parameter(parameters=test_results, parameter='loss', mandatory=True)
-        self.__test_accuracy = get_parameter(parameters=test_results, parameter='accuracy', mandatory=False)
-        self.__test_mae = get_parameter(parameters=test_results, parameter='mae', mandatory=False)
+        self.__test_loss = putl.get_parameter(parameters=test_results, key='loss', mandatory=True)
+        self.__test_accuracy = putl.get_parameter(parameters=test_results, key='accuracy', mandatory=False)
+        self.__test_mae = putl.get_parameter(parameters=test_results, key='mae', mandatory=False)
 
     def plot_loss(self):
-        hutl.plot_loss(history=self.__history,
-                       title='Training and Validation Loss',
-                       )
+        hutl.plot_loss(history=self.__history, title='Training and Validation Loss')
 
     def plot_accuracy(self):
         hutl.plot_accuracy(history=self.__history, title='Training and Validation Accuracy')

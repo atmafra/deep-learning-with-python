@@ -4,7 +4,7 @@ from keras.utils import to_categorical
 
 from core import sets
 from core.sets import Corpus
-from examples.chapter5.mnist_configurations import load_experiment
+from examples.chapter5.mnist_configurations import load_experiment_plan
 
 
 def to_array(image_set: np.array) -> np.array:
@@ -29,8 +29,8 @@ def load_corpus(input_type: str, verbose: bool = True) -> sets.Corpus:
     test_set_size = corpus.test_set.length
 
     image_shape = corpus.training_set.input_data.shape
-    width = image_shape[1]
-    height = image_shape[2]
+    height = image_shape[1]
+    width = image_shape[2]
     channels = 1
 
     train_images = []
@@ -62,6 +62,10 @@ def run():
     """Runs the MNIST digit recognition example
     """
     corpus = load_corpus(input_type='image')
-    experiment = load_experiment(corpus=corpus)
-    experiment.run(print_results=True, plot_history=True, display_progress_bars=True)
-    experiment.plot_accuracy()
+    experiment_plan = load_experiment_plan(corpus=corpus)
+    # experiment_plan.run(print_results=True, plot_history=True, display_progress_bars=True)
+    experiment_plan.run(print_results=True,
+                        plot_training_loss=True,
+                        plot_training_accuracy=True,
+                        display_progress_bars=True)
+    # experiment_plan.plot_accuracy()
