@@ -90,12 +90,12 @@ def load_experiments(corpus: Corpus):
 
     experiment1 = Experiment(name='2 Hidden Layers, 16 units each',
                              corpus=corpus,
-                             layers_configuration_list=imdb_1,
+                             layers_configuration=imdb_1,
                              training_configuration=training_configuration)
 
     experiment2 = Experiment(name='3 Hidden Layers, 16 units each',
                              corpus=corpus,
-                             layers_configuration_list=imdb_2,
+                             layers_configuration=imdb_2,
                              training_configuration=training_configuration)
 
     plan = ExperimentPlan(name='Effect of the number of hidden layers',

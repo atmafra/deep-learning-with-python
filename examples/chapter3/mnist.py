@@ -92,7 +92,7 @@ def load_experiment(corpus: Corpus):
 
     experiment = Experiment(name="MNIST",
                             corpus=corpus,
-                            layers_configuration_list=layers_configuration,
+                            layers_configuration=layers_configuration,
                             training_configuration=training_configuration)
 
     return experiment

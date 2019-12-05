@@ -1,3 +1,5 @@
+from keras.callbacks import History
+
 import utils.history_utils as hutl
 from core.network import *
 from core.sets import Corpus, CorpusGenerator
@@ -12,7 +14,7 @@ class Experiment:
 
     def __init__(self,
                  name: str,
-                 layers_configuration_list: list,
+                 layers_configuration: list,
                  training_configuration: dict,
                  corpus_type: CorpusType = CorpusType.CORPUS_DATASET,
                  corpus: Corpus = None,
@@ -22,7 +24,7 @@ class Experiment:
 
         Args:
             name (str): name of the
-            layers_configuration_list (list): list of layer configurations that represent the network
+            layers_configuration (list): list of layer configurations that represent the network
             training_configuration (dict): training configuration parameters
             corpus_type (CorpusType): defines if data comes from in-memory sets
                or from directory iterators (generators)
@@ -44,14 +46,14 @@ class Experiment:
                 raise RuntimeError('No corpus generator passed to create experiment')
             else:
                 self.__corpus_generator = corpus_generator
-        self.__layers_configuration_list: list = layers_configuration_list
+        self.__layers_configuration: list = layers_configuration
         self.__training_configuration: dict = training_configuration
         self.__training_set = None
         self.__validation_strategy = ValidationStrategy.NO_VALIDATION
         self.__validation_set = None
         self.__test_set = None
         self.__neural_network = None
-        self.__history = None
+        self.__history: History = None
         self.__test_loss = None
         self.__test_accuracy = None
         self.__test_mae = None
@@ -81,8 +83,16 @@ class Experiment:
         return self.__training_configuration
 
     @property
+    def layers_configuration(self):
+        return self.__layers_configuration
+
+    @property
     def history(self):
         return self.__history
+
+    @history.setter
+    def history(self, history: History):
+        self.__history = history
 
     @property
     def test_loss(self):
@@ -111,51 +121,51 @@ class Experiment:
     def prepare_sets(self):
         """Prepare the training and the validation sets for training
         """
-        validation = putl.get_parameter(self.__training_configuration, 'validation')
+        validation = putl.get_parameter(self.training_configuration, 'validation')
         validation_strategy = putl.get_parameter(validation, 'strategy')
 
         if validation_strategy in \
                 (ValidationStrategy.NO_VALIDATION, ValidationStrategy.K_FOLD_CROSS_VALIDATION):
-            self.__training_set = self.__corpus.training_set
+            self.__training_set = self.corpus.training_set
             self.__validation_set = None
 
         elif validation_strategy == ValidationStrategy.CROSS_VALIDATION:
             validation_set_size = putl.get_parameter(validation, 'set_size')
-            self.__validation_set, self.__training_set = self.__corpus.get_validation_set(validation_set_size)
+            self.__validation_set, self.__training_set = self.corpus.get_validation_set(validation_set_size)
 
-        self.__test_set = self.__corpus.test_set
+        self.__test_set = self.corpus.test_set
 
     def create_network(self):
         """Creates the neural network according to the layers configuration list
         """
-        self.__neural_network = create_network(layer_configuration_list=self.__layers_configuration_list)
+        self.__neural_network = create_network(layer_configuration_list=self.layers_configuration)
 
     def train(self, display_progress_bars: bool = True):
         """Trains the neural network
         """
-        validation = putl.get_parameter(self.__training_configuration, 'validation')
+        validation = putl.get_parameter(self.training_configuration, 'validation')
         strategy = putl.get_parameter(validation, 'strategy')
 
         if strategy == ValidationStrategy.NO_VALIDATION:
-            self.__history = train_network(network=self.__neural_network,
-                                           training_configuration=self.__training_configuration,
-                                           training_set=self.__training_set,
+            self.__history = train_network(network=self.neural_network,
+                                           training_configuration=self.training_configuration,
+                                           training_set=self.training_set,
                                            validation_set=None,
                                            verbose=display_progress_bars)
 
         elif strategy == ValidationStrategy.CROSS_VALIDATION:
-            self.__history = train_network(network=self.__neural_network,
-                                           training_configuration=self.__training_configuration,
-                                           training_set=self.__training_set,
-                                           validation_set=self.__validation_set,
+            self.__history = train_network(network=self.neural_network,
+                                           training_configuration=self.training_configuration,
+                                           training_set=self.training_set,
+                                           validation_set=self.validation_set,
                                            verbose=display_progress_bars)
 
         elif strategy == ValidationStrategy.K_FOLD_CROSS_VALIDATION:
             k = putl.get_parameter(validation, 'k')
             shuffle = putl.get_parameter(validation, 'shuffle')
-            all_histories = train_network_k_fold(network=self.__neural_network,
-                                                 training_configuration=self.__training_configuration,
-                                                 training_set=self.__training_set,
+            all_histories = train_network_k_fold(network=self.neural_network,
+                                                 training_configuration=self.training_configuration,
+                                                 training_set=self.training_set,
                                                  k=k, shuffle=shuffle,
                                                  verbose=display_progress_bars)
             self.__history = hutl.merge_history_metrics(all_histories)
@@ -169,24 +179,24 @@ class Experiment:
         if self.corpus_generator is None:
             raise RuntimeError('Training Generator not defined')
 
-        if self.corpus_generator.training_set_generator is None:
+        training_set_generator = self.corpus_generator.training_set_generator
+        if training_set_generator is None:
             raise RuntimeError('Training Set Generator not defined')
 
-        training_set_generator = self.corpus_generator.training_set_generator
-        validation = putl.get_parameter(self.__training_configuration, 'validation')
+        validation = putl.get_parameter(self.training_configuration, 'validation')
         strategy = putl.get_parameter(validation, 'strategy')
 
         if strategy == ValidationStrategy.NO_VALIDATION:
             self.__history = train_network_generator(network=self.neural_network,
                                                      training_generator=training_set_generator.generator,
-                                                     training_configuration=self.__training_configuration,
+                                                     training_configuration=self.training_configuration,
                                                      verbose=display_progress_bars)
 
         elif strategy == ValidationStrategy.CROSS_VALIDATION:
             validation_generator = self.corpus_generator.validation_set_generator
-            self.__history = train_network_generator(network=self.__neural_network,
+            self.__history = train_network_generator(network=self.neural_network,
                                                      training_generator=training_set_generator.generator,
-                                                     training_configuration=self.__training_configuration,
+                                                     training_configuration=self.training_configuration,
                                                      validation_generator=validation_generator.generator,
                                                      verbose=display_progress_bars)
 
@@ -203,25 +213,31 @@ class Experiment:
     def evaluate(self, display_progress_bars: bool = True):
         """Evaluate the neural network
         """
-        test_results = test_network(network=self.__neural_network,
-                                    test_set=self.__corpus.test_set,
-                                    verbose=display_progress_bars)
+        if self.corpus_type == CorpusType.CORPUS_DATASET:
+            test_results = test_network(network=self.neural_network,
+                                        test_set=self.test_set,
+                                        verbose=display_progress_bars)
+
+        elif self.corpus_type == CorpusType.CORPUS_GENERATOR:
+            test_results = test_network_generator(network=self.neural_network,
+                                                  test_set_generator=self.corpus_generator.test_set_generator,
+                                                  verbose=display_progress_bars)
 
         self.__test_loss = putl.get_parameter(parameters=test_results, key='loss', mandatory=True)
         self.__test_accuracy = putl.get_parameter(parameters=test_results, key='accuracy', mandatory=False)
         self.__test_mae = putl.get_parameter(parameters=test_results, key='mae', mandatory=False)
 
     def plot_loss(self):
-        hutl.plot_loss(history=self.__history, title='Training and Validation Loss')
+        hutl.plot_loss(history=self.history, title='Training and Validation Loss')
 
     def plot_accuracy(self):
-        hutl.plot_accuracy(history=self.__history, title='Training and Validation Accuracy')
+        hutl.plot_accuracy(history=self.history, title='Training and Validation Accuracy')
 
     def print_test_results(self):
         """Print the result of the training session
         """
-        print("\n{}".format(self.__name))
-        print("Test loss     = {:.6}".format(self.__test_loss))
+        print("\n{}".format(self.name))
+        print("Test loss     = {:.6}".format(self.test_loss))
         if self.__test_accuracy is not None:
             print("Test accuracy = {:.2%}".format(self.__test_accuracy))
         if self.__test_mae is not None:

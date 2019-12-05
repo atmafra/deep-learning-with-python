@@ -1,10 +1,11 @@
+import os
 from enum import Enum
 
 from keras import models, layers, Model
 from keras.utils import Sequence
 
 import utils.parameter_utils as putl
-from core.sets import Set
+from core.sets import Set, SetGenerator
 from utils.parameter_utils import extract_parameter
 
 
@@ -52,10 +53,9 @@ def create_layer(parameters: dict):
         parameters (dict): hyperparameters dictionary
 
     """
-    if 'layer_type' not in parameters:
-        raise ValueError('layer_type not defined')
-
-    layer_type = extract_parameter(parameters, 'layer_type')
+    layer_type = extract_parameter(parameters=parameters,
+                                   key='layer_type',
+                                   mandatory=True)
 
     # Input
     if layer_type == LayerType.INPUT:
@@ -67,29 +67,23 @@ def create_layer(parameters: dict):
 
     # Dropout
     elif layer_type == LayerType.DROPOUT:
-        rate = extract_parameter(parameters, 'rate')
-        return layers.Dropout(rate=rate, **parameters)
+        return layers.Dropout(**parameters)
 
     # Convolutional 2D
     elif layer_type == LayerType.CONV_2D:
-        filters = extract_parameter(parameters=parameters, key='filters', mandatory=True)
-        kernel_size = extract_parameter(parameters=parameters, key='kernel_size', mandatory=True)
-        stride = extract_parameter(parameters=parameters, key='stride', mandatory=False, default_value=1)
-        return layers.Conv2D(filters=filters, kernel_size=kernel_size, strides=(stride, stride))
+        return layers.Conv2D(**parameters)
 
     # Max Pooling 2D
     elif layer_type == LayerType.MAX_POOLING_2D:
-        pool_size = extract_parameter(parameters, 'pool_size')
-        return layers.MaxPooling2D(pool_size=pool_size)
+        return layers.MaxPooling2D(**parameters)
 
     # Average Pooling 2D
     elif layer_type == LayerType.AVERAGE_POOLING_2D:
-        pool_size = extract_parameter(parameters, 'pool_size')
-        return layers.AveragePooling2D(pool_size=pool_size)
+        return layers.AveragePooling2D(**parameters)
 
     # Flatten
     elif layer_type == LayerType.FLATTEN:
-        return layers.Flatten()
+        return layers.Flatten(**parameters)
 
     # Output
     elif layer_type == LayerType.OUTPUT:
@@ -114,6 +108,8 @@ def create_network(layer_configuration_list: list):
         layer = create_layer(layer_configuration)
         if layer is not None:
             network.add(layer)
+
+    network.build()
 
     return network
 
@@ -178,11 +174,11 @@ def train_network_generator(network: Model,
     compile_parameters = putl.get_parameter(keras_parameters, 'compile')
     network.compile(**compile_parameters)
 
-    fit_parameters = putl.get_parameter(keras_parameters, 'fit')
+    fit_generator_parameters = putl.get_parameter(keras_parameters, 'fit_generator')
     history = network.fit_generator(generator=training_generator,
                                     validation_data=validation_generator,
                                     verbose=verbose,
-                                    **fit_parameters)
+                                    **fit_generator_parameters)
 
     return history
 
@@ -249,6 +245,7 @@ def test_network(network: Model,
                               max_queue_size=10,
                               workers=1,
                               use_multiprocessing=False)
+
     metrics = {}
     i = 0
     for name in network.metrics_names:
@@ -256,3 +253,47 @@ def test_network(network: Model,
         i = i + 1
 
     return metrics
+
+
+def test_network_generator(network: Model,
+                           test_set_generator: SetGenerator,
+                           verbose: bool = True) -> dict:
+    """Evaluates all the test inputs according to the current network
+
+    Args:
+        network (Model): neural network model to be tested
+        test_set_generator (SetGenerator): test set generator to be used for metrics evaluation
+        verbose (bool): display evaluation progress bar if True
+
+    """
+    result = network.evaluate_generator(generator=test_set_generator.generator,
+                                        steps=None,
+                                        callbacks=None,
+                                        max_queue_size=10,
+                                        workers=1,
+                                        use_multiprocessing=False,
+                                        verbose=verbose)
+
+    metrics = {}
+    i = 0
+    for name in network.metrics_names:
+        metrics[name] = result[i]
+        i = i + 1
+
+    return metrics
+
+
+def save_network(network: Model,
+                 path: str,
+                 file_name: str):
+    """Saves the model in the current state
+
+    Args:
+        network (Model): model to be saved
+        path (str): system path of the save directory
+        file_name (str): saved model file name
+
+    """
+    os.path.basename()
+    file_path = path + file_name
+    network.save(filepath=file_path)

@@ -158,75 +158,75 @@ imdb_medium_dropout_wreg_l2 = [
 
 def load_experiments(corpus: Corpus):
     _small = Experiment(name='small', corpus=corpus,
-                        layers_configuration_list=imdb_small,
+                        layers_configuration=imdb_small,
                         training_configuration=training_configuration_global)
 
     _medium = Experiment(name='medium', corpus=corpus,
-                         layers_configuration_list=imdb_medium,
+                         layers_configuration=imdb_medium,
                          training_configuration=training_configuration_global)
 
     _large = Experiment(name='large', corpus=corpus,
-                        layers_configuration_list=imdb_large,
+                        layers_configuration=imdb_large,
                         training_configuration=training_configuration_global)
 
     _medium_dropout_10 = Experiment(name='medium with dropout (rate = 10%)', corpus=corpus,
-                                    layers_configuration_list=imdb_medium_dropout_10,
+                                    layers_configuration=imdb_medium_dropout_10,
                                     training_configuration=training_configuration_global)
 
     _medium_dropout_20 = Experiment(name='medium with dropout (rate = 20%)', corpus=corpus,
-                                    layers_configuration_list=imdb_medium_dropout_20,
+                                    layers_configuration=imdb_medium_dropout_20,
                                     training_configuration=training_configuration_global)
 
     _medium_dropout_30 = Experiment(name='medium with dropout (rate = 30%)', corpus=corpus,
-                                    layers_configuration_list=imdb_medium_dropout_30,
+                                    layers_configuration=imdb_medium_dropout_30,
                                     training_configuration=training_configuration_global)
 
     _medium_dropout_40 = Experiment(name='medium with dropout (rate = 40%)', corpus=corpus,
-                                    layers_configuration_list=imdb_medium_dropout_40,
+                                    layers_configuration=imdb_medium_dropout_40,
                                     training_configuration=training_configuration_global)
 
     _medium_dropout_50 = Experiment(name='medium with dropout (rate = 50%)', corpus=corpus,
-                                    layers_configuration_list=imdb_medium_dropout_50,
+                                    layers_configuration=imdb_medium_dropout_50,
                                     training_configuration=training_configuration_global)
 
     _medium_wreg_l1_0001 = Experiment(name='medium, weight regularization (L1 = 0.0001)', corpus=corpus,
-                                      layers_configuration_list=imdb_medium_wreg_l1_0001,
+                                      layers_configuration=imdb_medium_wreg_l1_0001,
                                       training_configuration=training_configuration_global)
 
     _medium_wreg_l1_001 = Experiment(name='medium, weight regularization (L1 = 0.001)', corpus=corpus,
-                                     layers_configuration_list=imdb_medium_wreg_l1_001,
+                                     layers_configuration=imdb_medium_wreg_l1_001,
                                      training_configuration=training_configuration_global)
 
     _medium_wreg_l1_01 = Experiment(name='medium, weight regularization (L1 = 0.01)', corpus=corpus,
-                                    layers_configuration_list=imdb_medium_wreg_l1_01,
+                                    layers_configuration=imdb_medium_wreg_l1_01,
                                     training_configuration=training_configuration_global)
 
     _medium_wreg_l1_1 = Experiment(name='medium, weight regularization (L1 = 0.1)', corpus=corpus,
-                                   layers_configuration_list=imdb_medium_wreg_l1_1,
+                                   layers_configuration=imdb_medium_wreg_l1_1,
                                    training_configuration=training_configuration_global)
 
     _medium_wreg_l2_0001 = Experiment(name='medium, weight regularization (L2 = 0.0001)', corpus=corpus,
-                                      layers_configuration_list=imdb_medium_wreg_l2_0001,
+                                      layers_configuration=imdb_medium_wreg_l2_0001,
                                       training_configuration=training_configuration_global)
 
     _medium_wreg_l2_001 = Experiment(name='medium, weight regularization (L2 = 0.001)', corpus=corpus,
-                                     layers_configuration_list=imdb_medium_wreg_l2_001,
+                                     layers_configuration=imdb_medium_wreg_l2_001,
                                      training_configuration=training_configuration_global)
 
     _medium_wreg_l2_01 = Experiment(name='medium, weight regularization (L2 = 0.01)', corpus=corpus,
-                                    layers_configuration_list=imdb_medium_wreg_l2_01,
+                                    layers_configuration=imdb_medium_wreg_l2_01,
                                     training_configuration=training_configuration_global)
 
     _medium_wreg_l2_1 = Experiment(name='medium, weight regularization (L2 = 0.1)', corpus=corpus,
-                                   layers_configuration_list=imdb_medium_wreg_l2_1,
+                                   layers_configuration=imdb_medium_wreg_l2_1,
                                    training_configuration=training_configuration_global)
 
     _medium_wreg_l1_l2 = Experiment(name='medium, weight regularization (L1 = 0.0001, L2 = 0.0001)', corpus=corpus,
-                                    layers_configuration_list=imdb_medium_wreg_l1_l2,
+                                    layers_configuration=imdb_medium_wreg_l1_l2,
                                     training_configuration=training_configuration_global)
 
     _medium_dropout_wreg_l2 = Experiment(name='medium with dropout and L2 weight regularization', corpus=corpus,
-                                         layers_configuration_list=imdb_medium_dropout_wreg_l2,
+                                         layers_configuration=imdb_medium_dropout_wreg_l2,
                                          training_configuration=training_configuration_global)
 
     # Experiment: effect of dropout with different rates

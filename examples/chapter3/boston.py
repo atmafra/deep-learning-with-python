@@ -76,7 +76,7 @@ def load_experiment(corpus: Corpus) -> Experiment:
             'k': 5}}
 
     experiment = Experiment(name='Boston', corpus=corpus,
-                            layers_configuration_list=layers_configuration,
+                            layers_configuration=layers_configuration,
                             training_configuration=training_configuration)
 
     return experiment
