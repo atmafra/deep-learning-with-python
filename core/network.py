@@ -1,6 +1,7 @@
 from enum import Enum
 
 from keras import models, layers, Model
+from keras.utils import Sequence
 
 import utils.parameter_utils as putl
 from core.sets import Set
@@ -151,6 +152,37 @@ def train_network(network: Model,
                           validation_data=validation_data,
                           verbose=verbose,
                           **fit_parameters)
+
+    return history
+
+
+def train_network_generator(network: Model,
+                            training_generator: Sequence,
+                            training_configuration: dict,
+                            validation_generator: Sequence = None,
+                            verbose: bool = True):
+    """Train the neural network, returning the evolution of the training metrics
+
+    Args:
+        network (Model): neural network model to be trained
+        training_generator (Sequence): training set generator
+        training_configuration (dict): training algorithm parameters
+        validation_generator (Sequence): validation set generator
+        verbose (bool): display training progress bars if True
+
+    """
+    validation = putl.get_parameter(training_configuration, 'validation')
+    validation_strategy = putl.get_parameter(validation, 'strategy')
+
+    keras_parameters = putl.get_parameter(training_configuration, 'keras')
+    compile_parameters = putl.get_parameter(keras_parameters, 'compile')
+    network.compile(**compile_parameters)
+
+    fit_parameters = putl.get_parameter(keras_parameters, 'fit')
+    history = network.fit_generator(generator=training_generator,
+                                    validation_data=validation_generator,
+                                    verbose=verbose,
+                                    **fit_parameters)
 
     return history
 

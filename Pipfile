@@ -9,6 +9,7 @@ verify_ssl = true
 keras = "*"
 tensorflow = "*"
 matplotlib = "*"
+pillow = "*"
 
 [requires]
 python_version = "3.7"

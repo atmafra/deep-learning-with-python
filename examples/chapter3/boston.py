@@ -27,7 +27,7 @@ def load_corpus(num_words: int = 10000, verbose: bool = True) -> Corpus:
     if verbose:
         print('Training examples:', len(training_inputs))
         print('Test examples    :', len(test_inputs))
-        print('Minimum price    : {:.2f}'.format(corpus.min_ouptut))
+        print('Minimum price    : {:.2f}'.format(corpus.min_output))
         print('Average price    : {:.2f}'.format(corpus.average_output))
         print('Maximum price    : {:.2f}'.format(corpus.max_output))
 

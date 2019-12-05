@@ -1,4 +1,5 @@
 import numpy as np
+from keras.utils import Sequence
 
 import utils.dataset_utils as dsu
 
@@ -19,13 +20,12 @@ class Set:
         """
         assert input_data is not None, 'Cannot create Set with no input data'
 
-        self.input_data = input_data
-        self.length = len(self.input_data)
+        self.__input_data = input_data
 
-        if len(output_data) != self.length:
+        if len(output_data) != len(self.__input_data):
             raise ValueError('Input data and Output data must have the same length')
 
-        self.output_data = output_data
+        self.__output_data = output_data
 
     def copy(self):
         """Duplicates the set
@@ -38,8 +38,8 @@ class Set:
         """Shuffles the element order
         """
         p = np.random.permutation(self.length)
-        self.input_data = self.input_data[p]
-        self.output_data = self.output_data[p]
+        self.__input_data = self.input_data[p]
+        self.__output_data = self.output_data[p]
 
     def split(self, size: int, start: int = 0):
         """Splits the two arrays into a two subsets, the first of the given size
@@ -95,6 +95,18 @@ class Set:
         return self.input_data, self.output_data
 
     @property
+    def length(self):
+        return len(self.input_data)
+
+    @property
+    def input_data(self):
+        return self.__input_data
+
+    @property
+    def output_data(self):
+        return self.__output_data
+
+    @property
     def input_size(self):
         """Returns the size of the input elements
         """
@@ -143,15 +155,14 @@ class Corpus:
     """
 
     def __init__(self, training_set: Set, test_set: Set):
-        self.training_set = training_set
-        self.test_set = test_set
+        self.__training_set = training_set
+        self.__test_set = test_set
 
     @staticmethod
-    def from_datasets(
-            training_inputs: np.array,
-            training_outputs: np.array,
-            test_inputs: np.array,
-            test_outputs: np.array):
+    def from_datasets(training_inputs: np.array,
+                      training_outputs: np.array,
+                      test_inputs: np.array,
+                      test_outputs: np.array):
         """Creates a corpus from the 4 datasets: training x test, input x output
 
         Args:
@@ -185,7 +196,7 @@ class Corpus:
             start (int) : split training set from this position on
 
         """
-        training_set_copy = self.training_set.copy()
+        training_set_copy = self.__training_set.copy()
         return training_set_copy.split(size=size, start=start)
 
     def get_validation_set_k_fold(self, fold: int, k: int):
@@ -197,34 +208,86 @@ class Corpus:
             k (int): number of folds
 
         """
-        return self.training_set.split_k_fold(fold=fold, k=k)
+        return self.__training_set.split_k_fold(fold=fold, k=k)
 
     @property
     def input_size(self):
         """Returns the size of the input elements
         """
-        return self.training_set.input_size
+        return self.__training_set.input_size
 
     @property
     def output_size(self):
         """Returns the size of the output elements
         """
-        return self.training_set.output_size
+        return self.__training_set.output_size
 
     @property
     def count_categories(self):
         """Returns the number of distinct labels in the output data
         """
-        return self.training_set.count_unique_values
+        return self.__training_set.count_unique_values
 
     @property
-    def min_ouptut(self):
-        return self.training_set.min_output
+    def min_output(self):
+        return self.__training_set.min_output
 
     @property
     def max_output(self):
-        return self.training_set.max_output
+        return self.__training_set.max_output
 
     @property
     def average_output(self):
-        return self.training_set.average_output
+        return self.__training_set.average_output
+
+    @property
+    def training_set(self):
+        return self.__training_set
+
+    @property
+    def test_set(self):
+        return self.__test_set
+
+
+class SetGenerator:
+    """Contains a generator that can be sequentially iterated over to get a set
+    """
+
+    def __init__(self, generator: Sequence):
+        if generator is None:
+            raise RuntimeError('No generator passed creating GenSet')
+
+        self.__generator = generator
+
+    @property
+    def generator(self):
+        return self.__generator
+
+
+class CorpusGenerator:
+    """A corpus generator contains three set generators:
+       1. training
+       2. validation
+       3. test
+
+    """
+
+    def __init__(self,
+                 training_set_generator: SetGenerator,
+                 validation_set_generator: SetGenerator,
+                 test_set_generator: SetGenerator):
+        self.__training_set_generator = training_set_generator
+        self.__validation_set_generator = validation_set_generator
+        self.__test_set_generator = test_set_generator
+
+    @property
+    def training_set_generator(self):
+        return self.__training_set_generator
+
+    @property
+    def validation_set_generator(self):
+        return self.__validation_set_generator
+
+    @property
+    def test_set_generator(self):
+        return self.__test_set_generator

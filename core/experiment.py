@@ -1,32 +1,55 @@
 import utils.history_utils as hutl
 from core.network import *
-from core.sets import Corpus
+from core.sets import Corpus, CorpusGenerator
+
+
+class CorpusType(Enum):
+    CORPUS_DATASET = 1
+    CORPUS_GENERATOR = 2
 
 
 class Experiment:
 
     def __init__(self,
                  name: str,
-                 corpus: Corpus,
                  layers_configuration_list: list,
-                 training_configuration: dict):
+                 training_configuration: dict,
+                 corpus_type: CorpusType = CorpusType.CORPUS_DATASET,
+                 corpus: Corpus = None,
+                 corpus_generator: CorpusGenerator = None):
         """Creates a new Experiment to evaluate the performance of a specific
            combination of data and training hyperparameters
 
         Args:
             name (str): name of the
-            corpus (Corpus): the training and test sets to be used
             layers_configuration_list (list): list of layer configurations that represent the network
             training_configuration (dict): training configuration parameters
+            corpus_type (CorpusType): defines if data comes from in-memory sets
+               or from directory iterators (generators)
+            corpus (Corpus): the training and test sets to be used
+            corpus_generator (CorpusGenerator): corpus generator
 
         """
         self.__name: str = name
-        self.__corpus: Corpus = corpus
+        self.__corpus_type: CorpusType = corpus_type
+        self.__corpus = None
+        self.__corpus_generator = None
+        if corpus_type == CorpusType.CORPUS_DATASET:
+            if corpus is None:
+                raise RuntimeError('No corpus passed to create experiment')
+            else:
+                self.__corpus = corpus
+        elif corpus_type == CorpusType.CORPUS_GENERATOR:
+            if corpus_generator is None:
+                raise RuntimeError('No corpus generator passed to create experiment')
+            else:
+                self.__corpus_generator = corpus_generator
         self.__layers_configuration_list: list = layers_configuration_list
         self.__training_configuration: dict = training_configuration
         self.__training_set = None
         self.__validation_strategy = ValidationStrategy.NO_VALIDATION
         self.__validation_set = None
+        self.__test_set = None
         self.__neural_network = None
         self.__history = None
         self.__test_loss = None
@@ -36,6 +59,26 @@ class Experiment:
     @property
     def name(self):
         return self.__name
+
+    @property
+    def corpus(self):
+        return self.__corpus
+
+    @property
+    def corpus_generator(self):
+        return self.__corpus_generator
+
+    @property
+    def corpus_type(self):
+        return self.__corpus_type
+
+    @property
+    def neural_network(self):
+        return self.__neural_network
+
+    @property
+    def training_configuration(self):
+        return self.__training_configuration
 
     @property
     def history(self):
@@ -53,6 +96,18 @@ class Experiment:
     def test_mae(self):
         return self.__test_mae
 
+    @property
+    def training_set(self):
+        return self.__training_set
+
+    @property
+    def validation_set(self):
+        return self.__validation_set
+
+    @property
+    def test_set(self):
+        return self.__test_set
+
     def prepare_sets(self):
         """Prepare the training and the validation sets for training
         """
@@ -67,6 +122,8 @@ class Experiment:
         elif validation_strategy == ValidationStrategy.CROSS_VALIDATION:
             validation_set_size = putl.get_parameter(validation, 'set_size')
             self.__validation_set, self.__training_set = self.__corpus.get_validation_set(validation_set_size)
+
+        self.__test_set = self.__corpus.test_set
 
     def create_network(self):
         """Creates the neural network according to the layers configuration list
@@ -103,6 +160,46 @@ class Experiment:
                                                  verbose=display_progress_bars)
             self.__history = hutl.merge_history_metrics(all_histories)
 
+    def train_generator(self, display_progress_bars: bool = True):
+        """Trains the neural network using a training set generator
+        """
+        if self.corpus_type != CorpusType.CORPUS_GENERATOR:
+            raise RuntimeError('Corpus type is not from Generator type')
+
+        if self.corpus_generator is None:
+            raise RuntimeError('Training Generator not defined')
+
+        if self.corpus_generator.training_set_generator is None:
+            raise RuntimeError('Training Set Generator not defined')
+
+        training_set_generator = self.corpus_generator.training_set_generator
+        validation = putl.get_parameter(self.__training_configuration, 'validation')
+        strategy = putl.get_parameter(validation, 'strategy')
+
+        if strategy == ValidationStrategy.NO_VALIDATION:
+            self.__history = train_network_generator(network=self.neural_network,
+                                                     training_generator=training_set_generator.generator,
+                                                     training_configuration=self.__training_configuration,
+                                                     verbose=display_progress_bars)
+
+        elif strategy == ValidationStrategy.CROSS_VALIDATION:
+            validation_generator = self.corpus_generator.validation_set_generator
+            self.__history = train_network_generator(network=self.__neural_network,
+                                                     training_generator=training_set_generator.generator,
+                                                     training_configuration=self.__training_configuration,
+                                                     validation_generator=validation_generator.generator,
+                                                     verbose=display_progress_bars)
+
+        # elif strategy == ValidationStrategy.K_FOLD_CROSS_VALIDATION:
+        #     k = putl.get_parameter(validation, 'k')
+        #     shuffle = putl.get_parameter(validation, 'shuffle')
+        #     all_histories = train_network_k_fold(network=self.__neural_network,
+        #                                          training_set=self.__training_set,
+        #                                          training_configuration=self.__training_configuration,
+        #                                          k=k, shuffle=shuffle,
+        #                                          verbose=display_progress_bars)
+        #     self.__history = hutl.merge_history_metrics(all_histories)
+
     def evaluate(self, display_progress_bars: bool = True):
         """Evaluate the neural network
         """
@@ -136,9 +233,15 @@ class Experiment:
             display_progress_bars: bool = True):
         """Runs the experiment
         """
-        self.prepare_sets()
+        if self.corpus_type == CorpusType.CORPUS_DATASET:
+            self.prepare_sets()
         self.create_network()
-        self.train()
+
+        if self.corpus_type == CorpusType.CORPUS_DATASET:
+            self.train(display_progress_bars=display_progress_bars)
+        else:
+            self.train_generator(display_progress_bars=display_progress_bars)
+
         self.evaluate()
 
         if print_results:

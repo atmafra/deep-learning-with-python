@@ -63,9 +63,7 @@ def run():
     """
     corpus = load_corpus(input_type='image')
     experiment_plan = load_experiment_plan(corpus=corpus)
-    # experiment_plan.run(print_results=True, plot_history=True, display_progress_bars=True)
     experiment_plan.run(print_results=True,
                         plot_training_loss=True,
                         plot_training_accuracy=True,
                         display_progress_bars=True)
-    # experiment_plan.plot_accuracy()
