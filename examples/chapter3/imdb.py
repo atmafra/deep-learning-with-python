@@ -3,7 +3,7 @@ from keras import optimizers
 from keras.datasets import imdb
 
 from core.experiment import Experiment, ExperimentPlan
-from core.network import LayerType, ValidationStrategy
+from core.network import ValidationStrategy
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 
@@ -64,15 +64,15 @@ def load_experiments(corpus: Corpus):
     validation_set_size = 10000
 
     imdb_1 = [
-        {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
-        {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
-        {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+        {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
+        {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation},
+        {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
     imdb_2 = [
-        {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
-        {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
-        {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
-        {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+        {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
+        {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation},
+        {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation},
+        {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
     training_configuration = {
         'keras': {

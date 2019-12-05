@@ -71,9 +71,9 @@ def load_experiment(corpus: Corpus):
     shuffle = True
 
     layers_configuration = [
-        {'layer_type': LayerType.DENSE, 'units': hidden_layer_units, 'activation': hidden_layer_activation,
+        {'layer_type': 'Dense', 'units': hidden_layer_units, 'activation': hidden_layer_activation,
          'input_shape': (input_size,)},
-        {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'softmax'}]
+        {'layer_type': 'Dense', 'units': output_size, 'activation': 'softmax'}]
 
     training_configuration = {
         'keras': {

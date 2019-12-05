@@ -1,7 +1,7 @@
 from keras import regularizers, optimizers
 
 from core.experiment import Experiment, ExperimentPlan
-from core.network import LayerType, ValidationStrategy
+from core.network import ValidationStrategy
 from core.sets import Corpus
 
 num_words = 10000
@@ -34,126 +34,126 @@ training_configuration_global = {
 
 # Network Configuration
 imdb_small = [
-    {'layer_type': LayerType.DENSE, 'units': 4, 'activation': hidden_activation, 'input_shape': (input_size,)},
-    {'layer_type': LayerType.DENSE, 'units': 4, 'activation': hidden_activation},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': 4, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': 'Dense', 'units': 4, 'activation': hidden_activation},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_large = [
-    {'layer_type': LayerType.DENSE, 'units': 512, 'activation': hidden_activation, 'input_shape': (input_size,)},
-    {'layer_type': LayerType.DENSE, 'units': 512, 'activation': hidden_activation},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': 512, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': 'Dense', 'units': 512, 'activation': hidden_activation},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_dropout_10 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.10},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.10},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': 'Dropout', 'rate': 0.10},
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation},
+    {'layer_type': 'Dropout', 'rate': 0.10},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_dropout_20 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.20},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.20},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': 'Dropout', 'rate': 0.20},
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation},
+    {'layer_type': 'Dropout', 'rate': 0.20},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_dropout_30 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.30},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.30},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': 'Dropout', 'rate': 0.30},
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation},
+    {'layer_type': 'Dropout', 'rate': 0.30},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_dropout_40 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.40},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.40},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': 'Dropout', 'rate': 0.40},
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation},
+    {'layer_type': 'Dropout', 'rate': 0.40},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_dropout_50 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.50},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.50},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,)},
+    {'layer_type': 'Dropout', 'rate': 0.50},
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation},
+    {'layer_type': 'Dropout', 'rate': 0.50},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_wreg_l1_0001 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
      'kernel_regularizer': regularizers.l1(0.0001)},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation,
      'kernel_regularizer': regularizers.l1(0.0001)},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_wreg_l1_001 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
      'kernel_regularizer': regularizers.l1(0.001)},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation,
      'kernel_regularizer': regularizers.l1(0.001)},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_wreg_l1_01 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
      'kernel_regularizer': regularizers.l1(0.01)},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation,
      'kernel_regularizer': regularizers.l1(0.01)},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_wreg_l1_1 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
      'kernel_regularizer': regularizers.l1(0.1)},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation,
      'kernel_regularizer': regularizers.l1(0.1)},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_wreg_l2_0001 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
      'kernel_regularizer': regularizers.l2(0.0001)},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation,
      'kernel_regularizer': regularizers.l2(0.0001)},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_wreg_l2_001 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
      'kernel_regularizer': regularizers.l2(0.001)},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation,
      'kernel_regularizer': regularizers.l2(0.001)},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_wreg_l2_01 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
      'kernel_regularizer': regularizers.l2(0.01)},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation,
      'kernel_regularizer': regularizers.l2(0.01)},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_wreg_l2_1 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
      'kernel_regularizer': regularizers.l2(0.1)},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation,
      'kernel_regularizer': regularizers.l2(0.1)},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_wreg_l1_l2 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
      'kernel_regularizer': regularizers.l1_l2(l1=0.0001, l2=0.0001)},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation,
      'kernel_regularizer': regularizers.l1_l2(l1=0.0001, l2=0.0001)},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 imdb_medium_dropout_wreg_l2 = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation, 'input_shape': (input_size,),
      'kernel_regularizer': regularizers.l2(0.001)},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.5},
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': hidden_activation,
+    {'layer_type': 'Dropout', 'rate': 0.5},
+    {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation,
      'kernel_regularizer': regularizers.l2(0.001)},
-    {'layer_type': LayerType.DROPOUT, 'rate': 0.5},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+    {'layer_type': 'Dropout', 'rate': 0.5},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
 
 def load_experiments(corpus: Corpus):

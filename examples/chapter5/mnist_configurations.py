@@ -1,7 +1,7 @@
 from keras import optimizers
 
 from core.experiment import Experiment, ExperimentPlan
-from core.network import LayerType, ValidationStrategy
+from core.network import ValidationStrategy
 from core.sets import Corpus
 
 # layer parameters
@@ -26,40 +26,40 @@ shuffle = True
 
 # Network configurations
 mnist_dense = [
-    {'layer_type': LayerType.DENSE, 'units': 16, 'activation': 'relu',
+    {'layer_type': 'Dense', 'units': 16, 'activation': 'relu',
      'input_shape': input_shape_array},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'softmax'}]
+    {'layer_type': 'Dense', 'units': output_size, 'activation': 'softmax'}]
 
 mnist_conv_max_pooling = [
-    {'layer_type': LayerType.CONV_2D, 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
+    {'layer_type': 'Conv2D', 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
      'input_shape': input_shape_image},
-    {'layer_type': LayerType.MAX_POOLING_2D, 'pool_size': (2, 2)},
-    {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
-    {'layer_type': LayerType.MAX_POOLING_2D, 'pool_size': (2, 2)},
-    {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
-    {'layer_type': LayerType.FLATTEN},
-    {'layer_type': LayerType.DENSE, 'units': 64, 'activation': 'relu'},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'softmax'}]
+    {'layer_type': 'MaxPooling2D', 'pool_size': (2, 2)},
+    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    {'layer_type': 'MaxPooling2D', 'pool_size': (2, 2)},
+    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    {'layer_type': 'Flatten'},
+    {'layer_type': 'Dense', 'units': 64, 'activation': 'relu'},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': 'softmax'}]
 
 mnist_conv_avg_pooling = [
-    {'layer_type': LayerType.CONV_2D, 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
+    {'layer_type': 'Conv2D', 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
      'input_shape': input_shape_image},
-    {'layer_type': LayerType.AVERAGE_POOLING_2D, 'pool_size': (2, 2)},
-    {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
-    {'layer_type': LayerType.AVERAGE_POOLING_2D, 'pool_size': (2, 2)},
-    {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
-    {'layer_type': LayerType.FLATTEN},
-    {'layer_type': LayerType.DENSE, 'units': 64, 'activation': 'relu'},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'softmax'}]
+    {'layer_type': 'AveragePooling2D', 'pool_size': (2, 2)},
+    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    {'layer_type': 'AveragePooling2D', 'pool_size': (2, 2)},
+    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    {'layer_type': 'Flatten'},
+    {'layer_type': 'Dense', 'units': 64, 'activation': 'relu'},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': 'softmax'}]
 
 mnist_conv_strided = [
-    {'layer_type': LayerType.CONV_2D, 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
+    {'layer_type': 'Conv2D', 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
      'strides': 2, 'input_shape': input_shape_image},
-    {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu', 'strides': 2},
-    {'layer_type': LayerType.CONV_2D, 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu', 'strides': 2},
-    {'layer_type': LayerType.FLATTEN},
-    {'layer_type': LayerType.DENSE, 'units': 64, 'activation': 'relu'},
-    {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': 'softmax'}]
+    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu', 'strides': 2},
+    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu', 'strides': 2},
+    {'layer_type': 'Flatten'},
+    {'layer_type': 'Dense', 'units': 64, 'activation': 'relu'},
+    {'layer_type': 'Dense', 'units': output_size, 'activation': 'softmax'}]
 
 training_configuration = {
     'keras': {

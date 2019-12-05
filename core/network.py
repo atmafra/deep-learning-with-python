@@ -1,7 +1,8 @@
 import os
+import sys
 from enum import Enum
 
-from keras import models, layers, Model
+from keras import models, Model
 from keras.utils import Sequence
 
 import utils.parameter_utils as putl
@@ -19,17 +20,6 @@ class LayerPosition(Enum):
     INPUT = 1
     HIDDEN = 2
     OUTPUT = 3
-
-
-class LayerType(Enum):
-    INPUT = 1
-    DENSE = 2
-    DROPOUT = 3
-    CONV_2D = 4
-    MAX_POOLING_2D = 5
-    AVERAGE_POOLING_2D = 6
-    FLATTEN = 7
-    OUTPUT = 8
 
 
 class ValidationStrategy(Enum):
@@ -57,41 +47,11 @@ def create_layer(parameters: dict):
                                    key='layer_type',
                                    mandatory=True)
 
-    # Input
-    if layer_type == LayerType.INPUT:
-        pass
+    layer = getattr(sys.modules['keras.layers'], layer_type)
+    if layer is None:
+        raise RuntimeError('Invalid layer type: \'{}\''.format(layer_type))
 
-    # Dense
-    elif layer_type == LayerType.DENSE:
-        return layers.Dense(**parameters)
-
-    # Dropout
-    elif layer_type == LayerType.DROPOUT:
-        return layers.Dropout(**parameters)
-
-    # Convolutional 2D
-    elif layer_type == LayerType.CONV_2D:
-        return layers.Conv2D(**parameters)
-
-    # Max Pooling 2D
-    elif layer_type == LayerType.MAX_POOLING_2D:
-        return layers.MaxPooling2D(**parameters)
-
-    # Average Pooling 2D
-    elif layer_type == LayerType.AVERAGE_POOLING_2D:
-        return layers.AveragePooling2D(**parameters)
-
-    # Flatten
-    elif layer_type == LayerType.FLATTEN:
-        return layers.Flatten(**parameters)
-
-    # Output
-    elif layer_type == LayerType.OUTPUT:
-        pass
-
-    # Unknown
-    else:
-        raise NotImplementedError('Unknown layer type')
+    return layer(**parameters)
 
 
 def create_network(layer_configuration_list: list):
@@ -131,7 +91,6 @@ def train_network(network: Model,
     """
     validation = putl.get_parameter(training_configuration, 'validation')
     validation_strategy = putl.get_parameter(validation, 'strategy')
-    # working_training_set = training_set.copy()
     working_training_set = training_set
 
     validation_data = None

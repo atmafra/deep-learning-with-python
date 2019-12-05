@@ -81,10 +81,10 @@ def load_experiment(corpus: Corpus, encoding_schema):
     validation_set_size = 1000
 
     layers_configuration = [
-        {'layer_type': LayerType.DENSE, 'units': 64, 'activation': hidden_activation, 'input_shape': (input_size,)},
-        {'layer_type': LayerType.DENSE, 'units': 64, 'activation': hidden_activation},
-        {'layer_type': LayerType.DENSE, 'units': 64, 'activation': hidden_activation},
-        {'layer_type': LayerType.DENSE, 'units': output_size, 'activation': output_activation}]
+        {'layer_type': 'Dense', 'units': 64, 'activation': hidden_activation, 'input_shape': (input_size,)},
+        {'layer_type': 'Dense', 'units': 64, 'activation': hidden_activation},
+        {'layer_type': 'Dense', 'units': 64, 'activation': hidden_activation},
+        {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
     training_configuration = {
         'keras': {
