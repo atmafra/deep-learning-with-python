@@ -5,7 +5,7 @@ from keras.utils import to_categorical
 
 from core import sets
 from core.experiment import Experiment
-from core.network import LayerType, ValidationStrategy
+from core.network import ValidationStrategy
 from core.sets import Corpus
 
 

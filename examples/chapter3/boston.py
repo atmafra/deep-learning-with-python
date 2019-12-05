@@ -2,7 +2,7 @@ from keras import optimizers
 from keras.datasets import boston_housing as boston
 
 from core.experiment import Experiment
-from core.network import LayerType, ValidationStrategy
+from core.network import ValidationStrategy
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 from utils.history_utils import plot_mae_dict, plot_loss_dict

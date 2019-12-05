@@ -16,3 +16,4 @@ def get_image_generator(rescale_factor: float,
                                     class_mode=class_mode)
 
     return generator
+

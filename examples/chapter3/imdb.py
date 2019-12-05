@@ -58,7 +58,7 @@ def load_experiments(corpus: Corpus):
     metrics = ['accuracy']
 
     # training parameters
-    epochs = 20
+    epochs = 5
     batch_size = 512
     shuffle = True
     validation_set_size = 10000

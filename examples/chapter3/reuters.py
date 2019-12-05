@@ -4,7 +4,7 @@ from keras.datasets import reuters
 
 from core import sets
 from core.experiment import Experiment
-from core.network import LayerType, ValidationStrategy
+from core.network import ValidationStrategy
 from core.sets import Corpus
 from utils import dataset_utils as dsu
 
