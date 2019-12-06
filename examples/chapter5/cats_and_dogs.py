@@ -196,9 +196,12 @@ def check_generator(set_generator: SetGenerator):
 def run():
     dirs = prepare_directories()
     copy_files(dirs=dirs, check=True)
-    # corpus_generator = load_corpus_generator(dirs=dirs, use_augmented=False, check=True)
+    corpus_generator = load_corpus_generator(dirs=dirs, use_augmented=False, check=True)
     corpus_generator_augmented = load_corpus_generator(dirs=dirs, use_augmented=True, check=True)
-    experiment_plan = load_experiment_plan(corpus_generator=corpus_generator_augmented)
+
+    experiment_plan = load_experiment_plan(corpus_generator=corpus_generator,
+                                           corpus_generator_augmented=corpus_generator_augmented)
+
     experiment_plan.run(print_results=False,
                         plot_training_loss=True,
                         plot_training_accuracy=True,

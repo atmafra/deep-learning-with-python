@@ -43,7 +43,8 @@ def create_layer(parameters: dict):
         parameters (dict): hyperparameters dictionary
 
     """
-    layer_type = extract_parameter(parameters=parameters,
+    parameters_copy = parameters.copy()
+    layer_type = extract_parameter(parameters=parameters_copy,
                                    key='layer_type',
                                    mandatory=True)
 
@@ -51,7 +52,7 @@ def create_layer(parameters: dict):
     if layer is None:
         raise RuntimeError('Invalid layer type: \'{}\''.format(layer_type))
 
-    return layer(**parameters)
+    return layer(**parameters_copy)
 
 
 def create_network(layer_configuration_list: list):
@@ -253,6 +254,5 @@ def save_network(network: Model,
         file_name (str): saved model file name
 
     """
-    os.path.basename()
-    file_path = path + file_name
+    file_path = os.path.join(path, file_name)
     network.save(filepath=file_path)

@@ -243,11 +243,15 @@ class Experiment:
         if self.__test_mae is not None:
             print("Test MAE      = {}".format(self.__test_mae))
 
-    def run(self,
-            print_results: bool = True,
+    def run(self, print_results: bool = True,
             plot_history: bool = False,
             display_progress_bars: bool = True):
         """Runs the experiment
+
+        Args:
+            print_results (bool):
+            plot_history (bool):
+            display_progress_bars (bool):
         """
         if self.corpus_type == CorpusType.CORPUS_DATASET:
             self.prepare_sets()
@@ -265,6 +269,16 @@ class Experiment:
 
         if plot_history:
             self.plot_loss()
+
+    def save_network(self, path: str, name: str):
+        """Saves the neural network in its current status to the file path and name
+
+        Args:
+            path (str): file path
+            name (str): file name
+        """
+        network = self.neural_network
+        save_network(network=self.neural_network, path=path, file_name=name)
 
 
 class ExperimentPlan:

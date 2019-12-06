@@ -57,20 +57,29 @@ training_configuration = {
         'strategy': ValidationStrategy.CROSS_VALIDATION}}
 
 
-def load_experiment_plan(corpus_generator: CorpusGenerator) -> ExperimentPlan:
-    experiment_cats_and_dogs = Experiment(name='Cats and Dogs',
-                                          layers_configuration=cats_and_dogs,
-                                          training_configuration=training_configuration,
-                                          corpus_type=CorpusType.CORPUS_GENERATOR,
-                                          corpus_generator=corpus_generator)
+def load_experiment_plan(corpus_generator: CorpusGenerator,
+                         corpus_generator_augmented: CorpusGenerator) -> ExperimentPlan:
+    """Loads the Cats & Dogs experiment plan
+    """
+    regular = Experiment(name='Cats and Dogs',
+                         layers_configuration=cats_and_dogs,
+                         training_configuration=training_configuration,
+                         corpus_type=CorpusType.CORPUS_GENERATOR,
+                         corpus_generator=corpus_generator)
 
-    experiment_cats_and_dogs_dropout = Experiment(name='Cats and Dogs - Dropout (rate = 0.5)',
-                                                  layers_configuration=cats_and_dogs_dropout,
-                                                  training_configuration=training_configuration,
-                                                  corpus_type=CorpusType.CORPUS_GENERATOR,
-                                                  corpus_generator=corpus_generator)
+    dropout = Experiment(name='Cats and Dogs (dropout rate: 0.5)',
+                         layers_configuration=cats_and_dogs_dropout,
+                         training_configuration=training_configuration,
+                         corpus_type=CorpusType.CORPUS_GENERATOR,
+                         corpus_generator=corpus_generator)
 
-    experiment_list = [experiment_cats_and_dogs, experiment_cats_and_dogs_dropout]
+    dropout_augmented = Experiment(name='Cats and Dogs (dropout rate: 0.5, data augmentation)',
+                                   layers_configuration=cats_and_dogs_dropout,
+                                   training_configuration=training_configuration,
+                                   corpus_type=CorpusType.CORPUS_GENERATOR,
+                                   corpus_generator=corpus_generator)
+
+    experiment_list = [regular, dropout, dropout_augmented]
     experiment_plan = ExperimentPlan(name='Cats and Dogs', experiments=experiment_list)
 
     return experiment_plan
