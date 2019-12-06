@@ -3,7 +3,7 @@ import shutil
 
 import utils.parameter_utils as putl
 from core.sets import SetGenerator, CorpusGenerator
-from examples.chapter5.cats_and_dogs_configurations import load_experiment
+from examples.chapter5.cats_and_dogs_configurations import load_experiment_plan
 from utils.image_utils import get_image_generator
 
 root_dir = '/Users/alexandre.mafra/Documents/projetos/neural-network/deep-learning-with-python/'
@@ -126,7 +126,7 @@ def check_files(dirs: dict):
     print('Test dog images:     :', len(os.listdir(dirs['test_dogs'])))
 
 
-def load_corpus_generator(dirs: dict, check: bool = False) -> CorpusGenerator:
+def load_corpus_generator(dirs: dict, use_augmented: bool, check: bool = False) -> CorpusGenerator:
     """Loads the corpus from files in the directory structure
     """
     train_dir = putl.get_parameter(parameters=dirs, key='train')
@@ -142,7 +142,8 @@ def load_corpus_generator(dirs: dict, check: bool = False) -> CorpusGenerator:
                                              source_dir=train_dir,
                                              target_size=target_size,
                                              batch_size=batch_size,
-                                             class_mode=class_mode)
+                                             class_mode=class_mode,
+                                             use_augmented=use_augmented)
 
     validation_generator = get_image_generator(rescale_factor=rescale_factor,
                                                source_dir=validation_dir,
@@ -174,11 +175,31 @@ def check_generator(set_generator: SetGenerator):
         break
 
 
+# def test_data_augmentation(dirs: dict):
+#     train_cats_dir = putl.get_parameter(parameters=dirs, key='train_cats', mandatory=True)
+#     fnames = [os.path.join(train_cats_dir, fname) for fname in os.listdir(train_cats_dir)]
+#     img_path = fnames[3]
+#     img = image.load_img(img_path, target_size=(150, 150))
+#     x = image.img_to_array(img)
+#     x = x.reshape((1,) + x.shape)
+#     datagen = get_augmented_image_generator()
+#     i = 0
+#     for batch in datagen.flow(x, batch_size=1):
+#         plt.figure(i)
+#         imgplot = plt.imshow(image.array_to_img(batch[0]))
+#         i += 1
+#         if i % 10 == 0:
+#             break
+#         plt.show()
+
+
 def run():
     dirs = prepare_directories()
     copy_files(dirs=dirs, check=True)
-    corpus_generator = load_corpus_generator(dirs=dirs, check=True)
-    experiment = load_experiment(corpus_generator=corpus_generator)
-    experiment.run(print_results=True,
-                   plot_history=True,
-                   display_progress_bars=True)
+    # corpus_generator = load_corpus_generator(dirs=dirs, use_augmented=False, check=True)
+    corpus_generator_augmented = load_corpus_generator(dirs=dirs, use_augmented=True, check=True)
+    experiment_plan = load_experiment_plan(corpus_generator=corpus_generator_augmented)
+    experiment_plan.run(print_results=False,
+                        plot_training_loss=True,
+                        plot_training_accuracy=True,
+                        display_progress_bars=True)
