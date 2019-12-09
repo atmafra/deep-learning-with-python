@@ -252,6 +252,7 @@ class Experiment:
             print_results (bool):
             plot_history (bool):
             display_progress_bars (bool):
+
         """
         if self.corpus_type == CorpusType.CORPUS_DATASET:
             self.prepare_sets()
@@ -276,6 +277,7 @@ class Experiment:
         Args:
             path (str): file path
             name (str): file name
+
         """
         network = self.neural_network
         save_network(network=self.neural_network, path=path, file_name=name)

@@ -6,7 +6,6 @@ def get_image_generator(rescale_factor: float,
                         target_size: tuple,
                         batch_size: int,
                         class_mode: str,
-                        rescale: int = 255,
                         use_augmented: bool = False,
                         rotation_range: int = 40,
                         width_shift_range: float = 0.2,
@@ -31,7 +30,7 @@ def get_image_generator(rescale_factor: float,
     datagen = None
 
     if not use_augmented:
-        datagen = ImageDataGenerator(rescale=1. / rescale_factor)
+        datagen = ImageDataGenerator(rescale=rescale_factor)
     else:
         datagen = ImageDataGenerator(rotation_range=rotation_range,
                                      width_shift_range=width_shift_range,
@@ -49,7 +48,7 @@ def get_image_generator(rescale_factor: float,
                                      channel_shift_range=0.,
                                      cval=0.,
                                      vertical_flip=False,
-                                     rescale=1. / rescale_factor,
+                                     rescale=rescale_factor,
                                      preprocessing_function=None,
                                      data_format='channels_last',
                                      validation_split=0.0,
@@ -68,7 +67,7 @@ def get_image_generator(rescale_factor: float,
         return None
 
 
-def get_augmented_image_generator(rescale_factor: int = 255,
+def get_augmented_image_generator(rescale_factor: float = 1. / 255,
                                   rotation_range: int = 40,
                                   width_shift_range: float = 0.2,
                                   height_shift_range: float = 0.2,
@@ -78,7 +77,7 @@ def get_augmented_image_generator(rescale_factor: int = 255,
                                   fill_mode: str = 'nearest'):
     """
     Args:
-        rescale_factor (int)
+        rescale_factor (float): rescale factor for pixel values
         rotation_range (int): degree range for random rotations
         width_shift_range (float): part of width for random horizontal shift
         height_shift_range (float): part of width for random vertical shift
@@ -104,7 +103,7 @@ def get_augmented_image_generator(rescale_factor: int = 255,
                                  channel_shift_range=0.,
                                  cval=0.,
                                  vertical_flip=False,
-                                 rescale=1. / rescale_factor,
+                                 rescale=rescale_factor,
                                  preprocessing_function=None,
                                  data_format='channels_last',
                                  validation_split=0.0,

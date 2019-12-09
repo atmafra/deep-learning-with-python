@@ -77,7 +77,7 @@ def load_experiment_plan(corpus_generator: CorpusGenerator,
                                    layers_configuration=cats_and_dogs_dropout,
                                    training_configuration=training_configuration,
                                    corpus_type=CorpusType.CORPUS_GENERATOR,
-                                   corpus_generator=corpus_generator)
+                                   corpus_generator=corpus_generator_augmented)
 
     experiment_list = [regular, dropout, dropout_augmented]
     experiment_plan = ExperimentPlan(name='Cats and Dogs', experiments=experiment_list)
