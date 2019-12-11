@@ -10,6 +10,7 @@ keras = "*"
 tensorflow = "*"
 matplotlib = "*"
 pillow = "*"
+python-slugify = "*"
 
 [requires]
 python_version = "3.7"

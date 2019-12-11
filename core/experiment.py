@@ -3,6 +3,7 @@ from keras.callbacks import History
 import utils.history_utils as hutl
 from core.network import *
 from core.sets import Corpus, CorpusGenerator
+from utils.file_utils import str_to_filename
 
 
 class CorpusType(Enum):
@@ -53,7 +54,7 @@ class Experiment:
         self.__validation_set = None
         self.__test_set = None
         self.__neural_network = None
-        self.__history: History = None
+        self.__history = None
         self.__test_loss = None
         self.__test_accuracy = None
         self.__test_mae = None
@@ -77,6 +78,11 @@ class Experiment:
     @property
     def neural_network(self):
         return self.__neural_network
+
+    @neural_network.setter
+    def neural_network(self, neural_network: Model):
+        self.__neural_network = neural_network
+        neural_network.name = self.name
 
     @property
     def training_configuration(self):
@@ -138,7 +144,7 @@ class Experiment:
     def create_network(self):
         """Creates the neural network according to the layers configuration list
         """
-        self.__neural_network = create_network(layer_configuration_list=self.layers_configuration)
+        self.neural_network = create_network(layer_configuration_list=self.layers_configuration)
 
     def train(self, display_progress_bars: bool = True):
         """Trains the neural network
@@ -147,18 +153,18 @@ class Experiment:
         strategy = putl.get_parameter(validation, 'strategy')
 
         if strategy == ValidationStrategy.NO_VALIDATION:
-            self.__history = train_network(network=self.neural_network,
-                                           training_configuration=self.training_configuration,
-                                           training_set=self.training_set,
-                                           validation_set=None,
-                                           verbose=display_progress_bars)
+            self.history = train_network(network=self.neural_network,
+                                         training_configuration=self.training_configuration,
+                                         training_set=self.training_set,
+                                         validation_set=None,
+                                         verbose=display_progress_bars)
 
         elif strategy == ValidationStrategy.CROSS_VALIDATION:
-            self.__history = train_network(network=self.neural_network,
-                                           training_configuration=self.training_configuration,
-                                           training_set=self.training_set,
-                                           validation_set=self.validation_set,
-                                           verbose=display_progress_bars)
+            self.history = train_network(network=self.neural_network,
+                                         training_configuration=self.training_configuration,
+                                         training_set=self.training_set,
+                                         validation_set=self.validation_set,
+                                         verbose=display_progress_bars)
 
         elif strategy == ValidationStrategy.K_FOLD_CROSS_VALIDATION:
             k = putl.get_parameter(validation, 'k')
@@ -187,18 +193,18 @@ class Experiment:
         strategy = putl.get_parameter(validation, 'strategy')
 
         if strategy == ValidationStrategy.NO_VALIDATION:
-            self.__history = train_network_generator(network=self.neural_network,
-                                                     training_generator=training_set_generator.generator,
-                                                     training_configuration=self.training_configuration,
-                                                     verbose=display_progress_bars)
+            self.history = train_network_generator(network=self.neural_network,
+                                                   training_generator=training_set_generator.generator,
+                                                   training_configuration=self.training_configuration,
+                                                   verbose=display_progress_bars)
 
         elif strategy == ValidationStrategy.CROSS_VALIDATION:
             validation_generator = self.corpus_generator.validation_set_generator
-            self.__history = train_network_generator(network=self.neural_network,
-                                                     training_generator=training_set_generator.generator,
-                                                     training_configuration=self.training_configuration,
-                                                     validation_generator=validation_generator.generator,
-                                                     verbose=display_progress_bars)
+            self.history = train_network_generator(network=self.neural_network,
+                                                   training_generator=training_set_generator.generator,
+                                                   training_configuration=self.training_configuration,
+                                                   validation_generator=validation_generator.generator,
+                                                   verbose=display_progress_bars)
 
         # elif strategy == ValidationStrategy.K_FOLD_CROSS_VALIDATION:
         #     k = putl.get_parameter(validation, 'k')
@@ -271,16 +277,28 @@ class Experiment:
         if plot_history:
             self.plot_loss()
 
-    def save_network(self, path: str, name: str):
+    def save_model(self, path: str, name: str, verbose: bool = True):
         """Saves the neural network in its current status to the file path and name
 
         Args:
             path (str): file path
             name (str): file name
+            verbose (bool): show save messages on terminal
 
         """
-        network = self.neural_network
-        save_network(network=self.neural_network, path=path, file_name=name)
+        # save_network_hdf5(network=self.neural_network, path=path, file_name=name)
+        save_network_json(network=self.neural_network, path=path, filename=name)
+
+    def load_model(self, path: str, name: str, verbose: bool = True):
+        """Loads the neural network into the experiment
+
+        Args:
+            path (str): file path
+            name (str): file name
+            verbose (bool): show load messages on terminal
+
+        """
+        self.neural_network = load_network_hdf5(path=path, file_name=name, verbose=True)
 
 
 class ExperimentPlan:
@@ -299,6 +317,10 @@ class ExperimentPlan:
     @property
     def name(self):
         return self.__name
+
+    @property
+    def experiment_list(self):
+        return self.__experiment_list
 
     def run(self,
             print_results: bool = False,
@@ -354,3 +376,24 @@ class ExperimentPlan:
                                 title=title,
                                 plot_training=training,
                                 plot_validation=validation)
+
+    def save_models(self, path: str,
+                    filename_list: list = None):
+        """
+        """
+        has_file_names = filename_list is not None
+        if has_file_names and len(filename_list) != len(self.experiment_list):
+            raise RuntimeError('File names list has a different size of experiment list')
+
+        filename = ''
+        if has_file_names:
+            filename = next(filename_list)
+
+        for experiment in self.experiment_list:
+            if not has_file_names:
+                filename = str_to_filename(experiment.name)
+
+            experiment.save_model(path=path, name=filename)
+
+            if has_file_names:
+                filename = next(filename_list)

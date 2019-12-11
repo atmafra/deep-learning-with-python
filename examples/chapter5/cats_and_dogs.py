@@ -206,3 +206,5 @@ def run():
                         plot_training_loss=True,
                         plot_training_accuracy=True,
                         display_progress_bars=True)
+
+    experiment_plan.save_models('models/json')

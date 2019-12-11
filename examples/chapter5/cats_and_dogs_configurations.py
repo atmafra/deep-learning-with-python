@@ -49,7 +49,7 @@ training_configuration = {
             'loss': 'binary_crossentropy',
             'metrics': ['accuracy']},
         'fit_generator': {
-            'epochs': 30,
+            'epochs': 1,
             'steps_per_epoch': 100,
             'validation_steps': 50,
             'shuffle': True}},

@@ -7,9 +7,9 @@ def get_image_generator(rescale_factor: float,
                         batch_size: int,
                         class_mode: str,
                         use_augmented: bool = False,
-                        rotation_range: int = 40,
                         width_shift_range: float = 0.2,
                         height_shift_range: float = 0.2,
+                        rotation_range: int = 40,
                         shear_range: float = 0.2,
                         zoom_range: float = 0.2,
                         horizontal_flip: bool = True,
@@ -18,14 +18,15 @@ def get_image_generator(rescale_factor: float,
     Args:
         rescale_factor (float): multiply element values by this scale factor
         source_dir (str): image source directory path
-        target_size (tuple): image shape
-        rotation_range(int): degree range for random rotations
+        target_size (tuple): target image shape
         width_shift_range(float): part of width for random horizontal shift
         height_shift_range(float): part of width for random vertical shift
+        rotation_range(int): degree range for random rotations
         shear_range(float): angle in degrees for random shear
         zoom_range(float): random zoom range
         horizontal_flip(boolean): allow random horizontal flip
         fill_mode(str): how points outside the boundaries are filled("constant", "nearest", "reflect" or "wrap")
+
     """
     datagen = None
 

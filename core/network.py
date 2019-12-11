@@ -3,10 +3,12 @@ import sys
 from enum import Enum
 
 from keras import models, Model
+from keras.engine.saving import load_model
 from keras.utils import Sequence
 
 import utils.parameter_utils as putl
 from core.sets import Set, SetGenerator
+from utils.file_utils import str_to_filename, root_name
 from utils.parameter_utils import extract_parameter
 
 
@@ -243,16 +245,67 @@ def test_network_generator(network: Model,
     return metrics
 
 
-def save_network(network: Model,
-                 path: str,
-                 file_name: str):
-    """Saves the model in the current state
+def save_network_json(network: Model,
+                      path: str,
+                      filename: str,
+                      verbose: bool = True):
+    """Saves the model in the current state to a JSON file
+
+    Args:
+        network (Model): model to be saved
+        path (str): system path of the save directory
+        filename (str): saved model file name
+        verbose (bool): show save message in terminal
+
+    """
+    if filename == '':
+        filename = str_to_filename(network.name)
+    rootname = root_name(filename)
+    model_name = os.path.join(path, rootname + '.json')
+    weights_name = os.path.join(path, rootname + '.h5')
+
+    model_json = network.to_json()
+    with open(model_name, 'w') as json_file:
+        json_file.write(model_json)
+        if verbose:
+            print('Saving network architecture \"{}\" to file \"{}\"'.format(network.name, model_name))
+    network.save_weights(filepath=weights_name, overwrite=True)
+    if verbose:
+        print('Saving network weights to file \"{}\"'.format(weights_name))
+
+
+def save_network_hdf5(network: Model,
+                      path: str,
+                      file_name: str,
+                      verbose: bool = True):
+    """Saves the model in the current state to a H5PY file
 
     Args:
         network (Model): model to be saved
         path (str): system path of the save directory
         file_name (str): saved model file name
+        verbose (bool): show save message in terminal
 
     """
     file_path = os.path.join(path, file_name)
     network.save(filepath=file_path)
+    if verbose:
+        print('Saved neural network model \"{}\" to file \"{}\"'.format(network.name, file_path))
+
+
+def load_network_hdf5(path: str,
+                      file_name: str,
+                      verbose: bool = True):
+    """Loads a model in the state it was saved
+
+    Args:
+        path (str): system path of the load directory
+        file_name (str): file name of the model to be loaded
+        verbose (bool): show load message in terminal
+
+    """
+    file_path = os.path.join(path, file_name)
+    loaded_network = load_model(filepath=file_path, compile=False)
+    if verbose:
+        print('Loaded neural network model from file \"{}\"'.format(file_path))
+    return loaded_network
