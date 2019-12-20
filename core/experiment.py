@@ -1,22 +1,18 @@
-from keras.callbacks import History
-
 import utils.history_utils as hutl
-from core.network import *
-from core.sets import Corpus, CorpusGenerator
+from core.corpus import CorpusType, Corpus, CorpusGenerator
+from core.network import ValidationStrategy
+from core.neural_network import NeuralNetwork
+from core.training_configuration import TrainingConfiguration
 from utils.file_utils import str_to_filename
-
-
-class CorpusType(Enum):
-    CORPUS_DATASET = 1
-    CORPUS_GENERATOR = 2
+from utils.parameter_utils import get_parameter
 
 
 class Experiment:
 
     def __init__(self,
                  name: str,
-                 layers_configuration: list,
-                 training_configuration: dict,
+                 neural_network: NeuralNetwork,
+                 training_configuration: TrainingConfiguration,
                  corpus_type: CorpusType = CorpusType.CORPUS_DATASET,
                  corpus: Corpus = None,
                  corpus_generator: CorpusGenerator = None):
@@ -24,16 +20,22 @@ class Experiment:
            combination of data and training hyperparameters
 
         Args:
-            name (str): name of the
-            layers_configuration (list): list of layer configurations that represent the network
-            training_configuration (dict): training configuration parameters
+            name (str): name of the experiment
+            neural_network (NeuralNetwork): neural network architecture associated to this particular experiment
+            training_configuration (TrainingConfiguration): training hyperparameters
             corpus_type (CorpusType): defines if data comes from in-memory sets
                or from directory iterators (generators)
             corpus (Corpus): the training and test sets to be used
             corpus_generator (CorpusGenerator): corpus generator
 
         """
+        self.__neural_network = neural_network
+        self.__training_configuration = training_configuration
         self.__name: str = name
+        self.__training_history = None
+        self.__test_results = None
+
+        # Corpus definition
         self.__corpus_type: CorpusType = corpus_type
         self.__corpus = None
         self.__corpus_generator = None
@@ -47,21 +49,20 @@ class Experiment:
                 raise RuntimeError('No corpus generator passed to create experiment')
             else:
                 self.__corpus_generator = corpus_generator
-        self.__layers_configuration: list = layers_configuration
-        self.__training_configuration: dict = training_configuration
+
+        # Sets
         self.__training_set = None
         self.__validation_strategy = ValidationStrategy.NO_VALIDATION
         self.__validation_set = None
         self.__test_set = None
-        self.__neural_network = None
-        self.__history = None
-        self.__test_loss = None
-        self.__test_accuracy = None
-        self.__test_mae = None
 
     @property
     def name(self):
         return self.__name
+
+    @property
+    def corpus_type(self):
+        return self.__corpus_type
 
     @property
     def corpus(self):
@@ -72,45 +73,32 @@ class Experiment:
         return self.__corpus_generator
 
     @property
-    def corpus_type(self):
-        return self.__corpus_type
-
-    @property
     def neural_network(self):
         return self.__neural_network
-
-    @neural_network.setter
-    def neural_network(self, neural_network: Model):
-        self.__neural_network = neural_network
-        neural_network.name = self.name
 
     @property
     def training_configuration(self):
         return self.__training_configuration
 
     @property
-    def layers_configuration(self):
-        return self.__layers_configuration
+    def training_history(self):
+        return self.__training_history
 
     @property
-    def history(self):
-        return self.__history
-
-    @history.setter
-    def history(self, history: History):
-        self.__history = history
+    def test_results(self):
+        return self.__test_results
 
     @property
     def test_loss(self):
-        return self.__test_loss
+        return get_parameter(parameters=self.test_results, key='loss', mandatory=False)
 
     @property
     def test_accuracy(self):
-        return self.__test_accuracy
+        return get_parameter(parameters=self.test_results, key='accuracy', mandatory=False)
 
     @property
     def test_mae(self):
-        return self.__test_mae
+        return get_parameter(parameters=self.test_results, key='mae', mandatory=False)
 
     @property
     def training_set(self):
@@ -127,127 +115,55 @@ class Experiment:
     def prepare_sets(self):
         """Prepare the training and the validation sets for training
         """
-        validation = putl.get_parameter(self.training_configuration, 'validation')
-        validation_strategy = putl.get_parameter(validation, 'strategy')
+        validation_strategy = self.training_configuration.validation_strategy
 
-        if validation_strategy in \
-                (ValidationStrategy.NO_VALIDATION, ValidationStrategy.K_FOLD_CROSS_VALIDATION):
+        if validation_strategy in (ValidationStrategy.NO_VALIDATION, ValidationStrategy.K_FOLD_CROSS_VALIDATION):
             self.__training_set = self.corpus.training_set
             self.__validation_set = None
 
         elif validation_strategy == ValidationStrategy.CROSS_VALIDATION:
-            validation_set_size = putl.get_parameter(validation, 'set_size')
+            validation_configuration = self.training_configuration.validation_configuration
+            validation_set_size = get_parameter(validation_configuration, 'set_size')
             self.__validation_set, self.__training_set = self.corpus.get_validation_set(validation_set_size)
 
         self.__test_set = self.corpus.test_set
 
-    def create_network(self):
-        """Creates the neural network according to the layers configuration list
-        """
-        self.neural_network = create_network(layer_configuration_list=self.layers_configuration)
-
     def train(self, display_progress_bars: bool = True):
-        """Trains the neural network
+        """Train the neural network model
+
+        Args:
+            display_progress_bars (bool): display progress bars in terminal during evaluation
+
         """
-        validation = putl.get_parameter(self.training_configuration, 'validation')
-        strategy = putl.get_parameter(validation, 'strategy')
+        if self.corpus_type == CorpusType.CORPUS_DATASET:
+            self.__training_history = \
+                self.neural_network.train(training_set=self.training_set,
+                                          training_configuration=self.training_configuration,
+                                          validation_set=self.validation_set,
+                                          display_progress_bars=display_progress_bars)
 
-        if strategy == ValidationStrategy.NO_VALIDATION:
-            self.history = train_network(network=self.neural_network,
-                                         training_configuration=self.training_configuration,
-                                         training_set=self.training_set,
-                                         validation_set=None,
-                                         verbose=display_progress_bars)
-
-        elif strategy == ValidationStrategy.CROSS_VALIDATION:
-            self.history = train_network(network=self.neural_network,
-                                         training_configuration=self.training_configuration,
-                                         training_set=self.training_set,
-                                         validation_set=self.validation_set,
-                                         verbose=display_progress_bars)
-
-        elif strategy == ValidationStrategy.K_FOLD_CROSS_VALIDATION:
-            k = putl.get_parameter(validation, 'k')
-            shuffle = putl.get_parameter(validation, 'shuffle')
-            all_histories = train_network_k_fold(network=self.neural_network,
-                                                 training_configuration=self.training_configuration,
-                                                 training_set=self.training_set,
-                                                 k=k, shuffle=shuffle,
-                                                 verbose=display_progress_bars)
-            self.__history = hutl.merge_history_metrics(all_histories)
-
-    def train_generator(self, display_progress_bars: bool = True):
-        """Trains the neural network using a training set generator
-        """
-        if self.corpus_type != CorpusType.CORPUS_GENERATOR:
-            raise RuntimeError('Corpus type is not from Generator type')
-
-        if self.corpus_generator is None:
-            raise RuntimeError('Training Generator not defined')
-
-        training_set_generator = self.corpus_generator.training_set_generator
-        if training_set_generator is None:
-            raise RuntimeError('Training Set Generator not defined')
-
-        validation = putl.get_parameter(self.training_configuration, 'validation')
-        strategy = putl.get_parameter(validation, 'strategy')
-
-        if strategy == ValidationStrategy.NO_VALIDATION:
-            self.history = train_network_generator(network=self.neural_network,
-                                                   training_generator=training_set_generator.generator,
-                                                   training_configuration=self.training_configuration,
-                                                   verbose=display_progress_bars)
-
-        elif strategy == ValidationStrategy.CROSS_VALIDATION:
-            validation_generator = self.corpus_generator.validation_set_generator
-            self.history = train_network_generator(network=self.neural_network,
-                                                   training_generator=training_set_generator.generator,
-                                                   training_configuration=self.training_configuration,
-                                                   validation_generator=validation_generator.generator,
-                                                   verbose=display_progress_bars)
-
-        # elif strategy == ValidationStrategy.K_FOLD_CROSS_VALIDATION:
-        #     k = putl.get_parameter(validation, 'k')
-        #     shuffle = putl.get_parameter(validation, 'shuffle')
-        #     all_histories = train_network_k_fold(network=self.__neural_network,
-        #                                          training_set=self.__training_set,
-        #                                          training_configuration=self.__training_configuration,
-        #                                          k=k, shuffle=shuffle,
-        #                                          verbose=display_progress_bars)
-        #     self.__history = hutl.merge_history_metrics(all_histories)
+        else:
+            self.__training_history = \
+                self.neural_network.train_generator(corpus_generator=self.corpus_generator,
+                                                    training_configuration=self.training_configuration,
+                                                    display_progress_bars=display_progress_bars)
 
     def evaluate(self, display_progress_bars: bool = True):
         """Evaluate the neural network
+
+        Args:
+            display_progress_bars (bool): display progress bars in terminal during evaluation
+
         """
         if self.corpus_type == CorpusType.CORPUS_DATASET:
-            test_results = test_network(network=self.neural_network,
-                                        test_set=self.test_set,
-                                        verbose=display_progress_bars)
+            self.__test_results = self.neural_network.evaluate(
+                test_set=self.corpus.test_set,
+                display_progress_bars=display_progress_bars)
 
         elif self.corpus_type == CorpusType.CORPUS_GENERATOR:
-            test_results = test_network_generator(network=self.neural_network,
-                                                  test_set_generator=self.corpus_generator.test_set_generator,
-                                                  verbose=display_progress_bars)
-
-        self.__test_loss = putl.get_parameter(parameters=test_results, key='loss', mandatory=True)
-        self.__test_accuracy = putl.get_parameter(parameters=test_results, key='accuracy', mandatory=False)
-        self.__test_mae = putl.get_parameter(parameters=test_results, key='mae', mandatory=False)
-
-    def plot_loss(self):
-        hutl.plot_loss(history=self.history, title='Training and Validation Loss')
-
-    def plot_accuracy(self):
-        hutl.plot_accuracy(history=self.history, title='Training and Validation Accuracy')
-
-    def print_test_results(self):
-        """Print the result of the training session
-        """
-        print("\n{}".format(self.name))
-        print("Test loss     = {:.6}".format(self.test_loss))
-        if self.__test_accuracy is not None:
-            print("Test accuracy = {:.2%}".format(self.__test_accuracy))
-        if self.__test_mae is not None:
-            print("Test MAE      = {}".format(self.__test_mae))
+            self.__test_results = self.neural_network.evaluate_generator(
+                test_set_generator=self.corpus_generator.test_set_generator,
+                display_progress_bars=display_progress_bars)
 
     def run(self, print_results: bool = True,
             plot_history: bool = False,
@@ -262,14 +178,9 @@ class Experiment:
         """
         if self.corpus_type == CorpusType.CORPUS_DATASET:
             self.prepare_sets()
-        self.create_network()
 
-        if self.corpus_type == CorpusType.CORPUS_DATASET:
-            self.train(display_progress_bars=display_progress_bars)
-        else:
-            self.train_generator(display_progress_bars=display_progress_bars)
-
-        self.evaluate()
+        self.train(display_progress_bars=display_progress_bars)
+        self.evaluate(display_progress_bars=display_progress_bars)
 
         if print_results:
             self.print_test_results()
@@ -277,28 +188,56 @@ class Experiment:
         if plot_history:
             self.plot_loss()
 
-    def save_model(self, path: str, name: str, verbose: bool = True):
+    def save_architecture(self, path: str, filename: str = '', verbose: bool = True):
         """Saves the neural network in its current status to the file path and name
 
         Args:
-            path (str): file path
-            name (str): file name
+            path (str): system path of the save directory
+            filename (str): model file name
             verbose (bool): show save messages on terminal
 
         """
         # save_network_hdf5(network=self.neural_network, path=path, file_name=name)
-        save_network_json(network=self.neural_network, path=path, filename=name)
+        self.neural_network.save_archtecture(path=path, filename=filename, verbose=verbose)
 
-    def load_model(self, path: str, name: str, verbose: bool = True):
-        """Loads the neural network into the experiment
+    def save_weights(self, path: str, filename: str = '', verbose: bool = True):
+        """Saves the model status (weights) to a binary H5 file
 
         Args:
-            path (str): file path
-            name (str): file name
-            verbose (bool): show load messages on terminal
+            path (str): system path of the save directory
+            filename (str): weights file name
+            verbose (bool): show save message on terminal
 
         """
-        self.neural_network = load_network_hdf5(path=path, file_name=name, verbose=True)
+        self.neural_network.save_weights(path=path, filename=filename, verbose=verbose)
+
+    def save_model(self, path: str, root_filename: str = '', verbose: bool = True):
+        """Saves the neural network architecture and weights
+
+        Args:
+            path (str): system path of the save directory
+            root_filename (str): model file name
+            verbose (bool): show save messages on terminal
+
+        """
+        # save_network_hdf5(network=self.neural_network, path=path, file_name=name)
+        self.neural_network.save_model(path=path, root_filename=root_filename, verbose=verbose)
+
+    def plot_loss(self):
+        hutl.plot_loss(history=self.training_history, title='Training and Validation Loss')
+
+    def plot_accuracy(self):
+        hutl.plot_accuracy(history=self.training_history, title='Training and Validation Accuracy')
+
+    def print_test_results(self):
+        """Print the result of the training session
+        """
+        print("\n{}".format(self.name))
+        print("Test loss     = {:.6}".format(self.test_loss))
+        if self.test_accuracy is not None:
+            print("Test accuracy = {:.2%}".format(self.test_accuracy))
+        if self.test_mae is not None:
+            print("Test MAE      = {}".format(self.test_mae))
 
 
 class ExperimentPlan:
@@ -348,9 +287,10 @@ class ExperimentPlan:
         history_list = []
         labels_list = []
 
-        for trial in self.__experiment_list:
-            history_list.append(trial.history)
-            labels_list.append(trial.name)
+        for experiment in self.experiment_list:
+            if experiment.training_history is not None:
+                history_list.append(experiment.training_history)
+                labels_list.append(experiment.name)
 
         hutl.plot_loss_list(history_metrics_list=history_list,
                             labels_list=labels_list,
@@ -368,7 +308,7 @@ class ExperimentPlan:
         labels_list = []
 
         for trial in self.__experiment_list:
-            history_list.append(trial.history)
+            history_list.append(trial.training_history)
             labels_list.append(trial.name)
 
         hutl.plot_accuracy_list(history_metrics_list=history_list,
@@ -378,22 +318,43 @@ class ExperimentPlan:
                                 plot_validation=validation)
 
     def save_models(self, path: str,
-                    filename_list: list = None):
+                    filename_list: list = None,
+                    save_architecture: bool = True,
+                    save_weights: bool = True):
+        """Saves all models architectures to files
+
+        Args:
+            path (str): system path of the save directory
+            filename_list (str): list of file names
+            save_architecture (bool): save architecture of each model
+            save_weights (bool): save weights of each model
+
         """
-        """
+        if not save_architecture and not save_weights:
+            return
+
         has_file_names = filename_list is not None
         if has_file_names and len(filename_list) != len(self.experiment_list):
             raise RuntimeError('File names list has a different size of experiment list')
 
-        filename = ''
+        architecture_filename = ''
+        weights_filename = ''
+
         if has_file_names:
-            filename = next(filename_list)
+            root_filename = next(filename_list)
+            architecture_filename = root_filename + '.json'
+            weights_filename = root_filename + '.h5'
 
         for experiment in self.experiment_list:
             if not has_file_names:
-                filename = str_to_filename(experiment.name)
+                architecture_filename = str_to_filename(experiment.name) + '.json'
+                weights_filename = str_to_filename(experiment.name) + '.h5'
 
-            experiment.save_model(path=path, name=filename)
+            if save_architecture:
+                experiment.save_architecture(path=path, filename=architecture_filename)
+
+            if save_weights:
+                experiment.save_weights(path=path, filename=weights_filename)
 
             if has_file_names:
                 filename = next(filename_list)

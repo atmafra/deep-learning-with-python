@@ -2,9 +2,11 @@ import numpy as np
 from keras import optimizers
 from keras.datasets import imdb
 
+from core.corpus import Corpus, CorpusType
 from core.experiment import Experiment, ExperimentPlan
 from core.network import ValidationStrategy
-from core.sets import Corpus
+from core.neural_network import NeuralNetwork
+from core.training_configuration import TrainingConfiguration
 from utils import dataset_utils as dsu
 
 num_words = 10000
@@ -74,7 +76,7 @@ def load_experiments(corpus: Corpus):
         {'layer_type': 'Dense', 'units': 16, 'activation': hidden_activation},
         {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
-    training_configuration = {
+    training_parameters = {
         'keras': {
             'compile': {
                 'optimizer': optimizer,
@@ -88,15 +90,25 @@ def load_experiments(corpus: Corpus):
             'strategy': ValidationStrategy.CROSS_VALIDATION,
             'set_size': validation_set_size}}
 
-    experiment1 = Experiment(name='2 Hidden Layers, 16 units each',
-                             corpus=corpus,
-                             layers_configuration=imdb_1,
-                             training_configuration=training_configuration)
+    training_configuration = TrainingConfiguration(configuration=training_parameters)
 
-    experiment2 = Experiment(name='3 Hidden Layers, 16 units each',
-                             corpus=corpus,
-                             layers_configuration=imdb_2,
-                             training_configuration=training_configuration)
+    network1 = NeuralNetwork.from_configurations(name='IMDB - 2 Hidden Layers, 16 units',
+                                                 layers_configuration=imdb_1)
+
+    experiment1 = Experiment(name=network1.name,
+                             neural_network=network1,
+                             training_configuration=training_configuration,
+                             corpus_type=CorpusType.CORPUS_DATASET,
+                             corpus=corpus)
+
+    network2 = NeuralNetwork.from_configurations(name='IMDB - 3 Hidden Layers, 16 units',
+                                                 layers_configuration=imdb_2)
+
+    experiment2 = Experiment(name=network2.name,
+                             neural_network=network2,
+                             training_configuration=training_configuration,
+                             corpus_type=CorpusType.CORPUS_DATASET,
+                             corpus=corpus)
 
     plan = ExperimentPlan(name='Effect of the number of hidden layers',
                           experiments=[experiment1, experiment2])
@@ -112,6 +124,7 @@ def run():
                         plot_training_accuracy=False,
                         display_progress_bars=True)
 
+    experiment_plan.save_models('models/imdb')
     experiment_plan.plot_loss("Training Loss", training=True, validation=False)
     experiment_plan.plot_loss("Validation Loss", training=False, validation=True)
     experiment_plan.plot_accuracy("Training Accuracy", training=True, validation=False)

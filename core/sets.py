@@ -20,30 +20,84 @@ class Set:
         """
         assert input_data is not None, 'Cannot create Set with no input data'
 
-        self.__input_data = input_data
+        self.input_data = input_data
 
-        if len(output_data) != len(self.__input_data):
+        if len(output_data) != len(self.input_data):
             raise ValueError('Input data and Output data must have the same length')
 
+        self.output_data = output_data
+
+    @property
+    def input_data(self):
+        return self.__input_data
+
+    @input_data.setter
+    def input_data(self, input_data):
+        self.__input_data = input_data
+
+    @property
+    def output_data(self):
+        return self.__output_data
+
+    @output_data.setter
+    def output_data(self, output_data):
         self.__output_data = output_data
 
+    @property
+    def length(self):
+        return len(self.input_data)
+
+    @property
+    def input_size(self):
+        """Returns the size of the input elements
+        """
+        return self.input_data.shape[1]
+
+    @property
+    def output_size(self):
+        """Returns the size of the output elements
+        """
+        shape = self.output_data.shape
+        if shape is None:
+            return 0
+        if len(shape) == 1:
+            return 1
+        return shape[1]
+
+    @property
+    def count_unique_values(self):
+        return dsu.count_unique_values(self.output_data)
+
+    @property
+    def min_output(self):
+        return np.min(self.output_data)
+
+    @property
+    def max_output(self):
+        return np.max(self.output_data)
+
+    @property
+    def average_output(self):
+        return np.average(self.output_data)
+
     def copy(self):
-        """Duplicates the set
+        """Generates a copy of the set, by duplicating the input and output data
         """
         input_copy = np.copy(self.input_data)
         output_copy = np.copy(self.output_data)
         return Set(input_copy, output_copy)
 
     def shuffle(self):
-        """Shuffles the element order
+        """Shuffles the order of the elements
         """
         p = np.random.permutation(self.length)
-        self.__input_data = self.input_data[p]
-        self.__output_data = self.output_data[p]
+        self.input_data = self.input_data[p]
+        self.output_data = self.output_data[p]
 
     def split(self, size: int, start: int = 0):
-        """Splits the two arrays into a two subsets, the first of the given size
-           and starting from the given start element
+        """Splits the two arrays into two subsets:
+           1. the first of the given size and starting from the given start element
+           2. the remain of the original set
 
         Args:
             size (int): first subset size
@@ -94,160 +148,6 @@ class Set:
         """
         return self.input_data, self.output_data
 
-    @property
-    def length(self):
-        return len(self.input_data)
-
-    @property
-    def input_data(self):
-        return self.__input_data
-
-    @property
-    def output_data(self):
-        return self.__output_data
-
-    @property
-    def input_size(self):
-        """Returns the size of the input elements
-        """
-        return self.input_data.shape[1]
-
-    @property
-    def output_size(self):
-        """Returns the size of the output elements
-        """
-        shape = self.output_data.shape
-        if shape is None:
-            return 0
-        if len(shape) == 1:
-            return 1
-        return shape[1]
-
-    @property
-    def count_unique_values(self):
-        return dsu.count_unique_values(self.output_data)
-
-    @property
-    def min_output(self):
-        return np.min(self.output_data)
-
-    @property
-    def max_output(self):
-        return np.max(self.output_data)
-
-    @property
-    def average_output(self):
-        return np.average(self.output_data)
-
-
-class Corpus:
-    """A Corpus is a pair of two subsets: Training Set and Test Set
-
-        Args:
-            training_set (Set): training set
-            test_set (Set): test set
-
-        Members:
-            training_set (Set): training set
-            test_set (Set): test set
-            validation_set (Set): a split from the training set, used to perform cross-validation
-
-    """
-
-    def __init__(self, training_set: Set, test_set: Set):
-        self.__training_set = training_set
-        self.__test_set = test_set
-
-    @staticmethod
-    def from_datasets(training_inputs: np.array,
-                      training_outputs: np.array,
-                      test_inputs: np.array,
-                      test_outputs: np.array):
-        """Creates a corpus from the 4 datasets: training x test, input x output
-
-        Args:
-            training_inputs (np.array): training set inputs
-            training_outputs (np.array): training set outputs
-            test_inputs (np.array): test set inputs
-            test_outputs (np.array): test set outputs
-
-        """
-        training_set = Set(training_inputs, training_outputs)
-        test_set = Set(test_inputs, test_outputs)
-        return Corpus(training_set, test_set)
-
-    @staticmethod
-    def from_tuple(corpus: tuple):
-        """Creates a new Corpus from a pair (tuple) of two sets
-           Each of these sets must have two subsets: input and output sets
-
-        Args:
-            corpus: a pair of arrays that represent training and test sets
-
-        """
-        (training_inputs, training_outputs), (test_inputs, test_outputs) = dsu.separate_corpus(corpus)
-        return Corpus.from_datasets(training_inputs, training_outputs, test_inputs, test_outputs)
-
-    def get_validation_set(self, size: int, start: int = 0):
-        """Splits the training set in order to split a validation dataset
-
-        Args:
-            size  (int) : validation set size
-            start (int) : split training set from this position on
-
-        """
-        training_set_copy = self.__training_set.copy()
-        return training_set_copy.split(size=size, start=start)
-
-    def get_validation_set_k_fold(self, fold: int, k: int):
-        """Splits the training set to extract a validation set according to
-           the k-fold rule
-
-        Args:
-            fold (int): current fold
-            k (int): number of folds
-
-        """
-        return self.__training_set.split_k_fold(fold=fold, k=k)
-
-    @property
-    def input_size(self):
-        """Returns the size of the input elements
-        """
-        return self.__training_set.input_size
-
-    @property
-    def output_size(self):
-        """Returns the size of the output elements
-        """
-        return self.__training_set.output_size
-
-    @property
-    def count_categories(self):
-        """Returns the number of distinct labels in the output data
-        """
-        return self.__training_set.count_unique_values
-
-    @property
-    def min_output(self):
-        return self.__training_set.min_output
-
-    @property
-    def max_output(self):
-        return self.__training_set.max_output
-
-    @property
-    def average_output(self):
-        return self.__training_set.average_output
-
-    @property
-    def training_set(self):
-        return self.__training_set
-
-    @property
-    def test_set(self):
-        return self.__test_set
-
 
 class SetGenerator:
     """Contains a generator that can be sequentially iterated over to get a set
@@ -262,32 +162,3 @@ class SetGenerator:
     @property
     def generator(self):
         return self.__generator
-
-
-class CorpusGenerator:
-    """A corpus generator contains three set generators:
-       1. training
-       2. validation
-       3. test
-
-    """
-
-    def __init__(self,
-                 training_set_generator: SetGenerator,
-                 validation_set_generator: SetGenerator,
-                 test_set_generator: SetGenerator):
-        self.__training_set_generator = training_set_generator
-        self.__validation_set_generator = validation_set_generator
-        self.__test_set_generator = test_set_generator
-
-    @property
-    def training_set_generator(self):
-        return self.__training_set_generator
-
-    @property
-    def validation_set_generator(self):
-        return self.__validation_set_generator
-
-    @property
-    def test_set_generator(self):
-        return self.__test_set_generator

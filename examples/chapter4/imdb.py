@@ -39,22 +39,33 @@ def load_corpus(words: int = 10000, verbose: bool = True) -> Corpus:
     return Corpus.from_datasets(training_inputs, training_outputs, test_inputs, test_outputs)
 
 
-def run():
-    # loads the corpus
-    corpus = load_corpus(words=num_words)
+def run(plan: str = 'comparison'):
+    """Runs the selected experiment plan
 
-    # loads the experiment
+    Args:
+        plan (str): key of the experiment to run. Possible values are
+            'dropout'
+            'weight_regularization_l1'
+            'weight_regularization_l2'
+            'comparison'
+
+    """
+    # loads the corpus and the experiment plans
+    corpus = load_corpus(words=num_words)
     experiments = load_experiments(corpus=corpus)
 
-    # runs the selected experiment
-    experiment = experiments["comparison"]
-    experiment.run(print_results=True,
-                   plot_training_loss=False,
-                   plot_training_accuracy=False,
-                   display_progress_bars=True)
+    # runs the selected experiment plan
+    experiment_plan = experiments[plan]
+
+    experiment_plan.run(print_results=True,
+                        plot_training_loss=False,
+                        plot_training_accuracy=False,
+                        display_progress_bars=True)
+
+    experiment_plan.save_models(path='models')
 
     # plots the results
-    experiment.plot_loss("Training Loss", training=True, validation=False)
-    experiment.plot_loss("Validation Loss", training=False, validation=True)
-    experiment.plot_accuracy("Training Accuracy", training=True, validation=False)
-    experiment.plot_accuracy("Validation Accuracy", training=False, validation=True)
+    experiment_plan.plot_loss("Training Loss", training=True, validation=False)
+    experiment_plan.plot_loss("Validation Loss", training=False, validation=True)
+    experiment_plan.plot_accuracy("Training Accuracy", training=True, validation=False)
+    experiment_plan.plot_accuracy("Validation Accuracy", training=False, validation=True)

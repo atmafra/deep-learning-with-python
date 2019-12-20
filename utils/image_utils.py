@@ -19,6 +19,9 @@ def get_image_generator(rescale_factor: float,
         rescale_factor (float): multiply element values by this scale factor
         source_dir (str): image source directory path
         target_size (tuple): target image shape
+        batch_size (int): size of the image batch that is read from disk
+        class_mode (str):
+        use_augmented (bool): apply transformations to the image to implement data augmentation
         width_shift_range(float): part of width for random horizontal shift
         height_shift_range(float): part of width for random vertical shift
         rotation_range(int): degree range for random rotations

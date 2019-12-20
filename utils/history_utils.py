@@ -70,13 +70,18 @@ def plot_metrics_list(metric_values_list: list,
                       metric_labels_list: list,
                       metric_style_list: list,
                       title: str,
-                      x_label: str = 'Epochs',
-                      y_label: str = 'Loss'):
+                      y_label: str,
+                      x_label: str = 'Epochs'):
     """ Plots a list of metrics
     """
-    plt.clf()
-    epochs = range(1, len(metric_values_list[0]) + 1)
+    if metric_values_list is None:
+        raise RuntimeError('No metric values list to plot')
 
+    epochs = range(1, 0)
+    if np.shape(metric_values_list)[0] > 0:
+        epochs = range(1, np.shape(metric_values_list)[1] + 1)
+
+    plt.clf()
     for i in range(0, len(metric_values_list)):
         metric_values = metric_values_list[i]
 
@@ -233,10 +238,10 @@ def plot_loss_list(history_metrics_list: list,
 
     for history in history_metrics_list:
 
-        if plot_training:
+        if plot_training and 'loss' in history.history:
             metric_values_list.append(history.history['loss'])
 
-        if plot_validation:
+        if plot_validation and 'val_loss' in history.history:
             metric_values_list.append(history.history['val_loss'])
 
     plot_metrics_list(metric_values_list=metric_values_list,
@@ -258,10 +263,10 @@ def plot_accuracy_list(history_metrics_list: list,
 
     for history in history_metrics_list:
 
-        if plot_training:
+        if plot_training and 'accuracy' in history.history:
             metric_values_list.append(history.history['accuracy'])
 
-        if plot_validation:
+        if plot_validation and 'val_accuracy' in history.history:
             metric_values_list.append(history.history['val_accuracy'])
 
     plot_metrics_list(metric_values_list=metric_values_list,

@@ -1,9 +1,11 @@
 from keras import optimizers
 from keras.datasets import boston_housing as boston
 
+from core.corpus import Corpus
 from core.experiment import Experiment
 from core.network import ValidationStrategy
-from core.sets import Corpus
+from core.neural_network import NeuralNetwork
+from core.training_configuration import TrainingConfiguration
 from utils import dataset_utils as dsu
 from utils.history_utils import plot_mae_dict, plot_loss_dict
 
@@ -60,7 +62,7 @@ def load_experiment(corpus: Corpus) -> Experiment:
         {'layer_type': 'Dense', 'units': 64, 'activation': hidden_activation},
         {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
-    training_configuration = {
+    training_parameters = {
         'keras': {
             'compile': {
                 'optimizer': optimizers.RMSprop(lr=learning_rate),
@@ -75,8 +77,12 @@ def load_experiment(corpus: Corpus) -> Experiment:
             'shuffle': True,
             'k': 5}}
 
-    experiment = Experiment(name='Boston', corpus=corpus,
-                            layers_configuration=layers_configuration,
+    neural_network = NeuralNetwork.from_configurations(name='Boston - MLP 2 layers, 64 units',
+                                                       layers_configuration=layers_configuration)
+    training_configuration = TrainingConfiguration(configuration=training_parameters)
+    experiment = Experiment(name=neural_network.name,
+                            corpus=corpus,
+                            neural_network=neural_network,
                             training_configuration=training_configuration)
 
     return experiment
@@ -86,10 +92,10 @@ def run():
     corpus = load_corpus(num_words=10000, verbose=True)
     experiment = load_experiment(corpus=corpus)
     experiment.run(print_results=True, plot_history=False)
+    experiment.save_model('models/boston')
 
-    plot_loss_dict(experiment.history,
+    plot_loss_dict(experiment.training_history,
                    title='Boston Housing: Training and Validation Mean Squared Error (MSE)')
 
-    plot_mae_dict(experiment.history,
+    plot_mae_dict(experiment.training_history,
                   title='Boston Housing: Training and Validation Mean Absolute Error (MAE)')
-

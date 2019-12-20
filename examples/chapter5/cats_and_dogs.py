@@ -2,7 +2,8 @@ import os
 import shutil
 
 import utils.parameter_utils as putl
-from core.sets import SetGenerator, CorpusGenerator
+from core.corpus import CorpusGenerator
+from core.sets import SetGenerator
 from examples.chapter5.cats_and_dogs_configurations import load_experiment_plan
 from utils.image_utils import get_image_generator
 
@@ -149,13 +150,15 @@ def load_corpus_generator(dirs: dict, use_augmented: bool, check: bool = False) 
                                                source_dir=validation_dir,
                                                target_size=target_size,
                                                batch_size=batch_size,
-                                               class_mode=class_mode)
+                                               class_mode=class_mode,
+                                               use_augmented=False)
 
     test_generator = get_image_generator(rescale_factor=rescale_factor,
                                          source_dir=test_dir,
                                          target_size=target_size,
                                          batch_size=batch_size,
-                                         class_mode=class_mode)
+                                         class_mode=class_mode,
+                                         use_augmented=False)
 
     training_set_generator = SetGenerator(generator=training_generator)
     validation_set_generator = SetGenerator(generator=validation_generator)
@@ -207,4 +210,4 @@ def run():
                         plot_training_accuracy=True,
                         display_progress_bars=True)
 
-    experiment_plan.save_models('models/json')
+    experiment_plan.save_models('models/cats_and_dogs')

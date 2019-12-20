@@ -2,8 +2,7 @@ import numpy as np
 from keras.datasets import mnist
 from keras.utils import to_categorical
 
-from core import sets
-from core.sets import Corpus
+from core.corpus import Corpus
 from examples.chapter5.mnist_configurations import load_experiment_plan
 
 
@@ -18,13 +17,13 @@ def normalize(image_set: np.array) -> np.array:
     return image_set.astype('float32') / 255
 
 
-def load_corpus(input_type: str, verbose: bool = True) -> sets.Corpus:
+def load_corpus(input_type: str, verbose: bool = True) -> Corpus:
     """Loads the MNIST corpus from public repositories
     """
     if verbose:
         print("Loading MNIST dataset...")
 
-    corpus = sets.Corpus.from_tuple(mnist.load_data())
+    corpus = Corpus.from_tuple(mnist.load_data())
     train_set_size = corpus.training_set.length
     test_set_size = corpus.test_set.length
 
@@ -67,3 +66,5 @@ def run():
                         plot_training_loss=True,
                         plot_training_accuracy=True,
                         display_progress_bars=True)
+
+    experiment_plan.save_models(path='models/mnist')

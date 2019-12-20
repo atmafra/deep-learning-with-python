@@ -1,12 +1,20 @@
+from enum import Enum
+
 import numpy as np
 from keras import optimizers
 from keras.datasets import mnist
 from keras.utils import to_categorical
 
-from core import sets
+from core.corpus import Corpus, CorpusType
 from core.experiment import Experiment
 from core.network import ValidationStrategy
-from core.sets import Corpus
+from core.neural_network import NeuralNetwork
+from core.training_configuration import TrainingConfiguration
+
+
+class ModelSource(Enum):
+    CONFIGURATION = 0
+    FILE = 1
 
 
 def to_array(image_set: np.array) -> np.array:
@@ -20,13 +28,13 @@ def normalize(image_set: np.array) -> np.array:
     return image_set.astype('float32') / 255
 
 
-def load_corpus(verbose: bool = True) -> sets.Corpus:
+def load_corpus(verbose: bool = True) -> Corpus:
     """Loads the MNIST corpus from public repositories
     """
     if verbose:
         print("Loading MNIST dataset...")
 
-    corpus = sets.Corpus.from_tuple(mnist.load_data())
+    corpus = Corpus.from_tuple(mnist.load_data())
 
     train_set_size = corpus.training_set.length
     image_shape = corpus.training_set.input_data.shape
@@ -50,7 +58,7 @@ def load_corpus(verbose: bool = True) -> sets.Corpus:
     return corpus
 
 
-def load_experiment(corpus: Corpus):
+def create_neural_network(corpus: Corpus, model_source: ModelSource):
     """Loads the experiment hyperparameters
     """
     # layer parameters
@@ -59,6 +67,26 @@ def load_experiment(corpus: Corpus):
     hidden_layer_units = 16
     hidden_layer_activation = 'relu'
 
+
+    layers_configuration = [
+        {'layer_type': 'Dense', 'name': 'Dense-1', 'units': hidden_layer_units, 'activation': hidden_layer_activation,
+         'input_shape': (input_size,)},
+        {'layer_type': 'Dense', 'name': 'Dense-2', 'units': output_size, 'activation': 'softmax'}]
+
+    if model_source == ModelSource.CONFIGURATION:
+        return NeuralNetwork.from_configurations(name='MNIST: MLP, 2 dense layers',
+                                                 layers_configuration=layers_configuration)
+
+    elif model_source == ModelSource.FILE:
+        return NeuralNetwork.from_file(path='models/mnist',
+                                       filename='mnist-mlp-2-dense-layers-short.json',
+                                       verbose=True)
+
+    raise RuntimeError('Unknown model source')
+
+
+def create_experiment(corpus: Corpus,
+                      neural_network: NeuralNetwork):
     # compile parameters
     learning_rate = 0.001
     optimizer = optimizers.RMSprop(lr=learning_rate)
@@ -69,13 +97,7 @@ def load_experiment(corpus: Corpus):
     epochs = 20
     batch_size = 128
     shuffle = True
-
-    layers_configuration = [
-        {'layer_type': 'Dense', 'units': hidden_layer_units, 'activation': hidden_layer_activation,
-         'input_shape': (input_size,)},
-        {'layer_type': 'Dense', 'units': output_size, 'activation': 'softmax'}]
-
-    training_configuration = {
+    training_parameters = {
         'keras': {
             'compile': {
                 'optimizer': optimizer,
@@ -88,14 +110,13 @@ def load_experiment(corpus: Corpus):
         'validation': {
             'strategy': ValidationStrategy.NO_VALIDATION}}
 
-    loss = 'categorical_crossentropy'
+    training_configuration = TrainingConfiguration(configuration=training_parameters)
 
-    experiment = Experiment(name="MNIST",
-                            corpus=corpus,
-                            layers_configuration=layers_configuration,
-                            training_configuration=training_configuration)
-
-    return experiment
+    return Experiment(name="MNIST",
+                      corpus_type=CorpusType.CORPUS_DATASET,
+                      corpus=corpus,
+                      neural_network=neural_network,
+                      training_configuration=training_configuration)
 
 
 def run():
@@ -103,5 +124,8 @@ def run():
     """
     num_labels = 10
     corpus = load_corpus()
-    experiment = load_experiment(corpus=corpus)
+    neural_network = create_neural_network(corpus=corpus, model_source=ModelSource.FILE)
+    experiment = create_experiment(corpus, neural_network)
+    path = 'models/mnist'
     experiment.run(print_results=True, plot_history=True, display_progress_bars=True)
+    experiment.save_model(path='models/mnist')

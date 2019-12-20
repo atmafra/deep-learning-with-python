@@ -3,12 +3,12 @@ import sys
 from enum import Enum
 
 from keras import models, Model
-from keras.engine.saving import load_model
+from keras.engine.saving import load_model, model_from_json
 from keras.utils import Sequence
 
 import utils.parameter_utils as putl
 from core.sets import Set, SetGenerator
-from utils.file_utils import str_to_filename, root_name
+from utils.file_utils import str_to_filename
 from utils.parameter_utils import extract_parameter
 
 
@@ -57,14 +57,17 @@ def create_layer(parameters: dict):
     return layer(**parameters_copy)
 
 
-def create_network(layer_configuration_list: list):
+def create_network(name: str,
+                   layer_configuration_list: list):
     """Creates a neural network according to its hyper parameters
 
     Args:
+        name (str): neural network name
         layer_configuration_list (list): list of layer hyperparameters
 
     """
     network = models.Sequential()
+    network.name = name
 
     # layers
     for layer_configuration in layer_configuration_list:
@@ -75,6 +78,27 @@ def create_network(layer_configuration_list: list):
     network.build()
 
     return network
+
+
+def create_model_from_file(filepath: str,
+                           verbose: bool = True):
+    """Creates a new model from a JSON architecture file
+
+    Args:
+        filepath (str): fully qualified path to JSON file
+        verbose (bool): display load messages in terminal
+
+    """
+    json_file = open(filepath, 'r')
+    network_architecture_json = json_file.read()
+    json_file.close()
+    model = model_from_json(network_architecture_json)
+    model.build()
+
+    if verbose:
+        print('Loaded model \"{}\" from file \"{}\"'.format(model.name, filepath))
+
+    return model
 
 
 def train_network(network: Model,
@@ -245,11 +269,110 @@ def test_network_generator(network: Model,
     return metrics
 
 
+def save_architecture_json(network: Model,
+                           path: str,
+                           filename: str = '',
+                           verbose: bool = True):
+    """Saves the model architecture as a JSON file
+
+    Args:
+        network (Model): model whose architecture must be saved
+        path (str): system path of the save directory
+        filename (str): architecture file name
+        verbose (bool): show save message in terminal
+
+    """
+    if filename == '':
+        filename = str_to_filename(network.name) + '.json'
+    model_filepath = os.path.join(path, filename)
+
+    model_json = network.to_json()
+
+    if verbose:
+        print('Saving network architecture \"{}\" to file \"{}\"'.format(network.name, model_filepath))
+
+    with open(model_filepath, 'w') as json_file:
+        json_file.write(model_json)
+
+
+def save_weights_h5(network: Model,
+                    path: str,
+                    filename: str = '',
+                    verbose: bool = True):
+    """Saves the model weights to a h5 file
+
+    Args:
+        network (Model): model whose weights must be saved
+        path (str): system path of the save directory
+        filename (str): weigths file name
+        verbose (bool): show save message in terminal
+    """
+    if filename == '':
+        filename = str_to_filename(network.name) + '.h5'
+    weights_filepath = os.path.join(path, filename)
+
+    if verbose:
+        print('Saving model \"{}\" weights to file \"{}\"'.format(network.name, weights_filepath))
+
+    network.save_weights(filepath=weights_filepath, overwrite=True)
+
+
 def save_network_json(network: Model,
+                      path: str,
+                      root_name: str,
+                      verbose: bool = True):
+    """Saves the model in the current state to a JSON file. The model is saved in 2 files:
+       1. a JSON file, containing the architecture (.json)
+       2. the binary H5 (pickle) file, containing the weights (.h5)
+
+    Args:
+        network (Model): model to be saved
+        path (str): system path of the save directory
+        root_name (str): root of the model and weights filenames
+        verbose (bool): show save message in terminal
+
+    """
+    if root_name is None:
+        root_name = network.name
+        
+    architecture_filename = root_name + '.json'
+    weights_filename = root_name + '.h5'
+
+    save_architecture_json(network=network, path=path, filename=architecture_filename, verbose=verbose)
+    save_weights_h5(network=network, path=path, filename=weights_filename, verbose=verbose)
+
+
+def load_network_json(architecture_filepath: str,
+                      weights_filepath: str,
+                      verbose: bool = True):
+    """Loads a file containing a representation of a JSON object
+       that describes the architecture of a neural network model
+
+    Args:
+        architecture_filepath (str): architecture filename
+        weights_filepath (str): weights filename
+        verbose (bool): show load message on terminal
+
+    """
+    model = create_model_from_file(filepath=architecture_filepath, verbose=verbose)
+
+    if weights_filepath is not None:
+        if weights_filepath != '':
+            model.load_weights(weights_filepath)
+        else:
+            raise RuntimeError('A full path must be specified in order to load pre-trained model weights')
+
+        if verbose:
+            print('Loaded weights from file \"{}\"'.format(weights_filepath))
+
+    return model
+
+
+def save_network_hdf5(network: Model,
                       path: str,
                       filename: str,
                       verbose: bool = True):
-    """Saves the model in the current state to a JSON file
+    """Saves the model in the current state to a H5PY file
 
     Args:
         network (Model): model to be saved
@@ -258,54 +381,25 @@ def save_network_json(network: Model,
         verbose (bool): show save message in terminal
 
     """
-    if filename == '':
-        filename = str_to_filename(network.name)
-    rootname = root_name(filename)
-    model_name = os.path.join(path, rootname + '.json')
-    weights_name = os.path.join(path, rootname + '.h5')
-
-    model_json = network.to_json()
-    with open(model_name, 'w') as json_file:
-        json_file.write(model_json)
-        if verbose:
-            print('Saving network architecture \"{}\" to file \"{}\"'.format(network.name, model_name))
-    network.save_weights(filepath=weights_name, overwrite=True)
+    full_path = os.path.join(path, filename)
+    network.save(filepath=full_path)
     if verbose:
-        print('Saving network weights to file \"{}\"'.format(weights_name))
-
-
-def save_network_hdf5(network: Model,
-                      path: str,
-                      file_name: str,
-                      verbose: bool = True):
-    """Saves the model in the current state to a H5PY file
-
-    Args:
-        network (Model): model to be saved
-        path (str): system path of the save directory
-        file_name (str): saved model file name
-        verbose (bool): show save message in terminal
-
-    """
-    file_path = os.path.join(path, file_name)
-    network.save(filepath=file_path)
-    if verbose:
-        print('Saved neural network model \"{}\" to file \"{}\"'.format(network.name, file_path))
+        print('Saved neural network model \"{}\" to file \"{}\"'.format(network.name, full_path))
 
 
 def load_network_hdf5(path: str,
-                      file_name: str,
+                      filename: str,
                       verbose: bool = True):
     """Loads a model in the state it was saved
 
     Args:
         path (str): system path of the load directory
-        file_name (str): file name of the model to be loaded
+        filename (str): file name of the model to be loaded
         verbose (bool): show load message in terminal
 
     """
-    file_path = os.path.join(path, file_name)
-    loaded_network = load_model(filepath=file_path, compile=False)
+    full_path = os.path.join(path, filename)
+    loaded_network = load_model(filepath=full_path, compile=False)
     if verbose:
-        print('Loaded neural network model from file \"{}\"'.format(file_path))
+        print('Loaded neural network model from file \"{}\"'.format(full_path))
     return loaded_network

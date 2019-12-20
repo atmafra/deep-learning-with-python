@@ -2,10 +2,11 @@ import numpy as np
 from keras import optimizers
 from keras.datasets import reuters
 
-from core import sets
+from core.corpus import Corpus, CorpusType
 from core.experiment import Experiment
 from core.network import ValidationStrategy
-from core.sets import Corpus
+from core.neural_network import NeuralNetwork
+from core.training_configuration import TrainingConfiguration
 from utils import dataset_utils as dsu
 
 if __name__ == '__main__':
@@ -35,7 +36,7 @@ def load_corpus(num_words: int, encoding_schema: str, verbose: bool = True):
         train_labels = np.array(train_labels)
         test_labels = np.array(test_labels)
 
-    corpus = sets.Corpus.from_datasets(train_data, train_labels, test_data, test_labels)
+    corpus = Corpus.from_datasets(train_data, train_labels, test_data, test_labels)
 
     if verbose:
         print('Training phrases:', len(train_data))
@@ -57,6 +58,7 @@ def load_experiment(corpus: Corpus, encoding_schema):
     """
     # network hyperparameters
     input_size = corpus.input_size
+    output_size = -1
     if encoding_schema == 'one-hot':
         output_size = corpus.output_size
     elif encoding_schema == 'int-array':
@@ -86,7 +88,7 @@ def load_experiment(corpus: Corpus, encoding_schema):
         {'layer_type': 'Dense', 'units': 64, 'activation': hidden_activation},
         {'layer_type': 'Dense', 'units': output_size, 'activation': output_activation}]
 
-    training_configuration = {
+    training_parameters = {
         'keras': {
             'compile': {
                 'optimizer': optimizers.RMSprop(lr=learning_rate),
@@ -96,27 +98,33 @@ def load_experiment(corpus: Corpus, encoding_schema):
                 'epochs': epochs,
                 'batch_size': batch_size,
                 'shuffle': shuffle}},
-        'validation' : {
+        'validation': {
             'strategy': ValidationStrategy.CROSS_VALIDATION,
             'set_size': validation_set_size}}
 
-    experiment = Experiment(name="Reuters (encoding schema: {})".format(encoding_schema),
-                            corpus=corpus,
-                            layers_configuration=layers_configuration,
-                            training_configuration=training_configuration)
+    name = 'Reuters (encoding schema: {})'.format(encoding_schema)
+    neural_network = NeuralNetwork.from_configurations(name=name, layers_configuration=layers_configuration)
+    training_configuration = TrainingConfiguration(configuration=training_parameters)
 
-    return experiment
+    return Experiment(name=name,
+                      neural_network=neural_network,
+                      training_configuration=training_configuration,
+                      corpus_type=CorpusType.CORPUS_DATASET,
+                      corpus=corpus)
 
 
 def run(num_words: int = 10000, encoding_schema: str = 'one-hot'):
+
     if encoding_schema == 'one-hot':
         # one-hot encoding experiment
         corpus_one_hot = load_corpus(num_words=num_words, encoding_schema='one-hot')
         experiment_one_hot = load_experiment(corpus=corpus_one_hot, encoding_schema='one-hot')
         experiment_one_hot.run(print_results=True, plot_history=True)
+        experiment_one_hot.save_model(path='models/reuters')
 
     elif encoding_schema == 'int-array':
         # int-array encoding experiment
         corpus_int_array = load_corpus(num_words=num_words, encoding_schema='int-array')
         experiment_int_array = load_experiment(corpus=corpus_int_array, encoding_schema='int-array')
         experiment_int_array.run(print_results=True, plot_history=True)
+        experiment_int_array.save_model(path='models/reuters')
