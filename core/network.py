@@ -7,7 +7,7 @@ from keras.engine.saving import load_model, model_from_json
 from keras.utils import Sequence
 
 import utils.parameter_utils as putl
-from core.sets import Set, SetGenerator
+from core.sets import Set, SetFiles
 from utils.file_utils import str_to_filename
 from utils.parameter_utils import extract_parameter
 
@@ -242,17 +242,17 @@ def test_network(network: Model,
 
 
 def test_network_generator(network: Model,
-                           test_set_generator: SetGenerator,
+                           test_set_generator: SetFiles,
                            verbose: bool = True) -> dict:
     """Evaluates all the test inputs according to the current network
 
     Args:
         network (Model): neural network model to be tested
-        test_set_generator (SetGenerator): test set generator to be used for metrics evaluation
+        test_set_generator (SetFiles): test set generator to be used for metrics evaluation
         verbose (bool): display evaluation progress bar if True
 
     """
-    result = network.evaluate_generator(generator=test_set_generator.generator,
+    result = network.evaluate_generator(generator=test_set_generator.directory_iterator,
                                         steps=None,
                                         callbacks=None,
                                         max_queue_size=10,

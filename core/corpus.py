@@ -3,7 +3,7 @@ from enum import Enum
 import numpy as np
 
 import utils.dataset_utils as dsu
-from core.sets import Set, SetGenerator
+from core.sets import Set, SetFiles
 
 
 class CorpusType(Enum):
@@ -26,16 +26,19 @@ class Corpus:
 
     """
 
-    def __init__(self, training_set: Set, test_set: Set):
+    def __init__(self, training_set: Set,
+                 test_set: Set,
+                 validation_set: Set = None):
         self.__training_set = training_set
         self.__test_set = test_set
+        self.__validation_set = validation_set or None
 
     @classmethod
     def from_datasets(cls,
-                      training_inputs: np.array,
-                      training_outputs: np.array,
-                      test_inputs: np.array,
-                      test_outputs: np.array):
+                      training_inputs: np.ndarray,
+                      training_outputs: np.ndarray,
+                      test_inputs: np.ndarray,
+                      test_outputs: np.ndarray):
         """Creates a corpus from the 4 datasets: training x test, input x output
 
         Args:
@@ -122,38 +125,34 @@ class Corpus:
         return self.training_set.split_k_fold(fold=fold, k=k)
 
 
-class CorpusGenerator:
-    """A corpus generator contains three set generators:
-       1. training
-       2. validation
-       3. test
+class CorpusFiles:
+    """A corpus generator contains three file sets: training, validation, and test
 
     """
 
     def __init__(self,
-                 training_set_generator: SetGenerator,
-                 validation_set_generator: SetGenerator,
-                 test_set_generator: SetGenerator):
-        """Creates a new Corpus based on Set Generators
+                 training_set_files: SetFiles,
+                 validation_set_files: SetFiles,
+                 test_set_files: SetFiles):
+        """Creates a new Corpus based on Set of files
 
         Args:
-            training_set_generator (SetGenerator): training set generator
-            validation_set_generator (SetGenerator): validation set generator
-            test_set_generator (SetGenerator): test set generator
+            training_set_files (SetFiles): training set files
+            validation_set_files (SetFiles): validation set files
+            test_set_files (SetFiles): test set files
         """
-        self.__training_set_generator = training_set_generator
-        self.__validation_set_generator = validation_set_generator
-        self.__test_set_generator = test_set_generator
+        self.__training_set_files = training_set_files
+        self.__validation_set_files = validation_set_files
+        self.__test_set_files = test_set_files
 
     @property
-    def training_set_generator(self):
-        return self.__training_set_generator
+    def training_set_files(self):
+        return self.__training_set_files
 
     @property
-    def validation_set_generator(self):
-        return self.__validation_set_generator
+    def validation_set_files(self):
+        return self.__validation_set_files
 
     @property
-    def test_set_generator(self):
-        return self.__test_set_generator
-
+    def test_set_files(self):
+        return self.__test_set_files

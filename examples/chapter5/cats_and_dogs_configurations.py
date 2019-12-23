@@ -1,6 +1,6 @@
 from keras import optimizers
 
-from core.corpus import CorpusGenerator
+from core.corpus import CorpusFiles
 from core.experiment import Experiment, CorpusType, ExperimentPlan
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
@@ -69,8 +69,8 @@ training_parameters = {
 training_configuration = TrainingConfiguration(configuration=training_parameters)
 
 
-def load_experiment_plan(corpus_generator: CorpusGenerator,
-                         corpus_generator_augmented: CorpusGenerator) -> ExperimentPlan:
+def load_experiment_plan(corpus_generator: CorpusFiles,
+                         corpus_generator_augmented: CorpusFiles) -> ExperimentPlan:
     """Loads the Cats & Dogs experiment plan
     """
     regular = Experiment(name='Cats and Dogs',

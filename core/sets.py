@@ -1,5 +1,7 @@
+import os
+
 import numpy as np
-from keras.utils import Sequence
+from keras_preprocessing.image import DirectoryIterator
 
 import utils.dataset_utils as dsu
 
@@ -8,14 +10,14 @@ class Set:
     """A Set is a pair of two arrays: input and output data
 
     Args:
-        input_data (np.array): input data array
-        output_data (np.array): output data array
+        input_data (np.ndarray): input data array
+        output_data (np.ndarray): output data array
 
     """
 
     def __init__(self,
-                 input_data: np.array,
-                 output_data: np.array = None):
+                 input_data: np.ndarray,
+                 output_data: np.ndarray = None):
         """Create a new Set instance
         """
         assert input_data is not None, 'Cannot create Set with no input data'
@@ -148,17 +150,43 @@ class Set:
         """
         return self.input_data, self.output_data
 
+    def flatten_input_data(self):
+        """Flattens input data, asuming the first dimension is the number of samples (which is preserved)
+        """
+        new_shape = self.input_data.shape[0], np.prod(self.input_data.shape[1:])
+        self.input_data.reshape(new_shape)
 
-class SetGenerator:
-    """Contains a generator that can be sequentially iterated over to get a set
+
+class SetFiles:
+    """Contains a directory iterator that can be sequentially iterated over to get a set of files
     """
 
-    def __init__(self, generator: Sequence):
-        if generator is None:
-            raise RuntimeError('No generator passed creating GenSet')
+    def __init__(self, directory_iterator: DirectoryIterator):
+        if directory_iterator is None:
+            raise RuntimeError('No directory iterator passed creating GenSet')
 
-        self.__generator = generator
+        self.__directory_iterator = directory_iterator
 
     @property
-    def generator(self):
-        return self.__generator
+    def directory_iterator(self):
+        return self.__directory_iterator
+
+    @property
+    def path(self):
+        return self.directory_iterator.directory
+
+    @property
+    def batch_size(self):
+        return self.directory_iterator.batch_size
+
+    @property
+    def file_list(self):
+        return os.listdir(self.path)
+
+    @property
+    def length(self):
+        return self.directory_iterator.samples
+
+    @property
+    def image_shape(self):
+        return self.directory_iterator.image_shape

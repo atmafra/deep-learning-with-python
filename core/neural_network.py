@@ -3,8 +3,8 @@ import os.path
 from keras import Model
 
 import core.network as net
-from core.corpus import CorpusGenerator
-from core.sets import Set, SetGenerator
+from core.corpus import CorpusFiles
+from core.sets import Set, SetFiles
 from core.training_configuration import TrainingConfiguration
 from utils.history_utils import merge_history_metrics
 from utils.parameter_utils import get_parameter
@@ -161,7 +161,7 @@ class NeuralNetwork():
 
         return training_history
 
-    def train_generator(self, corpus_generator: CorpusGenerator,
+    def train_generator(self, corpus_generator: CorpusFiles,
                         training_configuration: TrainingConfiguration,
                         display_progress_bars: bool = True):
         """Trains the neural network using a training set generator
@@ -169,7 +169,7 @@ class NeuralNetwork():
         if training_configuration is None:
             raise RuntimeError('No training configuration defined')
 
-        training_set_generator = corpus_generator.training_set_generator
+        training_set_generator = corpus_generator.training_set_files
         if training_set_generator is None:
             raise RuntimeError('Training Set Generator not defined')
 
@@ -178,16 +178,16 @@ class NeuralNetwork():
 
         if validation_strategy == net.ValidationStrategy.NO_VALIDATION:
             training_history = net.train_network_generator(network=self.model,
-                                                           training_generator=training_set_generator.generator,
+                                                           training_generator=training_set_generator.directory_iterator,
                                                            training_configuration=training_configuration.configuration,
                                                            verbose=display_progress_bars)
 
         elif validation_strategy == net.ValidationStrategy.CROSS_VALIDATION:
-            validation_generator = corpus_generator.validation_set_generator
+            validation_generator = corpus_generator.validation_set_files
             training_history = net.train_network_generator(network=self.model,
-                                                           training_generator=training_set_generator.generator,
+                                                           training_generator=training_set_generator.directory_iterator,
                                                            training_configuration=training_configuration.configuration,
-                                                           validation_generator=validation_generator.generator,
+                                                           validation_generator=validation_generator.directory_iterator,
                                                            verbose=display_progress_bars)
         return training_history
 
@@ -204,12 +204,12 @@ class NeuralNetwork():
                                 test_set=test_set,
                                 verbose=display_progress_bars)
 
-    def evaluate_generator(self, test_set_generator: SetGenerator,
+    def evaluate_generator(self, test_set_generator: SetFiles,
                            display_progress_bars: bool = True):
         """Evaluate the neural network using a test set generator
 
         Args:
-            test_set_generator (SetGenerator): test set generator
+            test_set_generator (SetFiles): test set generator
             display_progress_bars (bool): display progress bars in terminal during evaluation
 
         """

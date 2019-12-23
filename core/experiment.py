@@ -1,5 +1,5 @@
 import utils.history_utils as hutl
-from core.corpus import CorpusType, Corpus, CorpusGenerator
+from core.corpus import CorpusType, Corpus, CorpusFiles
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
@@ -15,7 +15,7 @@ class Experiment:
                  training_configuration: TrainingConfiguration,
                  corpus_type: CorpusType = CorpusType.CORPUS_DATASET,
                  corpus: Corpus = None,
-                 corpus_generator: CorpusGenerator = None):
+                 corpus_generator: CorpusFiles = None):
         """Creates a new Experiment to evaluate the performance of a specific
            combination of data and training hyperparameters
 
@@ -26,7 +26,7 @@ class Experiment:
             corpus_type (CorpusType): defines if data comes from in-memory sets
                or from directory iterators (generators)
             corpus (Corpus): the training and test sets to be used
-            corpus_generator (CorpusGenerator): corpus generator
+            corpus_generator (CorpusFiles): corpus generator
 
         """
         self.__neural_network = neural_network
@@ -162,7 +162,7 @@ class Experiment:
 
         elif self.corpus_type == CorpusType.CORPUS_GENERATOR:
             self.__test_results = self.neural_network.evaluate_generator(
-                test_set_generator=self.corpus_generator.test_set_generator,
+                test_set_generator=self.corpus_generator.test_set_files,
                 display_progress_bars=display_progress_bars)
 
     def run(self, print_results: bool = True,
