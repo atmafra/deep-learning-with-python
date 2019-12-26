@@ -1,9 +1,17 @@
 import os
+from enum import Enum
 
 import numpy as np
 from keras_preprocessing.image import DirectoryIterator
 
 import utils.dataset_utils as dsu
+from utils.file_utils import str_to_filename
+
+
+class SetDataFormat(Enum):
+    TXT = 1
+    BIN = 2
+    NPY = 3
 
 
 class Set:
@@ -22,12 +30,11 @@ class Set:
         """
         assert input_data is not None, 'Cannot create Set with no input data'
 
-        self.input_data = input_data
+        if len(output_data) != len(input_data):
+            raise ValueError('Input and Output data must share the same length')
 
-        if len(output_data) != len(self.input_data):
-            raise ValueError('Input data and Output data must have the same length')
-
-        self.output_data = output_data
+        self.__input_data = input_data
+        self.__output_data = output_data
 
     @property
     def input_data(self):
@@ -154,7 +161,34 @@ class Set:
         """Flattens input data, asuming the first dimension is the number of samples (which is preserved)
         """
         new_shape = self.input_data.shape[0], np.prod(self.input_data.shape[1:])
-        self.input_data.reshape(new_shape)
+        self.input_data = self.input_data.reshape(new_shape)
+
+    def save(self, path: str,
+             filename: str,
+             file_format: SetDataFormat = SetDataFormat.TXT):
+        """Saves the input and output data to files
+
+        Args:
+            path (str): system path of the save directory
+            filename (str): root file name
+            file_format (SetDataFormat): file format: text (.txt), binary (.h5) or numpy (.npy)
+
+        """
+        root_name = str_to_filename(filename)
+        input_filepath = os.path.join(path, root_name) + '-input'
+        output_filepath = os.path.join(path, root_name) + '-output'
+
+        if file_format == SetDataFormat.TXT:
+            np.savetxt(fname=input_filepath + '.txt', X=self.input_data)
+            np.savetxt(fname=output_filepath + '.txt', X=self.output_data)
+
+        elif file_format == SetDataFormat.BIN:
+            np.save(file=input_filepath + '.h5', arr=self.input_data, allow_pickle=True)
+            np.save(file=output_filepath + '.h5', arr=self.output_data, allow_pickle=True)
+
+        elif file_format == SetDataFormat.NPY:
+            np.save(file=input_filepath + '.npy', arr=self.input_data, allow_pickle=False)
+            np.save(file=output_filepath + '.npy', arr=self.output_data, allow_pickle=False)
 
 
 class SetFiles:

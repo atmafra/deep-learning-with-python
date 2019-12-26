@@ -93,7 +93,7 @@ def create_experiment(corpus: Corpus,
     loss = 'categorical_crossentropy'
     metrics = ['accuracy']
 
-    # training parameters
+    # train parameters
     epochs = 20
     batch_size = 128
     shuffle = True

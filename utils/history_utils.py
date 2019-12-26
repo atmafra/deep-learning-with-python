@@ -314,7 +314,7 @@ def plot_mae_dict(history_metrics: dict,
 
 
 def merge_history_metrics(history_list: list):
-    """ Merges and averages all metrics from a list of training histories
+    """ Merges and averages all metrics from a list of train histories
     """
     merged_metrics = {}
 

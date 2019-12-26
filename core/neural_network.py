@@ -121,14 +121,14 @@ class NeuralNetwork():
         """Trains the neural network
 
         Args:
-            training_set (Set): training set
-            training_configuration (TrainingConfiguration): training configuration hyperparameters
+            training_set (Set): train set
+            training_configuration (TrainingConfiguration): train configuration hyperparameters
             validation_set (Set): validation set (optional, depending on validation strategy)
-            display_progress_bars (bool): display progress bars in terminal during training
+            display_progress_bars (bool): display progress bars in terminal during train
 
         """
         if training_configuration is None:
-            raise RuntimeError('No training configuration defined')
+            raise RuntimeError('No train configuration defined')
 
         strategy = training_configuration.validation_strategy
         training_history = None
@@ -164,10 +164,10 @@ class NeuralNetwork():
     def train_generator(self, corpus_generator: CorpusFiles,
                         training_configuration: TrainingConfiguration,
                         display_progress_bars: bool = True):
-        """Trains the neural network using a training set generator
+        """Trains the neural network using a train set generator
         """
         if training_configuration is None:
-            raise RuntimeError('No training configuration defined')
+            raise RuntimeError('No train configuration defined')
 
         training_set_generator = corpus_generator.training_set_files
         if training_set_generator is None:

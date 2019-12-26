@@ -2,14 +2,14 @@ import numpy as np
 
 
 def separate_corpus(corpus: tuple):
-    """ Splits a corpus into training and test sets
+    """ Splits a corpus into train and test sets
     """
     assert corpus is not None, 'No corpus passed to split'
 
     if len(corpus) != 2:
-        raise RuntimeError('Corpus must have 2 sets: training and test')
+        raise RuntimeError('Corpus must have 2 sets: train and test')
 
-    # training set
+    # train set
     training_set = corpus[0]
     if len(training_set) != 2:
         raise RuntimeError('Training set must have 2 series: data and labels')
@@ -32,12 +32,12 @@ def split_dataset(dataset: np.array,
                   shuffle: bool = False):
     """ Splits a dataset into two subsets
     """
-    assert dataset is not None, 'Empty training set trying to split validation set'
+    assert dataset is not None, 'Empty train set trying to split validation set'
 
     dataset_len = len(dataset)
 
     if split_size > dataset_len:
-        raise RuntimeError('validation set size bigger ({}) than training set size ({})'
+        raise RuntimeError('validation set size bigger ({}) than train set size ({})'
                            .format(split_size, dataset_len))
 
     if shuffle:
@@ -82,12 +82,12 @@ def one_hot_encode(sequence: np.array, categories: int):
 
 
 def normalize(training_data: np.array, test_data: np.array):
-    """ Normalizes the training and test datasets
+    """ Normalizes the train and test datasets
     """
     mean = training_data.mean(axis=0)
     stddev = training_data.std(axis=0)
 
-    # training dataset
+    # train dataset
     training_data -= mean
     training_data /= stddev
 

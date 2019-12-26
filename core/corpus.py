@@ -13,16 +13,16 @@ class CorpusType(Enum):
 
 class Corpus:
     """A Corpus is a group of two sets: Training and Test. An additional set
-       can be created for training enhancemente purposes: the Validation set.
+       can be created for train enhancemente purposes: the Validation set.
 
         Args:
-            training_set (Set): training set
+            training_set (Set): train set
             test_set (Set): test set
 
         Members:
-            training_set (Set): training set
+            training_set (Set): train set
             test_set (Set): test set
-            validation_set (Set): a split from the training set, used to perform cross-validation
+            validation_set (Set): a split from the train set, used to perform cross-validation
 
     """
 
@@ -38,19 +38,30 @@ class Corpus:
                       training_inputs: np.ndarray,
                       training_outputs: np.ndarray,
                       test_inputs: np.ndarray,
-                      test_outputs: np.ndarray):
-        """Creates a corpus from the 4 datasets: training x test, input x output
+                      test_outputs: np.ndarray,
+                      validation_inputs: np.ndarray = None,
+                      validation_outputs: np.ndarray = None):
+        """Creates a corpus from the 4 datasets: train x test, input x output
 
         Args:
-            training_inputs (np.array): training set inputs
-            training_outputs (np.array): training set outputs
-            test_inputs (np.array): test set inputs
-            test_outputs (np.array): test set outputs
+            training_inputs (ndarray): train set inputs
+            training_outputs (ndarray): train set outputs
+            test_inputs (ndarray): test set inputs
+            test_outputs (ndarray): test set outputs
+            validation_inputs (ndarray): validation set inputs
+            validation_outputs (ndarray): validation set outputs
 
         """
         training_set = Set(training_inputs, training_outputs)
         test_set = Set(test_inputs, test_outputs)
-        return Corpus(training_set, test_set)
+        validation_set = None
+
+        if validation_inputs is not None and validation_outputs is not None:
+            validation_set = Set(validation_inputs, validation_outputs)
+
+        return Corpus(training_set=training_set,
+                      test_set=test_set,
+                      validation_set=validation_set)
 
     @classmethod
     def from_tuple(cls, corpus: tuple):
@@ -58,7 +69,7 @@ class Corpus:
            Each of these sets must have two subsets: input and output sets
 
         Args:
-            corpus: a pair of arrays that represent training and test sets
+            corpus: a pair of arrays that represent train and test sets
 
         """
         (training_inputs, training_outputs), (test_inputs, test_outputs) = dsu.separate_corpus(corpus)
@@ -71,6 +82,10 @@ class Corpus:
     @property
     def test_set(self):
         return self.__test_set
+
+    @property
+    def validation_set(self):
+        return self.__validation_set
 
     @property
     def input_size(self):
@@ -103,18 +118,18 @@ class Corpus:
         return self.training_set.average_output
 
     def get_validation_set(self, size: int, start: int = 0):
-        """Splits the training set in order to split a validation dataset
+        """Splits the train set in order to split a validation dataset
 
         Args:
             size  (int) : validation set size
-            start (int) : split training set from this position on
+            start (int) : split train set from this position on
 
         """
         training_set_copy = self.training_set.copy()
         return training_set_copy.split(size=size, start=start)
 
     def get_validation_set_k_fold(self, fold: int, k: int):
-        """Splits the training set to extract a validation set according to
+        """Splits the train set to extract a validation set according to
            the k-fold rule
 
         Args:
@@ -126,7 +141,7 @@ class Corpus:
 
 
 class CorpusFiles:
-    """A corpus generator contains three file sets: training, validation, and test
+    """A corpus generator contains three file sets: train, validation, and test
 
     """
 
@@ -137,7 +152,7 @@ class CorpusFiles:
         """Creates a new Corpus based on Set of files
 
         Args:
-            training_set_files (SetFiles): training set files
+            training_set_files (SetFiles): train set files
             validation_set_files (SetFiles): validation set files
             test_set_files (SetFiles): test set files
         """

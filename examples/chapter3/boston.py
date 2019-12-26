@@ -17,7 +17,7 @@ def load_corpus(num_words: int = 10000, verbose: bool = True) -> Corpus:
     corpus = boston.load_data()
     (training_inputs, training_outputs), (test_inputs, test_outputs) = dsu.separate_corpus(corpus)
 
-    # normalization of the training and test data
+    # normalization of the train and test data
     dsu.normalize(training_inputs, test_inputs)
 
     # create the corpus
@@ -51,7 +51,7 @@ def load_experiment(corpus: Corpus) -> Experiment:
     metrics = ['mae']
     loss = 'mse'
 
-    # training parameters
+    # train parameters
     epochs = 80
     batch_size = 16
     k = 5

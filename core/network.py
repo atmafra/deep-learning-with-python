@@ -106,29 +106,35 @@ def train_network(network: Model,
                   training_set: Set,
                   validation_set: Set = None,
                   verbose: bool = True):
-    """Train the neural network, returning the evolution of the training metrics
+    """Train the neural network, returning the evolution of the train metrics
 
     Args:
         network (Model): neural network model to be trained
-        training_configuration (dict): training algorithm parameters
-        training_set (Set): training set
+        training_configuration (dict): train algorithm parameters
+        training_set (Set): train set
         validation_set (Set): validation set
-        verbose (bool): display training progress bars if True
+        verbose (bool): display train progress bars if True
 
     """
-    validation = putl.get_parameter(training_configuration, 'validation')
-    validation_strategy = putl.get_parameter(validation, 'strategy')
-    working_training_set = training_set
+    validation_strategy = putl.get_parameter(parameters=training_configuration,
+                                             key='validation.strategy',
+                                             mandatory=True)
+
+    compile_parameters = putl.get_parameter(parameters=training_configuration,
+                                            key='keras.compile',
+                                            mandatory=True)
+
+    fit_parameters = putl.get_parameter(parameters=training_configuration,
+                                        key='keras.fit',
+                                        mandatory=True)
 
     validation_data = None
     if validation_set is not None:
         validation_data = validation_set.to_datasets()
 
-    keras_parameters = putl.get_parameter(training_configuration, 'keras')
-    compile_parameters = putl.get_parameter(keras_parameters, 'compile')
     network.compile(**compile_parameters)
 
-    fit_parameters = putl.get_parameter(keras_parameters, 'fit')
+    working_training_set = training_set
     history = network.fit(x=working_training_set.input_data,
                           y=working_training_set.output_data,
                           validation_data=validation_data,
@@ -143,14 +149,14 @@ def train_network_generator(network: Model,
                             training_configuration: dict,
                             validation_generator: Sequence = None,
                             verbose: bool = True):
-    """Train the neural network, returning the evolution of the training metrics
+    """Train the neural network, returning the evolution of the train metrics
 
     Args:
         network (Model): neural network model to be trained
-        training_generator (Sequence): training set generator
-        training_configuration (dict): training algorithm parameters
+        training_generator (Sequence): train set generator
+        training_configuration (dict): train algorithm parameters
         validation_generator (Sequence): validation set generator
-        verbose (bool): display training progress bars if True
+        verbose (bool): display train progress bars if True
 
     """
     validation = putl.get_parameter(training_configuration, 'validation')
@@ -179,11 +185,11 @@ def train_network_k_fold(network: Model,
 
     Args:
         network (Model): neural network model to be trained
-        training_configuration (dict): training parameters
-        training_set (Set): training data set
+        training_configuration (dict): train parameters
+        training_set (Set): train data set
         k (int): number of partitions in k-fold cross-validation
-        shuffle (bool): shuffle the training set before k splitting
-        verbose (bool): display training progress bars if True
+        shuffle (bool): shuffle the train set before k splitting
+        verbose (bool): display train progress bars if True
 
     """
     all_histories = []
@@ -334,7 +340,7 @@ def save_network_json(network: Model,
     """
     if root_name is None:
         root_name = network.name
-        
+
     architecture_filename = root_name + '.json'
     weights_filename = root_name + '.h5'
 

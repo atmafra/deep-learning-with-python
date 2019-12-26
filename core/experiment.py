@@ -17,15 +17,15 @@ class Experiment:
                  corpus: Corpus = None,
                  corpus_generator: CorpusFiles = None):
         """Creates a new Experiment to evaluate the performance of a specific
-           combination of data and training hyperparameters
+           combination of data and train hyperparameters
 
         Args:
             name (str): name of the experiment
             neural_network (NeuralNetwork): neural network architecture associated to this particular experiment
-            training_configuration (TrainingConfiguration): training hyperparameters
+            training_configuration (TrainingConfiguration): train hyperparameters
             corpus_type (CorpusType): defines if data comes from in-memory sets
                or from directory iterators (generators)
-            corpus (Corpus): the training and test sets to be used
+            corpus (Corpus): the train and test sets to be used
             corpus_generator (CorpusFiles): corpus generator
 
         """
@@ -52,9 +52,9 @@ class Experiment:
 
         # Sets
         self.__training_set = None
-        self.__validation_strategy = ValidationStrategy.NO_VALIDATION
         self.__validation_set = None
         self.__test_set = None
+        self.__validation_strategy = ValidationStrategy.NO_VALIDATION
 
     @property
     def name(self):
@@ -104,29 +104,45 @@ class Experiment:
     def training_set(self):
         return self.__training_set
 
+    @training_set.setter
+    def training_set(self, training_set):
+        self.__training_set = training_set
+
     @property
     def validation_set(self):
         return self.__validation_set
+
+    @validation_set.setter
+    def validation_set(self, validation_set):
+        self.__validation_set = validation_set
 
     @property
     def test_set(self):
         return self.__test_set
 
+    @test_set.setter
+    def test_set(self, test_set):
+        self.__test_set = test_set
+
     def prepare_sets(self):
-        """Prepare the training and the validation sets for training
+        """Prepare the train and the validation sets for train
         """
         validation_strategy = self.training_configuration.validation_strategy
 
         if validation_strategy in (ValidationStrategy.NO_VALIDATION, ValidationStrategy.K_FOLD_CROSS_VALIDATION):
-            self.__training_set = self.corpus.training_set
-            self.__validation_set = None
+            self.training_set = self.corpus.training_set
+            self.validation_set = None
 
         elif validation_strategy == ValidationStrategy.CROSS_VALIDATION:
-            validation_configuration = self.training_configuration.validation_configuration
-            validation_set_size = get_parameter(validation_configuration, 'set_size')
-            self.__validation_set, self.__training_set = self.corpus.get_validation_set(validation_set_size)
+            if self.corpus.validation_set is None:
+                validation_configuration = self.training_configuration.validation_configuration
+                validation_set_size = get_parameter(validation_configuration, 'set_size')
+                self.validation_set, self.training_set = self.corpus.get_validation_set(validation_set_size)
+            else:
+                self.training_set = self.corpus.training_set
+                self.validation_set = self.corpus.validation_set
 
-        self.__test_set = self.corpus.test_set
+        self.test_set = self.corpus.test_set
 
     def train(self, display_progress_bars: bool = True):
         """Train the neural network model
@@ -230,7 +246,7 @@ class Experiment:
         hutl.plot_accuracy(history=self.training_history, title='Training and Validation Accuracy')
 
     def print_test_results(self):
-        """Print the result of the training session
+        """Print the result of the train session
         """
         print("\n{}".format(self.name))
         print("Test loss     = {:.6}".format(self.test_loss))
@@ -282,7 +298,7 @@ class ExperimentPlan:
                   title: str = "Training Loss",
                   training: bool = True,
                   validation: bool = False):
-        """Plots the evolution of Loss during training
+        """Plots the evolution of Loss during train
         """
         history_list = []
         labels_list = []
@@ -302,7 +318,7 @@ class ExperimentPlan:
                       title: str = "Training Accuracy",
                       training: bool = True,
                       validation: bool = False):
-        """Plots the evolution of Accuracy during training
+        """Plots the evolution of Accuracy during train
         """
         history_list = []
         labels_list = []

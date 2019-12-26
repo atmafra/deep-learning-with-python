@@ -13,6 +13,20 @@ def get_parameter(parameters: dict,
         default_value: default value, if parameter is not found (and not mandatory)
 
     """
+    key_split = key.split('.', 1)
+    if len(key_split) == 2:
+        sub_parameters = get_parameter(parameters=parameters,
+                                       key=key_split[0],
+                                       mandatory=mandatory,
+                                       delete=False)
+
+        if sub_parameters is not None:
+            return get_parameter(parameters=sub_parameters,
+                                 key=key_split[1],
+                                 mandatory=mandatory,
+                                 delete=delete,
+                                 default_value=default_value)
+
     if key in parameters:
         value = parameters.get(key)
         if delete:

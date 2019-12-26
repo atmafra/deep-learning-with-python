@@ -14,7 +14,7 @@ output_size = 1
 hidden_activation = 'relu'
 output_activation = 'sigmoid'
 
-# global training parameters
+# global train parameters
 epochs = 20
 batch_size = 512
 validation_set_size = 10000

@@ -59,7 +59,7 @@ def load_experiments(corpus: Corpus):
     loss = 'binary_crossentropy'
     metrics = ['accuracy']
 
-    # training parameters
+    # train parameters
     epochs = 5
     batch_size = 512
     shuffle = True

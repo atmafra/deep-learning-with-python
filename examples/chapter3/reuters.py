@@ -76,7 +76,7 @@ def load_experiment(corpus: Corpus, encoding_schema):
     elif encoding_schema == 'int-array':
         loss = 'sparse_categorical_crossentropy'
 
-    # training parameters
+    # train parameters
     epochs = 20
     batch_size = 512
     shuffle = True

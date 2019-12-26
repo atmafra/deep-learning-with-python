@@ -50,9 +50,8 @@ neural_network_cats_and_dogs_dropout = \
     NeuralNetwork.from_configurations(name='Cats and Dogs - convolutional with dropout',
                                       layers_configuration=cats_and_dogs_dropout)
 
-# training configuration
-learning_rate = 1e-4
-
+# train configuration
+learning_rate = 2e-5
 training_parameters = {
     'keras': {
         'compile': {
