@@ -34,7 +34,7 @@ def load_corpus(verbose: bool = True) -> Corpus:
     if verbose:
         print("Loading MNIST dataset...")
 
-    corpus = Corpus.from_tuple(mnist.load_data())
+    corpus = Corpus.from_tuple(corpus=mnist.load_data(), name='MNIST')
 
     train_set_size = corpus.training_set.length
     image_shape = corpus.training_set.input_data.shape
@@ -66,7 +66,6 @@ def create_neural_network(corpus: Corpus, model_source: ModelSource):
     output_size = corpus.output_size
     hidden_layer_units = 16
     hidden_layer_activation = 'relu'
-
 
     layers_configuration = [
         {'layer_type': 'Dense', 'name': 'Dense-1', 'units': hidden_layer_units, 'activation': hidden_layer_activation,

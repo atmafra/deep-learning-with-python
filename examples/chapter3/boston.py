@@ -15,20 +15,25 @@ def load_corpus(num_words: int = 10000, verbose: bool = True) -> Corpus:
         print('Loading Boston Housing dataset...')
 
     corpus = boston.load_data()
-    (training_inputs, training_outputs), (test_inputs, test_outputs) = dsu.separate_corpus(corpus)
+    corpus_datasets = dsu.separate_corpus(corpus)
+    training_inputs = corpus_datasets[0][0]
+    training_outputs = corpus_datasets[0][1]
+    test_inputs = corpus_datasets[1][0]
+    test_outputs = corpus_datasets[1][1]
 
     # normalization of the train and test data
     dsu.normalize(training_inputs, test_inputs)
 
     # create the corpus
-    corpus = Corpus.from_datasets(training_inputs=training_inputs,
-                                  training_outputs=training_outputs,
-                                  test_inputs=test_inputs,
-                                  test_outputs=test_outputs)
+    corpus = Corpus.from_datasets(training_input=training_inputs,
+                                  training_output=training_outputs,
+                                  test_input=test_inputs,
+                                  test_output=test_outputs,
+                                  name='Boston Housing')
 
     if verbose:
-        print('Training examples:', len(training_inputs))
-        print('Test examples    :', len(test_inputs))
+        print('Training examples:', corpus.training_set.length)
+        print('Test examples    :', corpus.test_set.length)
         print('Minimum price    : {:.2f}'.format(corpus.min_output))
         print('Average price    : {:.2f}'.format(corpus.average_output))
         print('Maximum price    : {:.2f}'.format(corpus.max_output))

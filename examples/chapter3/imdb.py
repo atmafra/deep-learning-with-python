@@ -23,11 +23,13 @@ def load_corpus(words: int = 10000, verbose: bool = True) -> Corpus:
     if verbose:
         print("Loading IMDB dataset...")
 
-    corpus = imdb.load_data(num_words=words)
-    (train_samples, train_labels), (test_samples, test_labels) = dsu.separate_corpus(corpus)
+    corpus_datasets = dsu.separate_corpus(imdb.load_data(num_words=words))
+    train_samples = corpus_datasets[0][0]
+    test_samples = corpus_datasets[1][0]
+    train_labels = corpus_datasets[0][1]
+    test_labels = corpus_datasets[1][1]
 
     # one-hot encode the phrases
-    # global vector_dimension
     vector_dimension = words
     training_inputs = dsu.one_hot_encode(train_samples, vector_dimension)
     test_inputs = dsu.one_hot_encode(test_samples, vector_dimension)
@@ -36,12 +38,18 @@ def load_corpus(words: int = 10000, verbose: bool = True) -> Corpus:
     training_outputs = np.asarray(train_labels).astype('float32')
     test_outputs = np.asarray(test_labels).astype('float32')
 
-    if verbose:
-        print("{} train reviews loaded".format(len(train_samples)))
-        print("{} test reviews loaded".format(len(test_samples)))
-
     # create the corpus
-    return Corpus.from_datasets(training_inputs, training_outputs, test_inputs, test_outputs)
+    corpus = Corpus.from_datasets(training_input=training_inputs,
+                                  training_output=training_outputs,
+                                  test_input=test_inputs,
+                                  test_output=test_outputs,
+                                  name='IMDB')
+
+    if verbose:
+        print("{} train reviews loaded".format(corpus.training_set.length))
+        print("{} test reviews loaded".format(corpus.test_set.length))
+
+    return corpus
 
 
 def load_experiments(corpus: Corpus):

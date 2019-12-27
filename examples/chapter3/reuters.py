@@ -18,8 +18,11 @@ def load_corpus(num_words: int, encoding_schema: str, verbose: bool = True):
     if verbose:
         print('Loading Reuters dataset...')
 
-    dataset = reuters.load_data(num_words=num_words)
-    (train_data, train_labels), (test_data, test_labels) = dsu.separate_corpus(dataset)
+    corpus_datasets = dsu.separate_corpus(reuters.load_data(num_words=num_words))
+    train_data = corpus_datasets[0][0]
+    test_data = corpus_datasets[1][0]
+    train_labels = corpus_datasets[0][1]
+    test_labels = corpus_datasets[1][1]
 
     # vectorization of the input data
     train_data = dsu.one_hot_encode(train_data, num_words)
@@ -36,11 +39,15 @@ def load_corpus(num_words: int, encoding_schema: str, verbose: bool = True):
         train_labels = np.array(train_labels)
         test_labels = np.array(test_labels)
 
-    corpus = Corpus.from_datasets(train_data, train_labels, test_data, test_labels)
+    corpus = Corpus.from_datasets(training_input=train_data,
+                                  training_output=train_labels,
+                                  test_input=test_data,
+                                  test_output=test_labels,
+                                  name='Reuters')
 
     if verbose:
-        print('Training phrases:', len(train_data))
-        print('Test phrases    :', len(test_data))
+        print('Training phrases:', corpus.training_set.length)
+        print('Test phrases    :', corpus.test_set.length)
         print('Input size      :', corpus.input_size)
         print('Output size:    :', corpus.output_size)
         print('Categories      :', categories)
@@ -114,7 +121,6 @@ def load_experiment(corpus: Corpus, encoding_schema):
 
 
 def run(num_words: int = 10000, encoding_schema: str = 'one-hot'):
-
     if encoding_schema == 'one-hot':
         # one-hot encoding experiment
         corpus_one_hot = load_corpus(num_words=num_words, encoding_schema='one-hot')

@@ -2,28 +2,53 @@ import numpy as np
 
 
 def separate_corpus(corpus: tuple):
-    """ Splits a corpus into train and test sets
+    """ Splits a corpus into train, test, and validation (optional) data sets
     """
     assert corpus is not None, 'No corpus passed to split'
 
-    if len(corpus) != 2:
-        raise RuntimeError('Corpus must have 2 sets: train and test')
+    if len(corpus) < 2:
+        raise ValueError('Corpus must have at least two sets: the training and test sets')
 
-    # train set
-    training_set = corpus[0]
-    if len(training_set) != 2:
-        raise RuntimeError('Training set must have 2 series: data and labels')
-    training_data = training_set[0]
-    training_labels = training_set[1]
+    training_inputs = None
+    training_outputs = None
+    test_inputs = None
+    test_outputs = None
+    validation_inputs = None
+    validation_outputs = None
 
-    # test set
-    test_set = corpus[1]
-    if len(test_set) != 2:
-        raise RuntimeError('Test set must have 2 series: data and labels')
-    test_data = test_set[0]
-    test_labels = test_set[1]
+    # training set (mandatory)
+    if len(corpus[0]) < 1:
+        raise RuntimeError('Training set must have at least input data')
 
-    return (training_data, training_labels), (test_data, test_labels)
+    training_inputs = corpus[0][0]
+    if len(corpus[0]) > 1:
+        training_outputs = corpus[0][1]
+
+    # test set (mandatory)
+    if len(corpus) > 1:
+
+        if len(corpus[1]) < 1:
+            raise RuntimeError('Test set must have at least input data')
+
+        test_inputs = corpus[1][0]
+        if len(corpus[1]) > 1:
+            test_outputs = corpus[1][1]
+
+    # validation set (optional)
+    if len(corpus) > 2:
+
+        if len(corpus[2]) < 1:
+            raise RuntimeError('Validation set must have at least input data')
+
+        test_inputs = corpus[2][0]
+        if len(corpus[2] > 1):
+            test_outputs = corpus[2][1]
+
+    training_set = (training_inputs, training_outputs)
+    test_set = (test_inputs, test_outputs)
+    validation_set = (validation_inputs, validation_outputs)
+
+    return training_set, test_set, validation_set
 
 
 def split_dataset(dataset: np.array,

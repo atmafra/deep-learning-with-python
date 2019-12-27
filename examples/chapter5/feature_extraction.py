@@ -78,10 +78,12 @@ def extract_features(set_files: SetFiles,
     return Set(input_data=features, output_data=labels)
 
 
-def load_corpus(dirs, conv_base):
-
+def build_corpus(dirs, conv_base, use_feature_files: bool = True):
+    dirs = prepare_directories()
+    copy_files(dirs, check=True)
+    conv_base = load_convolutional_base()
     corpus_files = load_corpus_files(dirs=dirs, use_augmented=False, check=True)
-    file_format = SetDataFormat.TXT
+    file_format = SetDataFormat.NPY
 
     print('\nExtracting features from train set ({} files)'.format(corpus_files.training_set_files.length))
     training_set = extract_features(set_files=corpus_files.training_set_files, conv_base=conv_base)
@@ -107,13 +109,30 @@ def load_corpus(dirs, conv_base):
     return Corpus(training_set=training_set, test_set=test_set, validation_set=validation_set)
 
 
-def run():
-    dirs = prepare_directories()
-    copy_files(dirs, check=True)
+def load_corpus():
+    return Corpus.from_files(training_path='data/features/train',
+                             training_input_filename='cats-and-dogs-train-input.npy',
+                             training_output_filename='cats-and-dogs-train-output.npy',
+                             test_path='data/features/test',
+                             test_input_filename='cats-and-dogs-test-input.npy',
+                             test_output_filename='cats-and-dogs-test-output.npy',
+                             validation_path='data/features/validation',
+                             validation_input_filename='cats-and-dogs-validation-input.npy',
+                             validation_output_filename='cats-and-dogs-validation-output.npy',
+                             file_format=SetDataFormat.NPY,
+                             sets_base_name='Cats and Dogs',
+                             corpus_name='Cats and Dogs')
 
-    conv_base = load_convolutional_base()
-    corpus = load_corpus(dirs, conv_base)
+
+def run(build_dataset: bool = False):
+    corpus = None
+
+    if build_dataset:
+        corpus = build_corpus()
+    else:
+        corpus = load_corpus()
 
     experiment = load_experiment(corpus=corpus)
-    experiment.run(print_results=True, plot_history=True, display_progress_bars=True)
+    experiment.run(print_results=True, plot_history=False, display_progress_bars=True)
+    experiment.plot_loss()
     experiment.plot_accuracy()

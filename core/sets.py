@@ -5,36 +5,41 @@ import numpy as np
 from keras_preprocessing.image import DirectoryIterator
 
 import utils.dataset_utils as dsu
+from core.file_structures import SetFileStructure
 from utils.file_utils import str_to_filename
 
 
 class SetDataFormat(Enum):
     TXT = 1
-    BIN = 2
-    NPY = 3
+    NPY = 2
 
 
 class Set:
-    """A Set is a pair of two arrays: input and output data
+    """A Set is a pair of two arrays of the same dimension: input and output data
 
     Args:
-        input_data (np.ndarray): input data array
-        output_data (np.ndarray): output data array
+        input_data (ndarray): input data array
+        output_data (ndarray): output data array
+        name (str): set name
 
     """
 
     def __init__(self,
                  input_data: np.ndarray,
-                 output_data: np.ndarray = None):
+                 output_data: np.ndarray = None,
+                 name: str = ''):
         """Create a new Set instance
         """
-        assert input_data is not None, 'Cannot create Set with no input data'
+        if input_data is None:
+            raise ValueError('Cannot create set with no input data')
 
-        if len(output_data) != len(input_data):
-            raise ValueError('Input and Output data must share the same length')
+        if output_data is not None:
+            if len(output_data) != len(input_data):
+                raise ValueError('Input and Output data must share the same length')
 
-        self.__input_data = input_data
-        self.__output_data = output_data
+        self.input_data = input_data
+        self.output_data = output_data
+        self.__name = name
 
     @property
     def input_data(self):
@@ -51,6 +56,10 @@ class Set:
     @output_data.setter
     def output_data(self, output_data):
         self.__output_data = output_data
+
+    @property
+    def name(self):
+        return self.__name
 
     @property
     def length(self):
@@ -179,16 +188,64 @@ class Set:
         output_filepath = os.path.join(path, root_name) + '-output'
 
         if file_format == SetDataFormat.TXT:
-            np.savetxt(fname=input_filepath + '.txt', X=self.input_data)
-            np.savetxt(fname=output_filepath + '.txt', X=self.output_data)
-
-        elif file_format == SetDataFormat.BIN:
-            np.save(file=input_filepath + '.h5', arr=self.input_data, allow_pickle=True)
-            np.save(file=output_filepath + '.h5', arr=self.output_data, allow_pickle=True)
+            np.savetxt(fname=input_filepath, X=self.input_data)
+            np.savetxt(fname=output_filepath, X=self.output_data)
 
         elif file_format == SetDataFormat.NPY:
-            np.save(file=input_filepath + '.npy', arr=self.input_data, allow_pickle=False)
-            np.save(file=output_filepath + '.npy', arr=self.output_data, allow_pickle=False)
+            np.save(file=input_filepath, arr=self.input_data, allow_pickle=False)
+            np.save(file=output_filepath, arr=self.output_data, allow_pickle=False)
+
+    @classmethod
+    def from_files(cls, path: str,
+                   input_data_filename: str,
+                   output_data_filename: str,
+                   file_format: SetDataFormat = SetDataFormat.TXT,
+                   name: str = ''):
+        """Creates a new set by reading input and output data files
+
+        Args:
+            path (str): system path of the data files directory
+            input_data_filename (str): input file name
+            output_data_filename (str): output file name
+            file_format (SetDataFormat): data files format
+            name (str): set name
+
+        """
+        input_data = None
+        output_data = None
+        input_filepath = os.path.join(path, input_data_filename)
+        output_filepath = os.path.join(path, output_data_filename)
+
+        if file_format == SetDataFormat.TXT:
+            input_data = np.loadtxt(fname=input_filepath)
+            output_data = np.loadtxt(fname=output_filepath)
+
+        elif file_format == SetDataFormat.NPY:
+            input_data = np.load(file=input_filepath)
+            output_data = np.load(file=output_filepath)
+
+        return Set(input_data=input_data,
+                   output_data=output_data,
+                   name=name)
+
+    @classmethod
+    def from_file_structure(cls, set_file_structure: SetFileStructure, name: str = ''):
+        return Set.from_files(path=set_file_structure.path,
+                              input_data_filename=set_file_structure.input_data_filename,
+                              output_data_filename=set_file_structure.output_data_filename,
+                              file_format=set_file_structure.file_format,
+                              name=name)
+
+    def get_canonical_file_structure(self, path: str,
+                                     file_format: SetDataFormat):
+        """Creates a new Set File Structure according to canonical definitions
+
+        Args:
+            path (str): system path of data files directory
+            file_format (SetDataFormat): data files format
+
+        """
+        return SetFileStructure.get_canonical(path=path, set_name=self.name, file_format=file_format)
 
 
 class SetFiles:
