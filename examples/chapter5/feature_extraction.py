@@ -7,9 +7,9 @@ from core.corpus import Corpus, CorpusType
 from core.experiment import Experiment
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
-from core.sets import SetFiles, Set, SetDataFormat
+from core.sets import Set, DatafileFormat
 from core.training_configuration import TrainingConfiguration
-from examples.chapter5.cats_and_dogs_files import prepare_directories, load_corpus_files, copy_files
+from examples.chapter5.cats_and_dogs_files import *
 
 classifier = [
     {'layer_type': 'Dense', 'units': 256, 'activation': 'relu', 'input_dim': 4 * 4 * 512},
@@ -78,59 +78,56 @@ def extract_features(set_files: SetFiles,
     return Set(input_data=features, output_data=labels)
 
 
-def build_corpus(dirs, conv_base, use_feature_files: bool = True):
+def build_corpus(corpus_file_structure: CorpusFileStructure,
+                 name: str):
+    """Builds the corpus by processing the source files
+
+    Args:
+        corpus_file_structure (CorpusFileStructure): corpus file structure
+        name (str): corpus name
+
+    """
     dirs = prepare_directories()
     copy_files(dirs, check=True)
     conv_base = load_convolutional_base()
     corpus_files = load_corpus_files(dirs=dirs, use_augmented=False, check=True)
-    file_format = SetDataFormat.NPY
 
     print('\nExtracting features from train set ({} files)'.format(corpus_files.training_set_files.length))
     training_set = extract_features(set_files=corpus_files.training_set_files, conv_base=conv_base)
     training_set.flatten_input_data()
-    training_set.save(path='data/features/train',
-                      filename='cats and dogs train',
-                      file_format=file_format)
+    training_set.save_file_structure(set_file_structure=corpus_file_structure.training_file_structure)
 
     print('\nExtracting features from validation set ({} files)'.format(corpus_files.validation_set_files.length))
     validation_set = extract_features(set_files=corpus_files.validation_set_files, conv_base=conv_base)
     validation_set.flatten_input_data()
-    validation_set.save(path='data/features/validation',
-                        filename='cats and dogs validation',
-                        file_format=file_format)
+    validation_set.save_file_structure(set_file_structure=corpus_file_structure.validation_file_structure)
 
     print('\nExtracting features from test set ({} files)'.format(corpus_files.test_set_files.length))
     test_set = extract_features(set_files=corpus_files.test_set_files, conv_base=conv_base)
     test_set.flatten_input_data()
-    test_set.save(path='data/features/test',
-                  filename='cats and dogs test',
-                  file_format=file_format)
+    test_set.save_file_structure(set_file_structure=corpus_file_structure.test_file_structure)
 
-    return Corpus(training_set=training_set, test_set=test_set, validation_set=validation_set)
-
-
-def load_corpus():
-    return Corpus.from_files(training_path='data/features/train',
-                             training_input_filename='cats-and-dogs-train-input.npy',
-                             training_output_filename='cats-and-dogs-train-output.npy',
-                             test_path='data/features/test',
-                             test_input_filename='cats-and-dogs-test-input.npy',
-                             test_output_filename='cats-and-dogs-test-output.npy',
-                             validation_path='data/features/validation',
-                             validation_input_filename='cats-and-dogs-validation-input.npy',
-                             validation_output_filename='cats-and-dogs-validation-output.npy',
-                             file_format=SetDataFormat.NPY,
-                             sets_base_name='Cats and Dogs',
-                             corpus_name='Cats and Dogs')
+    return Corpus(training_set=training_set,
+                  test_set=test_set,
+                  validation_set=validation_set,
+                  name=name)
 
 
 def run(build_dataset: bool = False):
     corpus = None
+    corpus_name = 'Cats and Dogs'
+    base_path = 'data/features'
+    corpus_file_structure = \
+        CorpusFileStructure.get_canonical(corpus_name=corpus_name,
+                                          base_path=base_path,
+                                          file_format=DatafileFormat.NPY)
 
     if build_dataset:
-        corpus = build_corpus()
+        corpus = build_corpus(corpus_file_structure=corpus_file_structure,
+                              name=corpus_name)
     else:
-        corpus = load_corpus()
+        corpus = Corpus.from_file_structure(corpus_file_structure=corpus_file_structure,
+                                            name=corpus_name)
 
     experiment = load_experiment(corpus=corpus)
     experiment.run(print_results=True, plot_history=False, display_progress_bars=True)

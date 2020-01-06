@@ -1,17 +1,10 @@
 import os
-from enum import Enum
 
 import numpy as np
 from keras_preprocessing.image import DirectoryIterator
 
 import utils.dataset_utils as dsu
-from core.file_structures import SetFileStructure
-from utils.file_utils import str_to_filename
-
-
-class SetDataFormat(Enum):
-    TXT = 1
-    NPY = 2
+from core.file_structures import SetFileStructure, DatafileFormat
 
 
 class Set:
@@ -173,33 +166,48 @@ class Set:
         self.input_data = self.input_data.reshape(new_shape)
 
     def save(self, path: str,
-             filename: str,
-             file_format: SetDataFormat = SetDataFormat.TXT):
+             filename_input: str,
+             filename_output: str,
+             file_format: DatafileFormat):
         """Saves the input and output data to files
 
         Args:
             path (str): system path of the save directory
-            filename (str): root file name
-            file_format (SetDataFormat): file format: text (.txt), binary (.h5) or numpy (.npy)
+            filename_input (str): input data filename
+            filename_output (str): output data filename
+            file_format (DatafileFormat): data file format
 
         """
-        root_name = str_to_filename(filename)
-        input_filepath = os.path.join(path, root_name) + '-input'
-        output_filepath = os.path.join(path, root_name) + '-output'
+        # root_name = str_to_filename(filename)
+        input_filepath = os.path.join(path, filename_input)
+        output_filepath = os.path.join(path, filename_output)
 
-        if file_format == SetDataFormat.TXT:
+        if file_format == DatafileFormat.TXT:
             np.savetxt(fname=input_filepath, X=self.input_data)
             np.savetxt(fname=output_filepath, X=self.output_data)
 
-        elif file_format == SetDataFormat.NPY:
+        elif file_format == DatafileFormat.NPY:
             np.save(file=input_filepath, arr=self.input_data, allow_pickle=False)
             np.save(file=output_filepath, arr=self.output_data, allow_pickle=False)
+
+    def save_file_structure(self,
+                            set_file_structure: SetFileStructure):
+        """"Saves the set data files according to the set file structure
+
+        Args:
+            set_file_structure (SetFileStructure): paths and filenames of the data files
+
+        """
+        self.save(path=set_file_structure.path,
+                  filename_input=set_file_structure.input_data_filename,
+                  filename_output=set_file_structure.output_data_filename,
+                  file_format=set_file_structure.file_format)
 
     @classmethod
     def from_files(cls, path: str,
                    input_data_filename: str,
                    output_data_filename: str,
-                   file_format: SetDataFormat = SetDataFormat.TXT,
+                   file_format: DatafileFormat = DatafileFormat.TXT,
                    name: str = ''):
         """Creates a new set by reading input and output data files
 
@@ -207,7 +215,7 @@ class Set:
             path (str): system path of the data files directory
             input_data_filename (str): input file name
             output_data_filename (str): output file name
-            file_format (SetDataFormat): data files format
+            file_format (DatafileFormat): data files format
             name (str): set name
 
         """
@@ -216,11 +224,11 @@ class Set:
         input_filepath = os.path.join(path, input_data_filename)
         output_filepath = os.path.join(path, output_data_filename)
 
-        if file_format == SetDataFormat.TXT:
+        if file_format == DatafileFormat.TXT:
             input_data = np.loadtxt(fname=input_filepath)
             output_data = np.loadtxt(fname=output_filepath)
 
-        elif file_format == SetDataFormat.NPY:
+        elif file_format == DatafileFormat.NPY:
             input_data = np.load(file=input_filepath)
             output_data = np.load(file=output_filepath)
 
@@ -237,12 +245,12 @@ class Set:
                               name=name)
 
     def get_canonical_file_structure(self, path: str,
-                                     file_format: SetDataFormat):
+                                     file_format: DatafileFormat):
         """Creates a new Set File Structure according to canonical definitions
 
         Args:
             path (str): system path of data files directory
-            file_format (SetDataFormat): data files format
+            file_format (DatafileFormat): data files format
 
         """
         return SetFileStructure.get_canonical(path=path, set_name=self.name, file_format=file_format)

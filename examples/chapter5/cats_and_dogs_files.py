@@ -4,6 +4,7 @@ import utils.parameter_utils as putl
 import shutil
 
 from core.corpus import CorpusFiles
+from core.file_structures import CorpusFileStructure
 from core.sets import SetFiles
 from utils.image_utils import get_image_directory_iterator
 

@@ -4,7 +4,7 @@ import numpy as np
 
 import utils.dataset_utils as dsu
 from core.file_structures import CorpusFileStructure
-from core.sets import Set, SetFiles, SetDataFormat
+from core.sets import Set, SetFiles, DatafileFormat
 
 
 class CorpusType(Enum):
@@ -109,7 +109,7 @@ class Corpus:
                    validation_path: str,
                    validation_input_filename: str,
                    validation_output_filename: str,
-                   file_format: SetDataFormat,
+                   file_format: DatafileFormat,
                    corpus_name: str,
                    sets_base_name: str):
         """Creates a corpus by loading feature files directly from disk
@@ -143,11 +143,16 @@ class Corpus:
     def from_file_structure(cls, corpus_file_structure: CorpusFileStructure, name: str):
         """Creates a new corpus based on a Corpus File Structure
 
+        Args:
+            corpus_file_structure (CorpusFileStructure): corpus file structures containing the paths and
+                file names of the data files of the Training, Test and Validation (optional) sets
+            name (str): corpus name
+
         """
         training_set = Set.from_file_structure(set_file_structure=corpus_file_structure.training_file_structure)
         test_set = Set.from_file_structure(set_file_structure=corpus_file_structure.test_file_structure)
         validation_set = Set.from_file_structure(set_file_structure=corpus_file_structure.validation_file_structure)
-        j
+
         return Corpus(training_set=training_set,
                       test_set=test_set,
                       validation_set=validation_set,
