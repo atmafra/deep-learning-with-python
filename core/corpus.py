@@ -3,8 +3,7 @@ from enum import Enum
 import numpy as np
 
 import utils.dataset_utils as dsu
-from core.file_structures import CorpusFileStructure
-from core.sets import Set, SetFiles, DatafileFormat
+from core.datasets import Dataset, DatasetFileIterator
 
 
 class CorpusType(Enum):
@@ -24,16 +23,16 @@ class Corpus:
 
     """
 
-    def __init__(self, training_set: Set,
-                 test_set: Set,
-                 validation_set: Set = None,
+    def __init__(self, training_set: Dataset,
+                 test_set: Dataset,
+                 validation_set: Dataset = None,
                  name: str = ''):
         """Creates a new corpus
 
         Args:
-            training_set (Set): train set
-            test_set (Set): test set
-            validation_set (Set): validation set
+            training_set (Dataset): train set
+            test_set (Dataset): test set
+            validation_set (Dataset): validation set
             name (str): corpus name
 
         """
@@ -63,12 +62,12 @@ class Corpus:
             name (str): corpus name
 
         """
-        training_set = Set(training_input, training_output)
-        test_set = Set(test_input, test_output)
+        training_set = Dataset(training_input, training_output)
+        test_set = Dataset(test_input, test_output)
         validation_set = None
 
         if validation_input is not None:
-            validation_set = Set(validation_input, validation_output)
+            validation_set = Dataset(validation_input, validation_output)
 
         return Corpus(training_set=training_set,
                       test_set=test_set,
@@ -98,72 +97,12 @@ class Corpus:
                                     validation_output=corpus_datasets[2][1],
                                     name=name)
 
-    @classmethod
-    def from_files(cls,
-                   training_path: str,
-                   training_input_filename: str,
-                   training_output_filename: str,
-                   test_path: str,
-                   test_input_filename: str,
-                   test_output_filename: str,
-                   validation_path: str,
-                   validation_input_filename: str,
-                   validation_output_filename: str,
-                   file_format: DatafileFormat,
-                   corpus_name: str,
-                   sets_base_name: str):
-        """Creates a corpus by loading feature files directly from disk
-        """
-        training_set = Set.from_files(path=training_path,
-                                      input_data_filename=training_input_filename,
-                                      output_data_filename=training_output_filename,
-                                      file_format=file_format,
-                                      name=sets_base_name + ' - train')
-
-        test_set = Set.from_files(path=test_path,
-                                  input_data_filename=test_input_filename,
-                                  output_data_filename=test_output_filename,
-                                  file_format=file_format,
-                                  name=sets_base_name + ' - test')
-
-        validation_set = None
-        if validation_input_filename:
-            validation_set = Set.from_files(path=validation_path,
-                                            input_data_filename=validation_input_filename,
-                                            output_data_filename=validation_output_filename,
-                                            file_format=file_format,
-                                            name=sets_base_name + ' - validation')
-
-        return Corpus(training_set=training_set,
-                      test_set=test_set,
-                      validation_set=validation_set,
-                      name=corpus_name)
-
-    @classmethod
-    def from_file_structure(cls, corpus_file_structure: CorpusFileStructure, name: str):
-        """Creates a new corpus based on a Corpus File Structure
-
-        Args:
-            corpus_file_structure (CorpusFileStructure): corpus file structures containing the paths and
-                file names of the data files of the Training, Test and Validation (optional) sets
-            name (str): corpus name
-
-        """
-        training_set = Set.from_file_structure(set_file_structure=corpus_file_structure.training_file_structure)
-        test_set = Set.from_file_structure(set_file_structure=corpus_file_structure.test_file_structure)
-        validation_set = Set.from_file_structure(set_file_structure=corpus_file_structure.validation_file_structure)
-
-        return Corpus(training_set=training_set,
-                      test_set=test_set,
-                      validation_set=validation_set,
-                      name=name)
-
     @property
     def training_set(self):
         return self.__training_set
 
     @training_set.setter
-    def training_set(self, training_set: Set):
+    def training_set(self, training_set: Dataset):
         self.__training_set = training_set
 
     @property
@@ -171,7 +110,7 @@ class Corpus:
         return self.__test_set
 
     @test_set.setter
-    def test_set(self, test_set: Set):
+    def test_set(self, test_set: Dataset):
         self.__test_set = test_set
 
     @property
@@ -179,7 +118,7 @@ class Corpus:
         return self.__validation_set
 
     @validation_set.setter
-    def validation_set(self, validation_set: Set):
+    def validation_set(self, validation_set: Dataset):
         self.__validation_set = validation_set
 
     @property
@@ -245,15 +184,15 @@ class CorpusFiles:
     """
 
     def __init__(self,
-                 training_set_files: SetFiles,
-                 validation_set_files: SetFiles,
-                 test_set_files: SetFiles):
+                 training_set_files: DatasetFileIterator,
+                 validation_set_files: DatasetFileIterator,
+                 test_set_files: DatasetFileIterator):
         """Creates a new Corpus based on Set of files
 
         Args:
-            training_set_files (SetFiles): train set files
-            validation_set_files (SetFiles): validation set files
-            test_set_files (SetFiles): test set files
+            training_set_files (DatasetFileIterator): train set files
+            validation_set_files (DatasetFileIterator): validation set files
+            test_set_files (DatasetFileIterator): test set files
         """
         self.__training_set_files = training_set_files
         self.__validation_set_files = validation_set_files

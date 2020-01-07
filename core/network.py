@@ -7,7 +7,7 @@ from keras.engine.saving import load_model, model_from_json
 from keras.utils import Sequence
 
 import utils.parameter_utils as putl
-from core.sets import Set, SetFiles
+from core.datasets import Dataset, DatasetFileIterator
 from utils.file_utils import str_to_filename
 from utils.parameter_utils import extract_parameter
 
@@ -103,16 +103,16 @@ def create_model_from_file(filepath: str,
 
 def train_network(network: Model,
                   training_configuration: dict,
-                  training_set: Set,
-                  validation_set: Set = None,
+                  training_set: Dataset,
+                  validation_set: Dataset = None,
                   verbose: bool = True):
     """Train the neural network, returning the evolution of the train metrics
 
     Args:
         network (Model): neural network model to be trained
         training_configuration (dict): train algorithm parameters
-        training_set (Set): train set
-        validation_set (Set): validation set
+        training_set (Dataset): train set
+        validation_set (Dataset): validation set
         verbose (bool): display train progress bars if True
 
     """
@@ -177,7 +177,7 @@ def train_network_generator(network: Model,
 
 def train_network_k_fold(network: Model,
                          training_configuration: dict,
-                         training_set: Set,
+                         training_set: Dataset,
                          k: int,
                          shuffle: bool,
                          verbose: bool = True):
@@ -186,7 +186,7 @@ def train_network_k_fold(network: Model,
     Args:
         network (Model): neural network model to be trained
         training_configuration (dict): train parameters
-        training_set (Set): train data set
+        training_set (Dataset): train data set
         k (int): number of partitions in k-fold cross-validation
         shuffle (bool): shuffle the train set before k splitting
         verbose (bool): display train progress bars if True
@@ -217,13 +217,13 @@ def train_network_k_fold(network: Model,
 
 
 def test_network(network: Model,
-                 test_set: Set,
+                 test_set: Dataset,
                  verbose: bool = True) -> dict:
     """Evaluates all the test inputs according to the current network
 
     Args:
         network (Model): neural network model to be tested
-        test_set (Set): test set to be used for metrics evaluation
+        test_set (Dataset): test set to be used for metrics evaluation
         verbose (bool): display evaluation progress bar if True
 
     """
@@ -248,13 +248,13 @@ def test_network(network: Model,
 
 
 def test_network_generator(network: Model,
-                           test_set_generator: SetFiles,
+                           test_set_generator: DatasetFileIterator,
                            verbose: bool = True) -> dict:
     """Evaluates all the test inputs according to the current network
 
     Args:
         network (Model): neural network model to be tested
-        test_set_generator (SetFiles): test set generator to be used for metrics evaluation
+        test_set_generator (DatasetFileIterator): test set generator to be used for metrics evaluation
         verbose (bool): display evaluation progress bar if True
 
     """

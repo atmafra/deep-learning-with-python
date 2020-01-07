@@ -5,7 +5,7 @@ import shutil
 
 from core.corpus import CorpusFiles
 from core.file_structures import CorpusFileStructure
-from core.sets import SetFiles
+from core.datasets import DatasetFileIterator
 from utils.image_utils import get_image_directory_iterator
 
 # root_dir = '/Users/alexandre.mafra/Documents/projetos/neural-network/deep-learning-with-python/'
@@ -180,9 +180,9 @@ def load_corpus_files(dirs: dict, use_augmented: bool, check: bool = False) -> C
         rescale_factor=rescale_factor,
         use_augmented=False)
 
-    training_set_generator = SetFiles(directory_iterator=training_generator)
-    validation_set_generator = SetFiles(directory_iterator=validation_generator)
-    test_set_generator = SetFiles(directory_iterator=test_generator)
+    training_set_generator = DatasetFileIterator(directory_iterator=training_generator)
+    validation_set_generator = DatasetFileIterator(directory_iterator=validation_generator)
+    test_set_generator = DatasetFileIterator(directory_iterator=test_generator)
 
     corpus_generator = CorpusFiles(training_set_files=training_set_generator,
                                    validation_set_files=validation_set_generator,
@@ -191,7 +191,7 @@ def load_corpus_files(dirs: dict, use_augmented: bool, check: bool = False) -> C
     return corpus_generator
 
 
-def check_generator(set_generator: SetFiles):
+def check_generator(set_generator: DatasetFileIterator):
     for data_batch, labels_batch in set_generator.directory_iterator:
         print('data batch shape  :', data_batch.shape)
         print('labels batch shape:', labels_batch.shape)

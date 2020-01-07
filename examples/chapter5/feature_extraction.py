@@ -4,10 +4,10 @@ from keras.applications import VGG16
 from keras.utils import Progbar
 
 from core.corpus import Corpus, CorpusType
+from core.datasets import Dataset
 from core.experiment import Experiment
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
-from core.sets import Set, DatafileFormat
 from core.training_configuration import TrainingConfiguration
 from examples.chapter5.cats_and_dogs_files import *
 
@@ -51,7 +51,7 @@ def load_experiment(corpus: Corpus):
     return experiment
 
 
-def extract_features(set_files: SetFiles,
+def extract_features(set_files: DatasetFileIterator,
                      conv_base: Model):
     """Extract features from a set of files using a convolutional base model as feature extractor
     """
@@ -75,7 +75,7 @@ def extract_features(set_files: SetFiles,
             progress_bar.update(current=sample_count)
             break
 
-    return Set(input_data=features, output_data=labels)
+    return Dataset(input_data=features, output_data=labels)
 
 
 def build_corpus(corpus_file_structure: CorpusFileStructure,
@@ -92,42 +92,40 @@ def build_corpus(corpus_file_structure: CorpusFileStructure,
     conv_base = load_convolutional_base()
     corpus_files = load_corpus_files(dirs=dirs, use_augmented=False, check=True)
 
-    print('\nExtracting features from train set ({} files)'.format(corpus_files.training_set_files.length))
+    print('\nExtracting features from training set ({} files)'.format(corpus_files.training_set_files.length))
     training_set = extract_features(set_files=corpus_files.training_set_files, conv_base=conv_base)
     training_set.flatten_input_data()
-    training_set.save_file_structure(set_file_structure=corpus_file_structure.training_file_structure)
 
     print('\nExtracting features from validation set ({} files)'.format(corpus_files.validation_set_files.length))
     validation_set = extract_features(set_files=corpus_files.validation_set_files, conv_base=conv_base)
     validation_set.flatten_input_data()
-    validation_set.save_file_structure(set_file_structure=corpus_file_structure.validation_file_structure)
 
     print('\nExtracting features from test set ({} files)'.format(corpus_files.test_set_files.length))
     test_set = extract_features(set_files=corpus_files.test_set_files, conv_base=conv_base)
     test_set.flatten_input_data()
-    test_set.save_file_structure(set_file_structure=corpus_file_structure.test_file_structure)
 
-    return Corpus(training_set=training_set,
-                  test_set=test_set,
-                  validation_set=validation_set,
-                  name=name)
+    corpus = Corpus(training_set=training_set,
+                    test_set=test_set,
+                    validation_set=validation_set,
+                    name=name)
+
+    corpus_file_structure.save_corpus(corpus=corpus)
+    return corpus
 
 
 def run(build_dataset: bool = False):
     corpus = None
     corpus_name = 'Cats and Dogs'
     base_path = 'data/features'
-    corpus_file_structure = \
-        CorpusFileStructure.get_canonical(corpus_name=corpus_name,
-                                          base_path=base_path,
-                                          file_format=DatafileFormat.NPY)
+    corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus_name,
+                                                              base_path=base_path)
 
     if build_dataset:
         corpus = build_corpus(corpus_file_structure=corpus_file_structure,
                               name=corpus_name)
     else:
-        corpus = Corpus.from_file_structure(corpus_file_structure=corpus_file_structure,
-                                            name=corpus_name)
+        corpus = corpus_file_structure.load_corpus(corpus_name=corpus_name,
+                                                   datasets_base_name=corpus_name)
 
     experiment = load_experiment(corpus=corpus)
     experiment.run(print_results=True, plot_history=False, display_progress_bars=True)

@@ -1,14 +1,13 @@
-import os
+import os.path
 
 import numpy as np
 from keras_preprocessing.image import DirectoryIterator
 
 import utils.dataset_utils as dsu
-from core.file_structures import SetFileStructure, DatafileFormat
 
 
-class Set:
-    """A Set is a pair of two arrays of the same dimension: input and output data
+class Dataset:
+    """A Dataset is a pair of two arrays of the same dimension: input and output data
 
     Args:
         input_data (ndarray): input data array
@@ -21,7 +20,7 @@ class Set:
                  input_data: np.ndarray,
                  output_data: np.ndarray = None,
                  name: str = ''):
-        """Create a new Set instance
+        """Create a new Dataset instance
         """
         if input_data is None:
             raise ValueError('Cannot create set with no input data')
@@ -96,7 +95,7 @@ class Set:
         """
         input_copy = np.copy(self.input_data)
         output_copy = np.copy(self.output_data)
-        return Set(input_copy, output_copy)
+        return Dataset(input_copy, output_copy)
 
     def shuffle(self):
         """Shuffles the order of the elements
@@ -132,8 +131,8 @@ class Set:
             split_range = list(range(start, self.length)) + list(range(0, stop))
             remain_range = list(range(stop, start))
 
-        split_set = Set(self.input_data[split_range], self.output_data[split_range])
-        remain_set = Set(self.input_data[remain_range], self.output_data[remain_range])
+        split_set = Dataset(self.input_data[split_range], self.output_data[split_range])
+        remain_set = Dataset(self.input_data[remain_range], self.output_data[remain_range])
 
         return split_set, remain_set
 
@@ -141,8 +140,8 @@ class Set:
         """Splits the set in two, according to the k-fold partition rule
 
         Args:
-            fold (int) : current fold to be split (n-th fold in k total folds)
-            k    (int) : total number of folds
+            fold (int): current fold to be split (n-th fold in k total folds)
+            k (int): total number of folds
 
         """
         if fold > k:
@@ -165,98 +164,8 @@ class Set:
         new_shape = self.input_data.shape[0], np.prod(self.input_data.shape[1:])
         self.input_data = self.input_data.reshape(new_shape)
 
-    def save(self, path: str,
-             filename_input: str,
-             filename_output: str,
-             file_format: DatafileFormat):
-        """Saves the input and output data to files
 
-        Args:
-            path (str): system path of the save directory
-            filename_input (str): input data filename
-            filename_output (str): output data filename
-            file_format (DatafileFormat): data file format
-
-        """
-        # root_name = str_to_filename(filename)
-        input_filepath = os.path.join(path, filename_input)
-        output_filepath = os.path.join(path, filename_output)
-
-        if file_format == DatafileFormat.TXT:
-            np.savetxt(fname=input_filepath, X=self.input_data)
-            np.savetxt(fname=output_filepath, X=self.output_data)
-
-        elif file_format == DatafileFormat.NPY:
-            np.save(file=input_filepath, arr=self.input_data, allow_pickle=False)
-            np.save(file=output_filepath, arr=self.output_data, allow_pickle=False)
-
-    def save_file_structure(self,
-                            set_file_structure: SetFileStructure):
-        """"Saves the set data files according to the set file structure
-
-        Args:
-            set_file_structure (SetFileStructure): paths and filenames of the data files
-
-        """
-        self.save(path=set_file_structure.path,
-                  filename_input=set_file_structure.input_data_filename,
-                  filename_output=set_file_structure.output_data_filename,
-                  file_format=set_file_structure.file_format)
-
-    @classmethod
-    def from_files(cls, path: str,
-                   input_data_filename: str,
-                   output_data_filename: str,
-                   file_format: DatafileFormat = DatafileFormat.TXT,
-                   name: str = ''):
-        """Creates a new set by reading input and output data files
-
-        Args:
-            path (str): system path of the data files directory
-            input_data_filename (str): input file name
-            output_data_filename (str): output file name
-            file_format (DatafileFormat): data files format
-            name (str): set name
-
-        """
-        input_data = None
-        output_data = None
-        input_filepath = os.path.join(path, input_data_filename)
-        output_filepath = os.path.join(path, output_data_filename)
-
-        if file_format == DatafileFormat.TXT:
-            input_data = np.loadtxt(fname=input_filepath)
-            output_data = np.loadtxt(fname=output_filepath)
-
-        elif file_format == DatafileFormat.NPY:
-            input_data = np.load(file=input_filepath)
-            output_data = np.load(file=output_filepath)
-
-        return Set(input_data=input_data,
-                   output_data=output_data,
-                   name=name)
-
-    @classmethod
-    def from_file_structure(cls, set_file_structure: SetFileStructure, name: str = ''):
-        return Set.from_files(path=set_file_structure.path,
-                              input_data_filename=set_file_structure.input_data_filename,
-                              output_data_filename=set_file_structure.output_data_filename,
-                              file_format=set_file_structure.file_format,
-                              name=name)
-
-    def get_canonical_file_structure(self, path: str,
-                                     file_format: DatafileFormat):
-        """Creates a new Set File Structure according to canonical definitions
-
-        Args:
-            path (str): system path of data files directory
-            file_format (DatafileFormat): data files format
-
-        """
-        return SetFileStructure.get_canonical(path=path, set_name=self.name, file_format=file_format)
-
-
-class SetFiles:
+class DatasetFileIterator:
     """Contains a directory iterator that can be sequentially iterated over to get a set of files
     """
 

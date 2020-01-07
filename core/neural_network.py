@@ -4,7 +4,7 @@ from keras import Model
 
 import core.network as net
 from core.corpus import CorpusFiles
-from core.sets import Set, SetFiles
+from core.datasets import Dataset, DatasetFileIterator
 from core.training_configuration import TrainingConfiguration
 from utils.history_utils import merge_history_metrics
 from utils.parameter_utils import get_parameter
@@ -114,16 +114,16 @@ class NeuralNetwork():
         self.save_archtecture(path=path, filename=architecture_filename, verbose=verbose)
         self.save_weights(path=path, filename=weights_filename, verbose=verbose)
 
-    def train(self, training_set: Set,
+    def train(self, training_set: Dataset,
               training_configuration: TrainingConfiguration,
-              validation_set: Set = None,
+              validation_set: Dataset = None,
               display_progress_bars: bool = True):
         """Trains the neural network
 
         Args:
-            training_set (Set): train set
+            training_set (Dataset): train set
             training_configuration (TrainingConfiguration): train configuration hyperparameters
-            validation_set (Set): validation set (optional, depending on validation strategy)
+            validation_set (Dataset): validation set (optional, depending on validation strategy)
             display_progress_bars (bool): display progress bars in terminal during train
 
         """
@@ -191,12 +191,12 @@ class NeuralNetwork():
                                                            verbose=display_progress_bars)
         return training_history
 
-    def evaluate(self, test_set: Set,
+    def evaluate(self, test_set: Dataset,
                  display_progress_bars: bool = True):
         """Evaluate the neural network
 
         Args:
-            test_set (Set): validation set, used to assess performance metrics
+            test_set (Dataset): validation set, used to assess performance metrics
             display_progress_bars (bool): display progress bars in terminal during evaluation
 
         """
@@ -204,12 +204,12 @@ class NeuralNetwork():
                                 test_set=test_set,
                                 verbose=display_progress_bars)
 
-    def evaluate_generator(self, test_set_generator: SetFiles,
+    def evaluate_generator(self, test_set_generator: DatasetFileIterator,
                            display_progress_bars: bool = True):
         """Evaluate the neural network using a test set generator
 
         Args:
-            test_set_generator (SetFiles): test set generator
+            test_set_generator (DatasetFileIterator): test set generator
             display_progress_bars (bool): display progress bars in terminal during evaluation
 
         """
