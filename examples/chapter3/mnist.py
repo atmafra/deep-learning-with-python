@@ -7,6 +7,7 @@ from keras.utils import to_categorical
 
 from core.corpus import Corpus, CorpusType
 from core.experiment import Experiment
+from core.file_structures import CorpusFileStructure
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
@@ -28,34 +29,55 @@ def normalize(image_set: np.array) -> np.array:
     return image_set.astype('float32') / 255
 
 
-def load_corpus(verbose: bool = True) -> Corpus:
+def build_corpus(save: bool, verbose: bool = True) -> Corpus:
     """Loads the MNIST corpus from public repositories
     """
     if verbose:
         print("Loading MNIST dataset...")
 
-    corpus = Corpus.from_tuple(corpus=mnist.load_data(), name='MNIST')
+    corpus_raw = Corpus.from_tuple(corpus=mnist.load_data(), name='MNIST')
 
-    train_set_size = corpus.training_set.length
-    image_shape = corpus.training_set.input_data.shape
+    train_set_size = corpus_raw.training_set.length
+    image_shape = corpus_raw.training_set.input_data.shape
     image_array_dim = image_shape[0] * image_shape[1]
-    test_set_size = corpus.test_set.length
+    test_set_size = corpus_raw.test_set.length
 
     # Prepare the images
-    train_images = normalize(to_array(corpus.training_set.input_data))
-    test_images = normalize(to_array(corpus.test_set.input_data))
+    train_images = normalize(to_array(corpus_raw.training_set.input_data))
+    test_images = normalize(to_array(corpus_raw.test_set.input_data))
 
     # Convert the labels to categorical
-    train_labels = to_categorical(corpus.training_set.output_data)
-    test_labels = to_categorical(corpus.test_set.output_data)
+    train_labels = to_categorical(corpus_raw.training_set.output_data)
+    test_labels = to_categorical(corpus_raw.test_set.output_data)
 
     if verbose:
         print("image dimensions :", image_shape)
         print("train set size   :", train_set_size, "images")
         print("test set size    :", test_set_size, "images")
 
-    corpus = Corpus.from_datasets(train_images, train_labels, test_images, test_labels)
+    corpus = Corpus.from_datasets(training_input=train_images, training_output=train_labels,
+                                  test_input=test_images, test_output=test_labels,
+                                  validation_input=None, validation_output=None,
+                                  name='MNIST')
+
+    if save:
+        save_corpus(corpus)
+
     return corpus
+
+
+def save_corpus(corpus: Corpus,
+                corpus_file_structure: CorpusFileStructure = None):
+    if corpus_file_structure is None:
+        corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus.name, base_path='data/mnist')
+    corpus_file_structure.save_corpus(corpus=corpus)
+
+
+def load_corpus(corpus_name: str,
+                corpus_file_structure: CorpusFileStructure = None) -> Corpus:
+    if corpus_file_structure is None:
+        corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus_name, base_path='data/mnist')
+    return corpus_file_structure.load_corpus(corpus_name=corpus_name, datasets_base_name=corpus_name)
 
 
 def create_neural_network(corpus: Corpus, model_source: ModelSource):
@@ -118,11 +140,15 @@ def create_experiment(corpus: Corpus,
                       training_configuration=training_configuration)
 
 
-def run():
+def run(build: bool = True):
     """Runs the MNIST digit recognition example
     """
     num_labels = 10
-    corpus = load_corpus()
+    corpus = None
+    if build:
+        corpus = build_corpus(save=True)
+    else:
+        corpus = load_corpus(corpus_name='MNIST')
     neural_network = create_neural_network(corpus=corpus, model_source=ModelSource.FILE)
     experiment = create_experiment(corpus, neural_network)
     path = 'models/mnist'

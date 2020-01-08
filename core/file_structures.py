@@ -1,5 +1,4 @@
 import os.path
-from enum import Enum
 
 import numpy as np
 
@@ -8,10 +7,10 @@ from core.datasets import Dataset
 from utils.file_utils import str_to_filename
 
 
-class DatafileFormat(Enum):
-    TXT = 1
-    NPY = 2
-    NPZ = 3
+# class DatafileFormat(Enum):
+#     TXT = 1
+#     NPY = 2
+#     NPZ = 3
 
 
 class DatasetFileStructure:
@@ -165,10 +164,6 @@ class DatasetFileStructureText(DatasetFileStructureMultipleFiles):
                                                    input_data_filename=input_data_filename,
                                                    output_data_filename=output_data_filename)
 
-    @DatasetFileStructureMultipleFiles.file_format.getter
-    def file_format(self):
-        return DatafileFormat.TXT
-
     @classmethod
     def get_canonical(cls, path: str, set_name: str):
         """Creates a new Set File Structure according to canonical definitions
@@ -189,8 +184,11 @@ class DatasetFileStructureText(DatasetFileStructureMultipleFiles):
         np.savetxt(fname=self.input_data_filepath, X=dataset.input_data)
         np.savetxt(fname=self.output_data_filepath, X=dataset.output_data)
 
-    def load_dataset(self, name: str) -> Dataset:
-        DatasetFileStructureMultipleFiles.load_dataset(self, name=name)
+    def load_dataset(self, name: str):
+        try:
+            DatasetFileStructureMultipleFiles.load_dataset(self, name=name)
+        except FileNotFoundError:
+            return None
         input_data = np.loadtxt(fname=self.input_data_filepath)
         output_data = np.loadtxt(fname=self.output_data_filepath)
         return Dataset(input_data=input_data, output_data=output_data, name=name)
@@ -216,10 +214,6 @@ class DatasetFileStructureNumpy(DatasetFileStructureMultipleFiles):
                                                    input_data_filename=input_data_filename,
                                                    output_data_filename=output_data_filename)
 
-    @DatasetFileStructureMultipleFiles.file_format.getter
-    def file_format(self):
-        return DatafileFormat.NPY
-
     @classmethod
     def get_canonical(cls, path: str, set_name: str):
         """Creates a new Set File Structure according to canonical definitions
@@ -240,8 +234,11 @@ class DatasetFileStructureNumpy(DatasetFileStructureMultipleFiles):
         np.save(file=self.input_data_filepath, arr=dataset.input_data, allow_pickle=False)
         np.save(file=self.output_data_filepath, arr=dataset.output_data, allow_pickle=False)
 
-    def load_dataset(self, name: str) -> Dataset:
-        DatasetFileStructureMultipleFiles.load_dataset(self, name=name)
+    def load_dataset(self, name: str):
+        try:
+            DatasetFileStructureMultipleFiles.load_dataset(self, name=name)
+        except FileNotFoundError:
+            return None
         input_data = np.load(file=self.input_data_filepath)
         output_data = np.load(file=self.output_data_filepath)
         return Dataset(input_data=input_data, output_data=output_data, name=name)
@@ -264,10 +261,6 @@ class DatasetFileStructureNumpyCompressed(DatasetFileStructureSingleFile):
         DatasetFileStructureSingleFile.__init__(self, path=path,
                                                 data_filename=data_filename)
 
-    @DatasetFileStructureMultipleFiles.file_format.getter
-    def file_format(self):
-        return DatafileFormat.NPZ
-
     @classmethod
     def get_canonical(cls, path: str, set_name: str):
         """Creates a new Set File Structure according to canonical definitions
@@ -283,10 +276,16 @@ class DatasetFileStructureNumpyCompressed(DatasetFileStructureSingleFile):
                                                    data_filename=data_filename)
 
     def save_dataset(self, dataset: Dataset):
-        np.savez_compressed(file=self.data_filepath, input=dataset.input_data, output=dataset.output_data)
+        os.makedirs(os.path.dirname(self.data_filepath), exist_ok=True)
+        np.savez_compressed(file=self.data_filepath,
+                            input=dataset.input_data,
+                            output=dataset.output_data)
 
-    def load_dataset(self, name: str) -> Dataset:
-        DatasetFileStructureSingleFile.load_dataset(self, name=name)
+    def load_dataset(self, name: str):
+        try:
+            DatasetFileStructureSingleFile.load_dataset(self, name=name)
+        except FileNotFoundError:
+            return None
         datasets = np.load(file=self.data_filepath)
         return Dataset(input_data=datasets['input'],
                        output_data=datasets['output'],
@@ -294,15 +293,18 @@ class DatasetFileStructureNumpyCompressed(DatasetFileStructureSingleFile):
 
 
 class CorpusFileStructure:
+    """A set of dataset file structures: training, test (optional), and validation (optional)
+    """
+
     def __init__(self,
                  training_file_structure: DatasetFileStructure,
                  test_file_structure: DatasetFileStructure,
-                 validation_file_structure: DatasetFileStructure = None,
-                 file_format: DatafileFormat = DatafileFormat.NPY):
+                 validation_file_structure: DatasetFileStructure = None):
+        """Creates a new corpus file structure
+        """
         self.__training_file_structure: DatasetFileStructure = training_file_structure
         self.__test_file_structure: DatasetFileStructure = test_file_structure
         self.__validation_file_structure: DatasetFileStructure = validation_file_structure
-        self.__file_format = file_format
 
     @property
     def training_file_structure(self):
@@ -316,10 +318,6 @@ class CorpusFileStructure:
     def validation_file_structure(self):
         return self.__validation_file_structure
 
-    @property
-    def file_format(self):
-        return self.__file_format
-
     @classmethod
     def get_canonical(cls, corpus_name: str, base_path: str):
         """Creates a new CorpusFileStructure according to the conventions
@@ -330,27 +328,20 @@ class CorpusFileStructure:
 
         """
         training_set_name = corpus_name + ' - train'
-        # training_path = os.path.join(base_path, 'train')
-        training_path = base_path
         training_file_structure = \
-            DatasetFileStructureNumpyCompressed.get_canonical(path=training_path, set_name=training_set_name)
+            DatasetFileStructureNumpyCompressed.get_canonical(path=base_path, set_name=training_set_name)
 
         test_set_name = corpus_name + ' - test'
-        # test_path = os.path.join(base_path, 'test')
-        test_path = base_path
         test_file_structrure = \
-            DatasetFileStructureNumpyCompressed.get_canonical(path=test_path, set_name=test_set_name)
+            DatasetFileStructureNumpyCompressed.get_canonical(path=base_path, set_name=test_set_name)
 
         validation_set_name = corpus_name + ' - validation'
-        # validation_path = os.path.join(base_path, 'validation')
-        validation_path = base_path
         validation_file_structure = \
-            DatasetFileStructureNumpyCompressed.get_canonical(path=validation_path, set_name=validation_set_name)
+            DatasetFileStructureNumpyCompressed.get_canonical(path=base_path, set_name=validation_set_name)
 
         return CorpusFileStructure(training_file_structure=training_file_structure,
                                    test_file_structure=test_file_structrure,
-                                   validation_file_structure=validation_file_structure,
-                                   file_format=DatafileFormat.NPZ)
+                                   validation_file_structure=validation_file_structure)
 
     def save_corpus(self, corpus: Corpus):
         """Saves the corpus data, by saving its set to data files according do their file structures
@@ -359,9 +350,14 @@ class CorpusFileStructure:
             corpus (Corpus): corpus to be saved according to the file structure
 
         """
-        self.training_file_structure.save_dataset(dataset=corpus.training_set)
-        self.test_file_structure.save_dataset(dataset=corpus.test_set)
-        self.validation_file_structure.save_dataset(dataset=corpus.validation_set)
+        if corpus.training_set is not None:
+            self.training_file_structure.save_dataset(dataset=corpus.training_set)
+
+        if corpus.test_set is not None:
+            self.test_file_structure.save_dataset(dataset=corpus.test_set)
+
+        if corpus.validation_set is not None:
+            self.validation_file_structure.save_dataset(dataset=corpus.validation_set)
 
     def load_corpus(self, corpus_name: str,
                     datasets_base_name: str):
