@@ -3,6 +3,7 @@ from keras.datasets import boston_housing as boston
 
 from core.corpus import Corpus
 from core.experiment import Experiment
+from core.file_structures import CorpusFileStructure
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
@@ -10,7 +11,9 @@ from utils import dataset_utils as dsu
 from utils.history_utils import plot_mae_dict, plot_loss_dict
 
 
-def load_corpus(num_words: int = 10000, verbose: bool = True) -> Corpus:
+def build_corpus(name: str,
+                 num_words: int = 10000,
+                 save: bool = True, verbose: bool = True) -> Corpus:
     if verbose:
         print('Loading Boston Housing dataset...')
 
@@ -29,7 +32,7 @@ def load_corpus(num_words: int = 10000, verbose: bool = True) -> Corpus:
                                   training_output=training_outputs,
                                   test_input=test_inputs,
                                   test_output=test_outputs,
-                                  name='Boston Housing')
+                                  name=name)
 
     if verbose:
         print('Training examples:', corpus.training_set.length)
@@ -38,7 +41,26 @@ def load_corpus(num_words: int = 10000, verbose: bool = True) -> Corpus:
         print('Average price    : {:.2f}'.format(corpus.average_output))
         print('Maximum price    : {:.2f}'.format(corpus.max_output))
 
+    if save:
+        save_corpus(corpus=corpus)
+
     return corpus
+
+
+def save_corpus(corpus: Corpus,
+                corpus_file_structure: CorpusFileStructure = None):
+    if corpus_file_structure is None:
+        corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus.name, base_path='data/boston')
+    corpus_file_structure.save_corpus(corpus=corpus)
+
+
+def load_corpus(name: str,
+                corpus_file_structure: CorpusFileStructure = None):
+    if corpus_file_structure is None:
+        corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=name,
+                                                                  base_path='data/boston')
+    return corpus_file_structure.load_corpus(corpus_name=name,
+                                             datasets_base_name=name)
 
 
 def load_experiment(corpus: Corpus) -> Experiment:
@@ -93,8 +115,13 @@ def load_experiment(corpus: Corpus) -> Experiment:
     return experiment
 
 
-def run():
-    corpus = load_corpus(num_words=10000, verbose=True)
+def run(build: bool = True):
+    corpus_name = 'Boston Housing'
+    corpus = None
+    if build:
+        corpus = build_corpus(name=corpus_name, num_words=10000, verbose=True)
+    else:
+        corpus = load_corpus(name=corpus_name)
     experiment = load_experiment(corpus=corpus)
     experiment.run(print_results=True, plot_history=False)
     experiment.save_model('models/boston')

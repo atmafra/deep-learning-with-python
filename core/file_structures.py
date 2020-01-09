@@ -29,9 +29,9 @@ class DatasetFileStructure:
     def path(self):
         return self.__path
 
-    @property
-    def file_format(self):
-        raise NotImplemented('Must be implemented in the subclass')
+    # @property
+    # def file_format(self):
+    #     raise NotImplemented('Must be implemented in the subclass')
 
     @classmethod
     def get_canonical(cls, path: str, set_name: str):
@@ -70,9 +70,9 @@ class DatasetFileStructureMultipleFiles(DatasetFileStructure):
         self.__input_data_filename: str = input_data_filename
         self.__output_data_filename: str = output_data_filename
 
-    @DatasetFileStructure.file_format.getter
-    def file_format(self):
-        raise NotImplemented('Must be implemented in the subclass')
+    # @DatasetFileStructure.file_format.getter
+    # def file_format(self):
+    #     raise NotImplemented('Must be implemented in the subclass')
 
     @property
     def input_data_filename(self):
@@ -120,9 +120,9 @@ class DatasetFileStructureSingleFile(DatasetFileStructure):
         DatasetFileStructure.__init__(self, path)
         self.__data_filename: str = data_filename
 
-    @DatasetFileStructure.file_format.getter
-    def file_format(self):
-        raise NotImplemented('Must be implemented in the subclass')
+    # @DatasetFileStructure.file_format.getter
+    # def file_format(self):
+    #     raise NotImplemented('Must be implemented in the subclass')
 
     @property
     def data_filename(self):

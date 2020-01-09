@@ -1,6 +1,7 @@
 import numpy as np
 from keras.datasets import imdb
 
+from core.file_structures import CorpusFileStructure
 from examples.chapter4.imdb_configurations import *
 from utils import dataset_utils as dsu
 
@@ -8,11 +9,16 @@ word_index = {}
 reverse_word_index = {}
 
 
-def load_corpus(words: int = 10000, verbose: bool = True) -> Corpus:
+def build_corpus(name: str,
+                 words: int = 10000,
+                 save: bool = True,
+                 verbose: bool = True) -> Corpus:
     """"Loads the IMDB dataset into a corpus object
 
     Args:
+        name (str): corpus name
         words (int): word limit in the reverse index
+        save (bool): save the pre-processed datafiles
         verbose (bool): outputs progress messages
 
     """
@@ -35,16 +41,39 @@ def load_corpus(words: int = 10000, verbose: bool = True) -> Corpus:
     test_outputs = np.asarray(test_labels).astype('float32')
 
     # create the corpus
-    corpus = Corpus.from_datasets(training_inputs, training_outputs, test_inputs, test_outputs)
+    corpus = Corpus.from_datasets(training_input=training_inputs,
+                                  training_output=training_outputs,
+                                  test_input=test_inputs,
+                                  test_output=test_outputs,
+                                  name=name)
 
     if verbose:
         print("{} train reviews loaded".format(corpus.training_set.length))
         print("{} test reviews loaded".format(corpus.test_set.length))
 
+    if save:
+        save_corpus(corpus)
+
     return corpus
 
 
-def run(plan: str = 'comparison'):
+def save_corpus(corpus: Corpus,
+                corpus_file_structure: CorpusFileStructure = None):
+    if corpus_file_structure is None:
+        corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus.name,
+                                                                  base_path='data')
+    corpus_file_structure.save_corpus(corpus)
+
+
+def load_corpus(corpus_name: str,
+                corpus_file_structure: CorpusFileStructure = None):
+    if corpus_file_structure is None:
+        corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus_name,
+                                                                  base_path='data')
+    return corpus_file_structure.load_corpus(corpus_name=corpus_name, datasets_base_name=corpus_name)
+
+
+def run(plan: str = 'comparison', build: bool = True):
     """Runs the selected experiment plan
 
     Args:
@@ -53,10 +82,17 @@ def run(plan: str = 'comparison'):
             'weight_regularization_l1'
             'weight_regularization_l2'
             'comparison'
+        build (bool): force rebuild of the datasets
 
     """
     # loads the corpus and the experiment plans
-    corpus = load_corpus(words=num_words)
+    corpus = None
+    corpus_name = 'IMDB'
+    if build:
+        corpus = build_corpus(name=corpus_name, words=num_words, save=True)
+    else:
+        corpus = load_corpus(corpus_name=corpus_name)
+
     experiments = load_experiments(corpus=corpus)
 
     # runs the selected experiment plan

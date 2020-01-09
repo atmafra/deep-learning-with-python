@@ -4,6 +4,7 @@ from keras.datasets import reuters
 
 from core.corpus import Corpus, CorpusType
 from core.experiment import Experiment
+from core.file_structures import CorpusFileStructure
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
@@ -14,7 +15,7 @@ if __name__ == '__main__':
     reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
 
 
-def load_corpus(num_words: int, encoding_schema: str, verbose: bool = True):
+def build_corpus(num_words: int, encoding_schema: str, save: bool = True, verbose: bool = True):
     if verbose:
         print('Loading Reuters dataset...')
 
@@ -39,11 +40,12 @@ def load_corpus(num_words: int, encoding_schema: str, verbose: bool = True):
         train_labels = np.array(train_labels)
         test_labels = np.array(test_labels)
 
+    corpus_name = 'Reuters ({})'.format(encoding_schema)
     corpus = Corpus.from_datasets(training_input=train_data,
                                   training_output=train_labels,
                                   test_input=test_data,
                                   test_output=test_labels,
-                                  name='Reuters')
+                                  name=corpus_name)
 
     if verbose:
         print('Training phrases:', corpus.training_set.length)
@@ -52,7 +54,29 @@ def load_corpus(num_words: int, encoding_schema: str, verbose: bool = True):
         print('Output size:    :', corpus.output_size)
         print('Categories      :', categories)
 
+    if save:
+        save_corpus(corpus)
+
     return corpus
+
+
+def save_corpus(corpus: Corpus,
+                corpus_file_structure: CorpusFileStructure = None):
+    if corpus_file_structure is None:
+        corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus.name,
+                                                                  base_path='data/reuters')
+    corpus_file_structure.save_corpus(corpus)
+
+
+def load_corpus(encoding_schema: str,
+                corpus_file_structure: CorpusFileStructure = None):
+    corpus_name = 'Reuters ({})'.format(encoding_schema)
+    if corpus_file_structure is None:
+        corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus_name,
+                                                                  base_path='data/reuters')
+
+    return corpus_file_structure.load_corpus(corpus_name=corpus_name,
+                                             datasets_base_name=corpus_name)
 
 
 def load_experiment(corpus: Corpus, encoding_schema):
@@ -120,17 +144,12 @@ def load_experiment(corpus: Corpus, encoding_schema):
                       corpus=corpus)
 
 
-def run(num_words: int = 10000, encoding_schema: str = 'one-hot'):
-    if encoding_schema == 'one-hot':
-        # one-hot encoding experiment
-        corpus_one_hot = load_corpus(num_words=num_words, encoding_schema='one-hot')
-        experiment_one_hot = load_experiment(corpus=corpus_one_hot, encoding_schema='one-hot')
-        experiment_one_hot.run(print_results=True, plot_history=True)
-        experiment_one_hot.save_model(path='models/reuters')
-
-    elif encoding_schema == 'int-array':
-        # int-array encoding experiment
-        corpus_int_array = load_corpus(num_words=num_words, encoding_schema='int-array')
-        experiment_int_array = load_experiment(corpus=corpus_int_array, encoding_schema='int-array')
-        experiment_int_array.run(print_results=True, plot_history=True)
-        experiment_int_array.save_model(path='models/reuters')
+def run(num_words: int = 10000, encoding_schema: str = 'one-hot', build: bool = True):
+    corpus = None
+    if build:
+        corpus = build_corpus(num_words=num_words, encoding_schema=encoding_schema, save=True)
+    else:
+        corpus = load_corpus(encoding_schema=encoding_schema)
+    experiment = load_experiment(corpus=corpus, encoding_schema=encoding_schema)
+    experiment.run(print_results=True, plot_history=True)
+    experiment.save_model(path='models/reuters')

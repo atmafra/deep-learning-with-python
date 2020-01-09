@@ -149,6 +149,7 @@ def run(build: bool = True):
         corpus = build_corpus(save=True)
     else:
         corpus = load_corpus(corpus_name='MNIST')
+
     neural_network = create_neural_network(corpus=corpus, model_source=ModelSource.FILE)
     experiment = create_experiment(corpus, neural_network)
     path = 'models/mnist'

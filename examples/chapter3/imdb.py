@@ -4,6 +4,7 @@ from keras.datasets import imdb
 
 from core.corpus import Corpus, CorpusType
 from core.experiment import Experiment, ExperimentPlan
+from core.file_structures import CorpusFileStructure
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
@@ -12,11 +13,12 @@ from utils import dataset_utils as dsu
 num_words = 10000
 
 
-def load_corpus(words: int = 10000, verbose: bool = True) -> Corpus:
+def build_corpus(words: int = 10000, save: bool = True, verbose: bool = True) -> Corpus:
     """"Loads the IMDB dataset into a corpus object
 
     Args:
         words (int): word limit in the reverse index
+        save (bool): save corpus after loading and pre-processing data
         verbose (bool): outputs progress messages
 
     """
@@ -49,7 +51,24 @@ def load_corpus(words: int = 10000, verbose: bool = True) -> Corpus:
         print("{} train reviews loaded".format(corpus.training_set.length))
         print("{} test reviews loaded".format(corpus.test_set.length))
 
+    if save:
+        save_corpus(corpus)
+
     return corpus
+
+
+def save_corpus(corpus: Corpus,
+                corpus_file_structure: CorpusFileStructure = None):
+    if corpus_file_structure is None:
+        corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus.name, base_path='data/imdb')
+    corpus_file_structure.save_corpus(corpus)
+
+
+def load_corpus(corpus_file_structure: CorpusFileStructure = None):
+    corpus_name = 'IMDB'
+    if corpus_file_structure is None:
+        corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus_name, base_path='data/imdb')
+    return corpus_file_structure.load_corpus(corpus_name='IMDB', datasets_base_name='imdb')
 
 
 def load_experiments(corpus: Corpus):
@@ -124,8 +143,13 @@ def load_experiments(corpus: Corpus):
     return plan
 
 
-def run():
-    corpus = load_corpus(words=num_words)
+def run(build: bool = True):
+    corpus = None
+    if build:
+        corpus = build_corpus(words=num_words)
+    else:
+        corpus = load_corpus()
+
     experiment_plan = load_experiments(corpus=corpus)
     experiment_plan.run(print_results=True,
                         plot_training_loss=False,
