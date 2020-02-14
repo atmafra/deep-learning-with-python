@@ -2,7 +2,7 @@ import os
 import sys
 from enum import Enum
 
-from keras import models, Model
+from keras import Model, Sequential
 from keras.engine.saving import load_model, model_from_json
 from keras.utils import Sequence
 
@@ -57,8 +57,8 @@ def create_layer(parameters: dict):
     return layer(**parameters_copy)
 
 
-def create_network(name: str,
-                   layer_configuration_list: list):
+def create_model(name: str,
+                 layer_configuration_list: list):
     """Creates a neural network according to its hyper parameters
 
     Args:
@@ -66,18 +66,41 @@ def create_network(name: str,
         layer_configuration_list (list): list of layer hyperparameters
 
     """
-    network = models.Sequential()
-    network.name = name
+    model = Sequential()
+    model.name = name
 
-    # layers
+    if layer_configuration_list is not None:
+        add_layers(model=model, layer_configuration_list=layer_configuration_list)
+
+    return model
+
+
+def add_layers(model: Sequential,
+               layer_configuration_list: list):
+    """Append layers to an existing sequential model
+
+    Args:
+        model (Sequential): previously created sequential model
+        layer_configuration_list (list): list of layer hyperparameters
+
+    """
+    if model is None:
+        raise RuntimeError('Null sequential model trying to append layers')
+
     for layer_configuration in layer_configuration_list:
         layer = create_layer(layer_configuration)
         if layer is not None:
-            network.add(layer)
+            model.add(layer)
 
-    network.build()
+    model.build()
 
-    return network
+
+def append_model(base_model: Sequential,
+                 model: Model):
+    """Adds a model to the current sequential model
+    """
+    base_model.add(model)
+    base_model.build()
 
 
 def create_model_from_file(filepath: str,

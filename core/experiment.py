@@ -15,7 +15,7 @@ class Experiment:
                  training_configuration: TrainingConfiguration,
                  corpus_type: CorpusType = CorpusType.CORPUS_DATASET,
                  corpus: Corpus = None,
-                 corpus_generator: CorpusFiles = None):
+                 corpus_files: CorpusFiles = None):
         """Creates a new Experiment to evaluate the performance of a specific
            combination of data and train hyperparameters
 
@@ -26,7 +26,7 @@ class Experiment:
             corpus_type (CorpusType): defines if data comes from in-memory sets
                or from directory iterators (generators)
             corpus (Corpus): the train and test sets to be used
-            corpus_generator (CorpusFiles): corpus generator
+            corpus_files (CorpusFiles): corpus files that represent the training, test, and validation sets
 
         """
         self.__neural_network = neural_network
@@ -38,17 +38,17 @@ class Experiment:
         # Corpus definition
         self.__corpus_type: CorpusType = corpus_type
         self.__corpus = None
-        self.__corpus_generator = None
+        self.__corpus_files = None
         if corpus_type == CorpusType.CORPUS_DATASET:
             if corpus is None:
                 raise RuntimeError('No corpus passed to create experiment')
             else:
                 self.__corpus = corpus
         elif corpus_type == CorpusType.CORPUS_GENERATOR:
-            if corpus_generator is None:
+            if corpus_files is None:
                 raise RuntimeError('No corpus generator passed to create experiment')
             else:
-                self.__corpus_generator = corpus_generator
+                self.__corpus_files = corpus_files
 
         # Sets
         self.__training_set = None
@@ -69,8 +69,8 @@ class Experiment:
         return self.__corpus
 
     @property
-    def corpus_generator(self):
-        return self.__corpus_generator
+    def corpus_files(self):
+        return self.__corpus_files
 
     @property
     def neural_network(self):
@@ -160,7 +160,7 @@ class Experiment:
 
         else:
             self.__training_history = \
-                self.neural_network.train_generator(corpus_generator=self.corpus_generator,
+                self.neural_network.train_generator(corpus_files=self.corpus_files,
                                                     training_configuration=self.training_configuration,
                                                     display_progress_bars=display_progress_bars)
 
@@ -178,7 +178,7 @@ class Experiment:
 
         elif self.corpus_type == CorpusType.CORPUS_GENERATOR:
             self.__test_results = self.neural_network.evaluate_generator(
-                test_set_generator=self.corpus_generator.test_set_files,
+                test_set_generator=self.corpus_files.test_set_files,
                 display_progress_bars=display_progress_bars)
 
     def run(self, print_results: bool = True,

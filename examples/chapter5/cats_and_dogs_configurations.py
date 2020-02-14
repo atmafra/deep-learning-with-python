@@ -76,19 +76,19 @@ def load_experiment_plan(corpus_generator: CorpusFiles,
                          neural_network=neural_network_cats_and_dogs,
                          training_configuration=training_configuration,
                          corpus_type=CorpusType.CORPUS_GENERATOR,
-                         corpus_generator=corpus_generator)
+                         corpus_files=corpus_generator)
 
     dropout = Experiment(name='Cats and Dogs (dropout rate: 0.5)',
                          neural_network=neural_network_cats_and_dogs_dropout,
                          training_configuration=training_configuration,
                          corpus_type=CorpusType.CORPUS_GENERATOR,
-                         corpus_generator=corpus_generator)
+                         corpus_files=corpus_generator)
 
     dropout_augmented = Experiment(name='Cats and Dogs (dropout rate: 0.5, data augmentation)',
                                    neural_network=neural_network_cats_and_dogs_dropout,
                                    training_configuration=training_configuration,
                                    corpus_type=CorpusType.CORPUS_GENERATOR,
-                                   corpus_generator=corpus_generator_augmented)
+                                   corpus_files=corpus_generator_augmented)
 
     experiment_list = [regular, dropout, dropout_augmented]
     experiment_plan = ExperimentPlan(name='Cats and Dogs', experiments=experiment_list)

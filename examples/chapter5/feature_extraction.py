@@ -6,6 +6,7 @@ from keras.utils import Progbar
 from core.corpus import Corpus, CorpusType
 from core.datasets import Dataset
 from core.experiment import Experiment
+from core.file_structures import CorpusFileStructure
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
@@ -124,8 +125,8 @@ def run(build_dataset: bool = False):
         corpus = build_corpus(corpus_file_structure=corpus_file_structure,
                               name=corpus_name)
     else:
-        corpus = corpus_file_structure.build_corpus(corpus_name=corpus_name,
-                                                    datasets_base_name=corpus_name)
+        corpus = corpus_file_structure.load_corpus(corpus_name=corpus_name,
+                                                   datasets_base_name=corpus_name)
 
     experiment = load_experiment(corpus=corpus)
     experiment.run(print_results=True, plot_history=False, display_progress_bars=True)
