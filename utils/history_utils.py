@@ -16,7 +16,7 @@ def plot_1_metric(metric_values: np.array,
     plt.title(title)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
-    plt.show()
+    plt.show(block=False)
 
 
 def plot_1_metric_history(history: History,
@@ -63,7 +63,7 @@ def plot_2_metrics(metric1_values: np.array,
     plt.title(title)
     plt.grid()
     plt.legend()
-    plt.show()
+    plt.show(block=False)
 
 
 def plot_metrics_list(metric_values_list: list,
@@ -100,7 +100,7 @@ def plot_metrics_list(metric_values_list: list,
     plt.ylabel(y_label)
     plt.legend()
     plt.grid()
-    plt.show()
+    plt.show(block=False)
 
 
 def plot_2_metrics_dict(history_metrics: dict,

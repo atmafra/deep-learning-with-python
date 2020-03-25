@@ -4,7 +4,7 @@ import shutil
 import utils.parameter_utils as putl
 from core.corpus import CorpusFiles
 from core.datasets import DatasetFileIterator
-from utils.image_utils import get_image_directory_iterator
+from utils.image_utils import get_image_directory_iterator, show_sample
 
 # root_dir = '/Users/alexandre.mafra/Documents/projetos/neural-network/deep-learning-with-python/'
 # root_dir = 'examples/chapter5'
@@ -135,6 +135,12 @@ def check_files(dirs: dict):
           '(\"{}\")'.format(dirs['test_dogs']))
 
 
+def prepare_files(check: bool = True):
+    dirs = prepare_directories()
+    copy_files(dirs=dirs, check=check)
+    return dirs
+
+
 def load_corpus_files(dirs: dict, use_augmented: bool, check: bool = False) -> CorpusFiles:
     """Loads the corpus from files in the directory structure
     """
@@ -144,7 +150,7 @@ def load_corpus_files(dirs: dict, use_augmented: bool, check: bool = False) -> C
 
     rescale_factor = 1. / 255
     target_size = (150, 150)
-    batch_size = 32
+    batch_size = 20
     class_mode = 'binary'
 
     training_generator = get_image_directory_iterator(
@@ -186,6 +192,7 @@ def load_corpus_files(dirs: dict, use_augmented: bool, check: bool = False) -> C
                                validation_set_files=validation_set_files,
                                test_set_files=test_set_files)
 
+    # show_sample(generator=training_generator)
     return corpus_files
 
 

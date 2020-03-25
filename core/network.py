@@ -2,9 +2,10 @@ import os
 import sys
 from enum import Enum
 
-from keras import Model, Sequential
+import numpy as np
+from keras import Model, Sequential, backend
 from keras.engine.saving import load_model, model_from_json
-from keras.utils import Sequence
+from keras.utils import Sequence, layer_utils
 
 import utils.parameter_utils as putl
 from core.datasets import Dataset, DatasetFileIterator
@@ -99,6 +100,12 @@ def append_model(base_model: Sequential,
                  model: Model):
     """Adds a model to the current sequential model
     """
+    if base_model is None:
+        raise ValueError('Empty base_model')
+
+    if model is None:
+        raise ValueError('Empty model to append to base model')
+
     base_model.add(model)
     base_model.build()
 
@@ -122,6 +129,32 @@ def create_model_from_file(filepath: str,
         print('Loaded model \"{}\" from file \"{}\"'.format(model.name, filepath))
 
     return model
+
+
+def count_trainable_parameters(model: Model) -> int:
+    if not Model:
+        raise ValueError('Empty model to count trainable parameters')
+
+    if hasattr(model, '_collected_trainable_weights'):
+        trainable_count = layer_utils.count_params(model._collected_trainable_weights)
+    else:
+        trainable_count = layer_utils.count_params(model.trainable_weights)
+
+    return trainable_count
+
+
+def count_non_trainable_parameters(model: Model) -> int:
+    if not Model:
+        raise ValueError('Empty model to count non-trainable parameters')
+
+    return layer_utils.count_params(model.non_trainable_weights)
+
+
+def count_parameters(model: Model) -> int:
+    if not Model:
+        raise ValueError('Empty model to count non-trainable parameters')
+
+    return model.count_params()
 
 
 def train_network(network: Model,

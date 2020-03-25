@@ -1,4 +1,5 @@
 import utils.history_utils as hutl
+from core.convolutional_neural_network import ConvolutionalNeuralNetwork
 from core.corpus import CorpusType, Corpus, CorpusFiles
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
@@ -13,6 +14,7 @@ class Experiment:
                  name: str,
                  neural_network: NeuralNetwork,
                  training_configuration: TrainingConfiguration,
+                 fine_tuning_configuration: TrainingConfiguration,
                  corpus_type: CorpusType = CorpusType.CORPUS_DATASET,
                  corpus: Corpus = None,
                  corpus_files: CorpusFiles = None):
@@ -23,6 +25,7 @@ class Experiment:
             name (str): name of the experiment
             neural_network (NeuralNetwork): neural network architecture associated to this particular experiment
             training_configuration (TrainingConfiguration): train hyperparameters
+            fine_tuning_configuration (TrainingConfiguration): fine-tuning training stage hyperparameters
             corpus_type (CorpusType): defines if data comes from in-memory sets
                or from directory iterators (generators)
             corpus (Corpus): the train and test sets to be used
@@ -31,6 +34,7 @@ class Experiment:
         """
         self.__neural_network = neural_network
         self.__training_configuration = training_configuration
+        self.__fine_tuning_configuration = fine_tuning_configuration
         self.__name: str = name
         self.__training_history = None
         self.__test_results = None
@@ -79,6 +83,10 @@ class Experiment:
     @property
     def training_configuration(self):
         return self.__training_configuration
+
+    @property
+    def fine_tuning_configuration(self):
+        return self.__fine_tuning_configuration
 
     @property
     def training_history(self):
@@ -144,7 +152,7 @@ class Experiment:
 
         self.test_set = self.corpus.test_set
 
-    def train(self, display_progress_bars: bool = True):
+    def training(self, display_progress_bars: bool = True):
         """Train the neural network model
 
         Args:
@@ -164,7 +172,27 @@ class Experiment:
                                                     training_configuration=self.training_configuration,
                                                     display_progress_bars=display_progress_bars)
 
-    def evaluate(self, display_progress_bars: bool = True):
+    def fine_tuning(self, layer_names: set,
+                    display_progress_bars: bool = True):
+        """Executes the fine tuning of a Convolutional Neural Network
+           by training the last layers of the convolutional base after
+           the classifier is traineed
+
+        Args:
+            layer_names (list): list of layer names to be unfrozen for fine tuning
+            display_progress_bars (bool):
+        """
+        if not isinstance(self.neural_network, ConvolutionalNeuralNetwork):
+            raise TypeError('To run fine tuning, neural network model must be Convolutional')
+
+        self.neural_network.set_convolutional_base_trainable(True)
+        self.neural_network.set_convolutional_layer_trainable(layer_names={'block5_conv1'}, trainable=True)
+        self.__training_history = \
+            self.neural_network.train_generator(corpus_files=self.corpus_files,
+                                                training_configuration=self.fine_tuning_configuration,
+                                                display_progress_bars=display_progress_bars)
+
+    def evaluation(self, display_progress_bars: bool = True):
         """Evaluate the neural network
 
         Args:
@@ -172,37 +200,86 @@ class Experiment:
 
         """
         if self.corpus_type == CorpusType.CORPUS_DATASET:
-            self.__test_results = self.neural_network.evaluate(
-                test_set=self.corpus.test_set,
-                display_progress_bars=display_progress_bars)
+            self.__test_results = \
+                self.neural_network.evaluate(test_set=self.corpus.test_set,
+                                             display_progress_bars=display_progress_bars)
 
         elif self.corpus_type == CorpusType.CORPUS_GENERATOR:
-            self.__test_results = self.neural_network.evaluate_generator(
-                test_set_generator=self.corpus_files.test_set_files,
-                display_progress_bars=display_progress_bars)
+            self.__test_results = \
+                self.neural_network.evaluate_generator(test_set_generator=self.corpus_files.test_set_files,
+                                                       display_progress_bars=display_progress_bars)
 
-    def run(self, print_results: bool = True,
-            plot_history: bool = False,
+    def run(self,
+            train: bool = True,
+            plot_training_loss: bool = True,
+            plot_training_accuracy: bool = True,
+            test_after_training: bool = True,
+            print_training_results: bool = True,
+            fine_tune: bool = False,
+            unfreeze_layers: set = {},
+            plot_fine_tuning_loss: bool = True,
+            plot_fine_tuning_accuracy: bool = True,
+            test_after_fine_tuning: bool = True,
+            print_fine_tuning_results: bool = True,
             display_progress_bars: bool = True):
         """Runs the experiment
 
         Args:
-            print_results (bool):
-            plot_history (bool):
+            train (bool): executes the training step of the neural network
+            plot_training_loss (bool): plot the loss graphic after the training stage
+            plot_training_accuracy (bool): plot the accuracy graphic after the training stage
+            test_after_training (bool): evaluates the test dataset after the training stage is complete
+            print_training_results (bool): print a summary of the test results after training
+            fine_tune (bool): executes fine tuning on the last convolutional layer after training the classifier
+            unfreeze_layers (list): list of layer names to be unfrozen in the convolutional base for fine tuning
+            plot_fine_tuning_loss (bool): plot the loss graphic after the fine tuning stage
+            plot_fine_tuning_accuracy (bool): plot the loss graphic after the fine tuning stage
+            test_after_fine_tuning (bool): evaluates the test dataset after the fine tuning stage is complete
+            print_fine_tuning_results (bool): print a summary of the results after training and tests
             display_progress_bars (bool):
 
         """
         if self.corpus_type == CorpusType.CORPUS_DATASET:
             self.prepare_sets()
 
-        self.train(display_progress_bars=display_progress_bars)
-        self.evaluate(display_progress_bars=display_progress_bars)
+        if train:
+            print("Starting training")
+            self.training(display_progress_bars=display_progress_bars)
+            print("Training finished successfully")
+            if plot_training_loss:
+                print("Plotting training loss")
+                self.plot_loss()
+            if plot_training_accuracy:
+                print("Plotting training accuracy")
+                self.plot_accuracy()
 
-        if print_results:
-            self.print_test_results()
+            if test_after_training:
+                print("Starting test after training")
+                self.evaluation(display_progress_bars=display_progress_bars)
+                print("Test finished successfully")
+                if print_training_results:
+                    print("Test results after training")
+                    self.print_test_results()
 
-        if plot_history:
-            self.plot_loss()
+        if fine_tune:
+            print("Starting fine tuning")
+            self.fine_tuning(layer_names=unfreeze_layers,
+                             display_progress_bars=display_progress_bars)
+            print("Fine tuning finished successfully")
+            if plot_fine_tuning_loss:
+                print("Plotting fine tuning training loss")
+                self.plot_loss()
+            if plot_fine_tuning_accuracy:
+                print("Plotting fine tuning training accuracy")
+                self.plot_accuracy()
+
+            if test_after_fine_tuning:
+                print("Starting test after fine tuning")
+                self.evaluation(display_progress_bars=display_progress_bars)
+                print("Test after fine tuning finished successfully")
+                if print_fine_tuning_results:
+                    print("Test results after fine tuning")
+                    self.print_test_results()
 
     def save_architecture(self, path: str, filename: str = '', verbose: bool = True):
         """Saves the neural network in its current status to the file path and name

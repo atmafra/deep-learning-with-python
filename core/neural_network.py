@@ -142,6 +142,19 @@ class NeuralNetwork():
         self.save_archtecture(path=path, filename=architecture_filename, verbose=verbose)
         self.save_weights(path=path, filename=weights_filename, verbose=verbose)
 
+    @property
+    def trainable_parameters_count(self):
+        return net.count_trainable_parameters(self.model)
+        self.model.summary()
+
+    @property
+    def non_trainable_parameters_count(self):
+        return net.count_non_trainable_parameters(self.model)
+
+    @property
+    def parameters_count(self):
+        return net.count_parameters(self.model)
+
     def train(self, training_set: Dataset,
               training_configuration: TrainingConfiguration,
               validation_set: Dataset = None,

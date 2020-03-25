@@ -5,4 +5,5 @@ if __name__ == '__main__':
     # cats_and_dogs.run()
     # :w
     # feature_extraction.run(build_dataset=False)
-    feature_extraction_data_augmentation.run(build_dataset=False)
+    feature_extraction_data_augmentation.run(build_dataset=False,
+                                             fine_tune=True)
