@@ -275,7 +275,9 @@ class Experiment:
             print("Fine tuning finished successfully")
 
         if save:
-            self.save_model(path=model_path, verbose=True)
+            self.save_model(path=model_path,
+                            root_filename=str_to_filename(self.name),
+                            verbose=True)
 
         if test:
             print("Starting final tests")

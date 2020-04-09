@@ -12,6 +12,9 @@ from keras_preprocessing import image
 from keras.applications.vgg16 import preprocess_input, decode_predictions
 
 image_url = 'https://s3.amazonaws.com/book.keras.io/img/ch5/creative_commons_elephant.jpg'
+# image_url = 'https://upload.wikimedia.orgo/wikipedia/commons/6/6a/Indian_Elephant.jpeg'
+# image_url = 'https://ca-times.brightspotcdn.com/dims4/default/2f4e1bf/2147483647/strip/true/crop/2910x2021+0+0/resize/840x583!/quality/90/?url=https%3A%2F%2Fcalifornia-times-brightspot.s3.amazonaws.com%2Fe4%2Fe8%2F0ee997f74398b400c5ea65244f70%2Fzoo-elephant-euthanized-67478.jpg'
+# image_url = 'https://www.thefactsite.com/wp-content/uploads/2018/07/facts-about-parrots.jpg'
 
 
 def download_image(url: str = image_url):

@@ -65,6 +65,8 @@ def run():
     experiment_plan.run(print_results=True,
                         plot_training_loss=True,
                         plot_training_accuracy=True,
-                        display_progress_bars=True)
+                        display_progress_bars=True,
+                        save_models=True,
+                        models_path='models/mnist')
 
-    experiment_plan.save_models(path='models/mnist')
+
