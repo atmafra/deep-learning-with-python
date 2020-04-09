@@ -74,12 +74,11 @@ def load_experiment(experiment_name: str,
     return experiment
 
 
-def run(build_dataset: bool = False, fine_tune: bool = True):
+def run(fine_tune: bool = True):
     """Run the experiment
     """
     dirs = prepare_files(check=True)
     corpus_files_augmented = load_corpus_files(dirs=dirs, use_augmented=True, check=False)
-
     corpus_name = 'Cats and Dogs'
     experiment_name = corpus_name + ' - Feature Extraction with Data Augmentation and Fine Tuning'
 
@@ -87,18 +86,19 @@ def run(build_dataset: bool = False, fine_tune: bool = True):
                                  corpus_files=corpus_files_augmented)
 
     experiment.run(train=True,
-                   plot_training_loss=True,
-                   plot_training_accuracy=True,
                    test_after_training=True,
                    print_training_results=True,
-                   fine_tune=True,
+                   fine_tune=fine_tune,
                    unfreeze_layers={'block5_conv1'},
-                   plot_fine_tuning_loss=False,
-                   plot_fine_tuning_accuracy=False,
-                   test_after_fine_tuning=True,
-                   print_fine_tuning_results=True,
+                   plot_training_loss=True,
+                   plot_training_accuracy=True,
+                   plot_fine_tuning_loss=True,
+                   plot_fine_tuning_accuracy=True,
+                   training_plot_smooth_factor=0.,
+                   validation_plot_smooth_factor=0.8,
+                   test=True,
+                   print_test_results=True,
+                   save=True,
+                   model_path='models/cats_and_dogs',
                    display_progress_bars=True)
 
-    experiment.save_model(path='models/cats_and_dogs')
-    experiment.plot_loss()
-    experiment.plot_accuracy()

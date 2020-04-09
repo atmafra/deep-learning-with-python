@@ -129,6 +129,14 @@ def run(build_dataset: bool = False):
                                                    datasets_base_name=corpus_name)
 
     experiment = load_experiment(corpus=corpus)
-    experiment.run(print_results=True, plot_history=False, display_progress_bars=True)
-    experiment.plot_loss()
-    experiment.plot_accuracy()
+    experiment.run(train=True,
+                   print_training_results=True,
+                   plot_training_loss=True,
+                   plot_training_accuracy=True,
+                   training_plot_smooth_factor=0.,
+                   validation_plot_smooth_factor=0.8,
+                   test=True,
+                   print_test_results=True,
+                   save=False,
+                   model_path=None,
+                   display_progress_bars=True)

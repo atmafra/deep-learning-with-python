@@ -106,7 +106,7 @@ def run(plan: str = 'comparison', build: bool = True):
     experiment_plan.save_models(path='models')
 
     # plots the results
-    experiment_plan.plot_loss("Training Loss", training=True, validation=False)
-    experiment_plan.plot_loss("Validation Loss", training=False, validation=True)
-    experiment_plan.plot_accuracy("Training Accuracy", training=True, validation=False)
-    experiment_plan.plot_accuracy("Validation Accuracy", training=False, validation=True)
+    experiment_plan.plot_training_loss("Training Loss", training=True, validation=False)
+    experiment_plan.plot_training_loss("Validation Loss", training=False, validation=True)
+    experiment_plan.plot_training_accuracy("Training Accuracy", training=True, validation=False)
+    experiment_plan.plot_training_accuracy("Validation Accuracy", training=False, validation=True)

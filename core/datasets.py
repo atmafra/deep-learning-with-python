@@ -169,11 +169,18 @@ class DatasetFileIterator:
     """Contains a directory iterator that can be sequentially iterated over to get a set of files
     """
 
-    def __init__(self, directory_iterator: DirectoryIterator):
+    def __init__(self,
+                 directory_iterator: DirectoryIterator,
+                 name: str):
         if directory_iterator is None:
             raise RuntimeError('No directory iterator passed creating GenSet')
 
+        self.__name = name
         self.__directory_iterator = directory_iterator
+
+    @property
+    def name(self):
+        return self.__name
 
     @property
     def directory_iterator(self):

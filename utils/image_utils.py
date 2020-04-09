@@ -33,8 +33,6 @@ def get_image_directory_iterator(source_dir: str,
         fill_mode (str): how points outside the boundaries are filled("constant", "nearest", "reflect" or "wrap")
 
     """
-    datagen = None
-
     if not use_augmented:
         datagen = ImageDataGenerator(rescale=rescale_factor)
     else:
@@ -74,13 +72,19 @@ def get_image_directory_iterator(source_dir: str,
                                        class_mode=class_mode)
 
 
-def show_sample(generator: DirectoryIterator,
+def show_sample(iterator: DirectoryIterator,
                 num_samples: int = 20,
                 rows: int = 4,
                 columns: int = 5):
     """Displays samples from the first batch of the image generator
+
+    Args:
+        iterator (DirectoryIterator): directory iterator that retrieves one image at a time
+        num_samples (int): number of image samples to be displayed
+        rows (int): number of image rows
+        columns (int): number of image columns
     """
-    batch = next(generator)
+    batch = next(iterator)
     images_list = batch[0]
     classification_list = batch[1]
     if num_samples > len(images_list):
@@ -89,9 +93,9 @@ def show_sample(generator: DirectoryIterator,
 
     for i in range(0, num_samples):
         current_image = image.array_to_img(images_list[i])
-        #current_classification = generator.class_indices[classification_list[i]]
+        # current_classification = generator.class_indices[classification_list[i]]
         subplot = fig.add_subplot(rows, columns, i + 1)
-        #subplot.title.set_text(current_classification)
+        # subplot.title.set_text(current_classification)
         plt.imshow(current_image)
 
     plt.show()

@@ -141,8 +141,21 @@ def prepare_files(check: bool = True):
     return dirs
 
 
-def load_corpus_files(dirs: dict, use_augmented: bool, check: bool = False) -> CorpusFiles:
+def load_corpus_files(dirs: dict,
+                      use_augmented: bool,
+                      check: bool = False,
+                      show_training_sample: bool = False,
+                      show_validation_sample: bool = False,
+                      show_test_sample: bool = False) -> CorpusFiles:
     """Loads the corpus from files in the directory structure
+
+    Args:
+        dirs (dict): directories dictionary
+        use_augmented (bool): use data augmentation on the training images to avoid overfitting
+        check (bool): print a summary of the files
+        show_training_sample (bool): show a figure with examples of images from the training set
+        show_validation_sample (bool): show a figure with examples of images from the validation set
+        show_test_sample (bool): show a figure with examples of images from the test set
     """
     train_dir = putl.get_parameter(parameters=dirs, key='train')
     validation_dir = putl.get_parameter(parameters=dirs, key='validation')
@@ -153,7 +166,7 @@ def load_corpus_files(dirs: dict, use_augmented: bool, check: bool = False) -> C
     batch_size = 20
     class_mode = 'binary'
 
-    training_generator = get_image_directory_iterator(
+    training_iterator = get_image_directory_iterator(
         source_dir=train_dir,
         target_size=target_size,
         batch_size=batch_size,
@@ -168,7 +181,7 @@ def load_corpus_files(dirs: dict, use_augmented: bool, check: bool = False) -> C
         horizontal_flip=True,
         fill_mode='nearest')
 
-    validation_generator = get_image_directory_iterator(
+    validation_iterator = get_image_directory_iterator(
         source_dir=validation_dir,
         target_size=target_size,
         batch_size=batch_size,
@@ -176,7 +189,7 @@ def load_corpus_files(dirs: dict, use_augmented: bool, check: bool = False) -> C
         rescale_factor=rescale_factor,
         use_augmented=False)
 
-    test_generator = get_image_directory_iterator(
+    test_iterator = get_image_directory_iterator(
         source_dir=test_dir,
         target_size=target_size,
         batch_size=batch_size,
@@ -184,15 +197,23 @@ def load_corpus_files(dirs: dict, use_augmented: bool, check: bool = False) -> C
         rescale_factor=rescale_factor,
         use_augmented=False)
 
-    training_set_files = DatasetFileIterator(directory_iterator=training_generator)
-    validation_set_files = DatasetFileIterator(directory_iterator=validation_generator)
-    test_set_files = DatasetFileIterator(directory_iterator=test_generator)
+    training_set_files = DatasetFileIterator(directory_iterator=training_iterator, name='Training')
+    validation_set_files = DatasetFileIterator(directory_iterator=validation_iterator, name='Validation')
+    test_set_files = DatasetFileIterator(directory_iterator=test_iterator, name='Test')
 
     corpus_files = CorpusFiles(training_set_files=training_set_files,
                                validation_set_files=validation_set_files,
                                test_set_files=test_set_files)
 
-    # show_sample(generator=training_generator)
+    if show_training_sample:
+        show_sample(iterator=training_iterator)
+
+    if show_validation_sample:
+        show_sample(iterator=validation_iterator)
+
+    if show_test_sample:
+        show_sample(iterator=test_iterator)
+
     return corpus_files
 
 

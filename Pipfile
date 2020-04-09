@@ -11,6 +11,8 @@ tensorflow = "*"
 matplotlib = "*"
 pillow = "*"
 python-slugify = "*"
+cv2 = "*"
+opencv-python = "*"
 
 [requires]
 python_version = "3.7"

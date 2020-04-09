@@ -157,7 +157,7 @@ def run(build: bool = True):
                         display_progress_bars=True)
 
     experiment_plan.save_models('models/imdb')
-    experiment_plan.plot_loss("Training Loss", training=True, validation=False)
-    experiment_plan.plot_loss("Validation Loss", training=False, validation=True)
-    experiment_plan.plot_accuracy("Training Accuracy", training=True, validation=False)
-    experiment_plan.plot_accuracy("Validation Accuracy", training=False, validation=True)
+    experiment_plan.plot_loss("Training Loss", plot_training_series=True, plot_validation_series=False)
+    experiment_plan.plot_loss("Validation Loss", plot_training_series=False, plot_validation_series=True)
+    experiment_plan.plot_accuracy("Training Accuracy", plot_training_series=True, plot_validation_series=False)
+    experiment_plan.plot_accuracy("Validation Accuracy", plot_training_series=False, plot_validation_series=True)
