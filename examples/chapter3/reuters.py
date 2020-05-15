@@ -145,11 +145,17 @@ def load_experiment(corpus: Corpus, encoding_schema):
 
 
 def run(num_words: int = 10000, encoding_schema: str = 'one-hot', build: bool = True):
-    corpus = None
     if build:
         corpus = build_corpus(num_words=num_words, encoding_schema=encoding_schema, save=True)
     else:
         corpus = load_corpus(encoding_schema=encoding_schema)
+
     experiment = load_experiment(corpus=corpus, encoding_schema=encoding_schema)
-    experiment.run(print_results=True, plot_history=True)
-    experiment.save_model(path='models/reuters')
+
+    experiment.run(train=True,
+                   print_training_results=True,
+                   test=True,
+                   print_test_results=True,
+                   save=True,
+                   model_path='models/reuters')
+

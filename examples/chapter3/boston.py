@@ -8,7 +8,7 @@ from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
 from utils import dataset_utils as dsu
-from utils.history_utils import plot_mae_dict, plot_loss_dict
+from utils.history_utils import plot_mae
 
 
 def build_corpus(name: str,
@@ -123,11 +123,15 @@ def run(build: bool = True):
     else:
         corpus = load_corpus(name=corpus_name)
     experiment = load_experiment(corpus=corpus)
-    experiment.run(print_results=True, plot_history=False)
-    experiment.save_model('models/boston')
 
-    plot_loss_dict(experiment.training_history,
-                   title='Boston Housing: Training and Validation Mean Squared Error (MSE)')
+    experiment.run(train=True,
+                   print_training_results=True,
+                   plot_training_loss=True,
+                   plot_training_accuracy=False,
+                   test=True,
+                   print_test_results=True,
+                   save=True,
+                   model_path='models/boston')
 
-    plot_mae_dict(experiment.training_history,
-                  title='Boston Housing: Training and Validation Mean Absolute Error (MAE)')
+    plot_mae(history=experiment.training_history,
+             title='Boston Housing: Training and Validation Mean Absolute Error (MAE)')

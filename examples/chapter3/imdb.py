@@ -13,14 +13,14 @@ from utils import dataset_utils as dsu
 num_words = 10000
 
 
-def build_corpus(words: int = 10000, save: bool = True, verbose: bool = True) -> Corpus:
-    """"Loads the IMDB dataset into a corpus object
-
-    Args:
-        words (int): word limit in the reverse index
-        save (bool): save corpus after loading and pre-processing data
-        verbose (bool): outputs progress messages
-
+def build_corpus(words: int = 10000,
+                 save: bool = True,
+                 verbose: bool = True) -> Corpus:
+    """"
+    Loads the IMDB dataset into a corpus object
+    :param words: word limit in the reverse index
+    :param save: save corpus after loading and pre-processing data
+    :param verbose: outputs progress messages
     """
     if verbose:
         print("Loading IMDB dataset...")
@@ -144,7 +144,6 @@ def load_experiments(corpus: Corpus):
 
 
 def run(build: bool = True):
-    corpus = None
     if build:
         corpus = build_corpus(words=num_words)
     else:
@@ -152,12 +151,14 @@ def run(build: bool = True):
 
     experiment_plan = load_experiments(corpus=corpus)
     experiment_plan.run(print_results=True,
-                        plot_training_loss=False,
-                        plot_training_accuracy=False,
+                        plot_training_loss=True,
+                        plot_training_accuracy=True,
+                        plot_validation_loss=True,
+                        plot_validation_accuracy=True,
                         display_progress_bars=True)
 
     experiment_plan.save_models('models/imdb')
-    experiment_plan.plot_loss("Training Loss", plot_training_series=True, plot_validation_series=False)
-    experiment_plan.plot_loss("Validation Loss", plot_training_series=False, plot_validation_series=True)
-    experiment_plan.plot_accuracy("Training Accuracy", plot_training_series=True, plot_validation_series=False)
-    experiment_plan.plot_accuracy("Validation Accuracy", plot_training_series=False, plot_validation_series=True)
+    # experiment_plan.plot_loss("Training Loss", plot_training_series=True, plot_validation_series=False)
+    # experiment_plan.plot_loss("Validation Loss", plot_training_series=False, plot_validation_series=True)
+    # experiment_plan.plot_accuracy("Training Accuracy", plot_training_series=True, plot_validation_series=False)
+    # experiment_plan.plot_accuracy("Validation Accuracy", plot_training_series=False, plot_validation_series=True)

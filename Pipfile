@@ -13,6 +13,8 @@ pillow = "*"
 python-slugify = "*"
 cv2 = "*"
 opencv-python = "*"
+annoy = "*"
+corpora = "*"
 
 [requires]
 python_version = "3.7"

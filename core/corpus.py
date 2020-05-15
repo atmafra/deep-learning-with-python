@@ -12,29 +12,24 @@ class CorpusType(Enum):
 
 
 class Corpus:
-    """A Corpus is a group of two sets: Training and Test. An additional set
-       can be created for train enhancemente purposes: the Validation set.
+    """ A Corpus is a group of three datasets:
 
-
-        Members:
-            training_set (Set): train set
-            test_set (Set): test set
-            validation_set (Set): part of the training set used to perform cross-validation
-
+    - Training Set: used to train a neural network model
+    - Test Set: used to evaluate the trained neural network model's performance metrics
+    - Validation Set: used to evaluate the model's current performance metrics during training
     """
 
-    def __init__(self, training_set: Dataset,
+    def __init__(self,
+                 training_set: Dataset,
                  test_set: Dataset,
                  validation_set: Dataset = None,
                  name: str = ''):
-        """Creates a new corpus
+        """ Creates a new corpus
 
-        Args:
-            training_set (Dataset): train set
-            test_set (Dataset): test set
-            validation_set (Dataset): validation set
-            name (str): corpus name
-
+        :param training_set: train set
+        :param test_set: test set
+        :param validation_set: validation set
+        :param name: corpus name
         """
         self.training_set = training_set
         self.test_set = test_set
@@ -50,17 +45,16 @@ class Corpus:
                       validation_input: np.ndarray = None,
                       validation_output: np.ndarray = None,
                       name: str = ''):
-        """Creates a corpus from the 4 datasets: train x test, input x output
+        """ Creates a corpus from the 4 datasets: train x test, input x output
 
-        Args:
-            training_input (ndarray): train set inputs
-            training_output (ndarray): train set outputs
-            test_input (ndarray): test set inputs
-            test_output (ndarray): test set outputs
-            validation_input (ndarray): validation set inputs
-            validation_output (ndarray): validation set outputs
-            name (str): corpus name
-
+        :param training_input: train set inputs
+        :param training_output: train set outputs
+        :param test_input: test set inputs
+        :param test_output: test set outputs
+        :param validation_input: validation set inputs
+        :param validation_output: validation set outputs
+        :param name: corpus name
+        :return: new Corpus
         """
         training_set = Dataset(training_input, training_output)
         test_set = Dataset(test_input, test_output)
@@ -77,13 +71,11 @@ class Corpus:
     @classmethod
     def from_tuple(cls, corpus: tuple,
                    name: str = ''):
-        """Creates a new Corpus from a pair (tuple) of two or three sets
-           Each of these sets must have two subsets: input and output sets
+        """ Creates a new Corpus from a pair (tuple) of two or three sets. Each of these sets must have
+        two subsets: input and output.
 
-        Args:
-            corpus (tuple): a pair of arrays that represent train and test sets
-            name (str): corpus name
-
+        :param corpus: a pair of arrays that represent train and test sets
+        :param name: corpus name
         """
         if corpus is None:
             raise ValueError('Cannot create a corpus from a null tuple of datasets')
@@ -97,6 +89,72 @@ class Corpus:
                                     validation_output=corpus_datasets[2][1],
                                     name=name)
 
+    def resize(self,
+               training_set_size: int = -1,
+               validation_set_size: int = -1,
+               test_set_size: int = -1,
+               shuffle: bool = False):
+        """ Resizes the internal Datasets to smaller sizes
+
+        :param training_set_size: new size of the training set
+        :param validation_set_size: new size of the validation set
+        :param test_set_size: new size of the test set
+        :param shuffle: shuffle sets before cutting
+        :returns: nothing
+        """
+        if training_set_size > 0:
+            if self.training_set is None:
+                raise RuntimeError('Corpus has no training set to be resized')
+            if shuffle:
+                self.training_set.shuffle()
+            self.training_set, training_remain = self.training_set.split(size=training_set_size)
+
+        if validation_set_size > 0:
+            if self.validation_set is None:
+                raise RuntimeError('Corpus has no validation set to be resized')
+            if shuffle:
+                self.validation_set.shuffle()
+            self.validation_set, validation_remain = self.validation_set.split(size=validation_set_size)
+
+        if test_set_size > 0:
+            if self.test_set is None:
+                raise RuntimeError('Corpus has no test set to be resized')
+            if shuffle:
+                self.test_set.shuffle()
+            self.test_set, test_remain = self.test_set.split(size=test_set_size)
+
+    def copy(self,
+             training_set_size: int = -1,
+             validation_set_size: int = -1,
+             test_set_size: int = -1):
+        """ Creates a copy of the current corpus, resizing the datasets if requested
+
+        :param training_set_size: size of the training set
+        :param validation_set_size: size of the validation set
+        :param test_set_size: size of the test set
+        :return: a resized copy of the corpus
+        """
+        training_set = self.training_set.copy()
+
+        validation_set = None
+        if self.validation_set is not None:
+            validation_set = self.validation_set.copy()
+
+        test_set = None
+        if self.test_set is not None:
+            test_set = self.test_set.copy()
+
+        copy = Corpus(training_set=training_set,
+                      validation_set=validation_set,
+                      test_set=test_set,
+                      name=self.name)
+
+        copy.resize(training_set_size=training_set_size,
+                    validation_set_size=validation_set_size,
+                    test_set_size=test_set_size)
+
+        return copy
+
     @property
     def training_set(self):
         return self.__training_set
@@ -104,6 +162,10 @@ class Corpus:
     @training_set.setter
     def training_set(self, training_set: Dataset):
         self.__training_set = training_set
+
+    @property
+    def size(self):
+        return self.training_set.length
 
     @property
     def test_set(self):
@@ -127,19 +189,15 @@ class Corpus:
 
     @property
     def input_size(self):
-        """Returns the size of the input elements
-        """
         return self.training_set.input_size
 
     @property
     def output_size(self):
-        """Returns the size of the output elements
-        """
         return self.training_set.output_size
 
     @property
     def count_categories(self):
-        """Returns the number of distinct labels in the output data
+        """ Returns the number of distinct labels in the output data
         """
         return self.training_set.count_unique_values
 
@@ -155,44 +213,61 @@ class Corpus:
     def average_output(self):
         return self.training_set.average_output
 
-    def get_validation_set(self, size: int, start: int = 0):
-        """Splits the train set in order to split a validation dataset
+    def split_training_set(self, size: int, start: int = 0):
+        """ Splits the training set into two new subsets whose elements are copied from the original training set
 
-        Args:
-            size  (int) : validation set size
-            start (int) : split train set from this position on
-
+        :param size: split size (number of elements of the split dataset)
+        :param start: split start position
+        :return: two new datasets: split, remain
         """
-        training_set_copy = self.training_set.copy()
-        return training_set_copy.split(size=size, start=start)
+        return self.training_set.split(size=size, start=start)
+
+    def get_validation_from_training_set(self,
+                                         validation_size: int,
+                                         start_position: int = 0,
+                                         merge_first: bool = False,
+                                         preserve_training_set: bool = False):
+        """ Creates a validation set by splitting the training set, overwriting the original datasets
+
+        :param validation_size: validation set size (must be smaller than training set)
+        :param start_position: split start position
+        :param merge_first: merge training and validation sets before split
+        :param preserve_training_set: preserve the original training set (don't override with the split remain)
+        """
+        if merge_first and self.validation_set is not None:
+            self.training_set.merge(self.validation_set)
+
+        split, remain = self.split_training_set(size=validation_size, start=start_position)
+
+        if self.validation_set is None:
+            self.validation_set = split
+        else:
+            self.validation_set.merge(split)
+
+        if not preserve_training_set:
+            self.training_set = remain
 
     def get_validation_set_k_fold(self, fold: int, k: int):
-        """Splits the train set to extract a validation set according to
-           the k-fold rule
-
-        Args:
-            fold (int): current fold
-            k (int): number of folds
-
+        """
+        Splits the training set to extract a validation set according to the k-fold rule
+        :param fold: current fold
+        :param k: number of folds
         """
         return self.training_set.split_k_fold(fold=fold, k=k)
 
 
 class CorpusFiles:
-    """A corpus generator contains three file sets: train, validation, and test
-
+    """ A corpus generator contains three file sets: train, validation, and test
     """
 
     def __init__(self,
                  training_set_files: DatasetFileIterator,
                  validation_set_files: DatasetFileIterator,
                  test_set_files: DatasetFileIterator):
-        """Creates a new Corpus based on Set of files
-
-        Args:
-            training_set_files (DatasetFileIterator): train set files
-            validation_set_files (DatasetFileIterator): validation set files
-            test_set_files (DatasetFileIterator): test set files
+        """ Creates a new Corpus based on Set of files
+        :param training_set_files: train set files
+        :param validation_set_files: validation set files
+        :param test_set_files: test set files
         """
         self.__training_set_files = training_set_files
         self.__validation_set_files = validation_set_files

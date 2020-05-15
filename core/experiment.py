@@ -1,3 +1,5 @@
+from keras.callbacks import History
+
 from core.convolutional_neural_network import ConvolutionalNeuralNetwork
 from core.corpus import CorpusType, Corpus, CorpusFiles
 from core.network import ValidationStrategy
@@ -9,33 +11,37 @@ from utils.parameter_utils import get_parameter
 
 
 class Experiment:
+    """ An Experiment is a combination of a Neural Network model, plus a Corpus (training and test datasets)
+    plus all the hyperparameters that can be tuned to execute the training of that model
+    """
 
     def __init__(self,
                  name: str,
                  neural_network: NeuralNetwork,
                  training_configuration: TrainingConfiguration,
+                 id: str = None,
                  fine_tuning_configuration: TrainingConfiguration = None,
                  corpus_type: CorpusType = CorpusType.CORPUS_DATASET,
                  corpus: Corpus = None,
                  corpus_files: CorpusFiles = None):
-        """Creates a new Experiment to evaluate the performance of a specific
-           combination of data and train hyperparameters
+        """ Creates a new Experiment to evaluate the performance of a specific combination
+        of data, model, and training hyperparameters
 
-        Args:
-            name (str): name of the experiment
-            neural_network (NeuralNetwork): neural network architecture associated to this particular experiment
-            training_configuration (TrainingConfiguration): train hyperparameters
-            fine_tuning_configuration (TrainingConfiguration): fine-tuning training stage hyperparameters
-            corpus_type (CorpusType): defines if data comes from in-memory sets
-               or from directory iterators (generators)
-            corpus (Corpus): the train and test sets to be used
-            corpus_files (CorpusFiles): corpus files that represent the training, test, and validation sets
-
+        :param name: name of the experiment
+        :param training_configuration: train hyperparameters
+        :param id: experiment ID (code)
+        :param fine_tuning_configuration: fine-tuning training stage hyperparameters
+        :param corpus_type: defines if data comes from in-memory sets or from directory iterators (generators)
+        :param corpus: the train and test sets to be used
+        :param corpus_files: corpus files that represent the training, test, and validation sets
         """
+        self.__name: str = name
         self.__neural_network = neural_network
         self.__training_configuration = training_configuration
+        self.__id: str = id or None
         self.__fine_tuning_configuration = fine_tuning_configuration
-        self.__name: str = name
+        self.__epochs = []
+        self.__training_metrics = {}
         self.__training_history = None
         self.__fine_tuning_history = None
         self.__test_results = None
@@ -86,12 +92,38 @@ class Experiment:
         return self.__training_configuration
 
     @property
+    def id(self):
+        return self.__id
+
+    @property
     def fine_tuning_configuration(self):
         return self.__fine_tuning_configuration
 
     @property
-    def training_history(self):
+    def epochs(self):
+        return self.__epochs
+
+    @epochs.setter
+    def epochs(self, epochs: list):
+        self.__epochs = epochs
+
+    @property
+    def training_metrics(self):
+        return self.__training_metrics
+
+    @training_metrics.setter
+    def training_metrics(self, metrics: dict):
+        self.__training_metrics = metrics
+
+    @property
+    def training_history(self) -> History:
         return self.__training_history
+
+    @training_history.setter
+    def training_history(self, history: History):
+        self.__training_history = history
+        self.epochs = self.training_history.epoch
+        self.training_metrics = self.training_history.history
 
     @property
     def fine_tuning_history(self):
@@ -138,54 +170,54 @@ class Experiment:
         self.__test_set = test_set
 
     def prepare_sets(self):
-        """Prepare the train and the validation sets for train
+        """ Prepare the train and the validation sets for train
         """
         validation_strategy = self.training_configuration.validation_strategy
+        validation_set_size = self.training_configuration.validation_set_size
 
         if validation_strategy in (ValidationStrategy.NO_VALIDATION, ValidationStrategy.K_FOLD_CROSS_VALIDATION):
             self.training_set = self.corpus.training_set
             self.validation_set = None
 
         elif validation_strategy == ValidationStrategy.CROSS_VALIDATION:
-            if self.corpus.validation_set is None:
-                validation_configuration = self.training_configuration.validation_configuration
-                validation_set_size = get_parameter(validation_configuration, 'set_size')
-                self.validation_set, self.training_set = self.corpus.get_validation_set(validation_set_size)
-            else:
-                self.training_set = self.corpus.training_set
-                self.validation_set = self.corpus.validation_set
+            if validation_set_size > 0:
+                if self.corpus.validation_set is None or self.corpus.validation_set.length == 0:
+                    split, remain = self.corpus.split_training_set(size=validation_set_size)
+                    self.training_set = remain
+                    self.validation_set = split
+                else:
+                    if self.corpus.validation_set.length != validation_set_size:
+                        raise RuntimeError('Incompatible validation set sizes')
+                    self.training_set = self.corpus.training_set
+                    self.validation_set = self.corpus.validation_set
 
         self.test_set = self.corpus.test_set
 
     def training(self, display_progress_bars: bool = True):
-        """Train the neural network model
+        """ Train the neural network model
 
-        Args:
-            display_progress_bars (bool): display progress bars in terminal during evaluation
-
+        :param display_progress_bars: display progress bars in terminal during evaluation
         """
         if self.corpus_type == CorpusType.CORPUS_DATASET:
-            self.__training_history = \
+            self.training_history = \
                 self.neural_network.train(training_set=self.training_set,
                                           training_configuration=self.training_configuration,
                                           validation_set=self.validation_set,
                                           display_progress_bars=display_progress_bars)
 
         else:
-            self.__training_history = \
+            self.training_history = \
                 self.neural_network.train_generator(corpus_files=self.corpus_files,
                                                     training_configuration=self.training_configuration,
                                                     display_progress_bars=display_progress_bars)
 
     def fine_tuning(self, layer_names: set,
                     display_progress_bars: bool = True):
-        """Executes the fine tuning of a Convolutional Neural Network
-           by training the last layers of the convolutional base after
-           the classifier is traineed
+        """ Executes the fine tuning of a Convolutional Neural Network by training the last layers
+        of the convolutional base after the classifier is trained.
 
-        Args:
-            layer_names (list): list of layer names to be unfrozen for fine tuning
-            display_progress_bars (bool):
+        :param layer_names: list of layer names to be unfrozen for fine tuning
+        :param display_progress_bars: display progress bars during training
         """
         if not isinstance(self.neural_network, ConvolutionalNeuralNetwork):
             raise TypeError('To run fine tuning, neural network model must be Convolutional')
@@ -198,11 +230,9 @@ class Experiment:
                                                 display_progress_bars=display_progress_bars)
 
     def evaluation(self, display_progress_bars: bool = True):
-        """Evaluate the neural network
+        """ Evaluates the neural network performance metrics against the test set
 
-        Args:
-            display_progress_bars (bool): display progress bars in terminal during evaluation
-
+        :param display_progress_bars: display progress bars in terminal during evaluation
         """
         if self.corpus_type == CorpusType.CORPUS_DATASET:
             self.__test_results = \
@@ -220,39 +250,37 @@ class Experiment:
             print_training_results: bool = True,
             fine_tune: bool = False,
             unfreeze_layers: set = {},
-            plot_training_loss: bool = True,
-            plot_training_accuracy: bool = True,
-            plot_fine_tuning_loss: bool = True,
-            plot_fine_tuning_accuracy: bool = True,
+            plot_training_loss: bool = False,
+            plot_training_accuracy: bool = False,
+            plot_fine_tuning_loss: bool = False,
+            plot_fine_tuning_accuracy: bool = False,
             training_plot_smooth_factor: float = 0.,
             validation_plot_smooth_factor: float = 0.,
             test: bool = True,
             print_test_results: bool = True,
-            save: bool = False,
+            save: bool = True,
             model_path: str = None,
             display_progress_bars: bool = True):
-        """Runs the experiment
+        """ Runs the experiment
 
-        Args:
-            train (bool): executes the training step of the neural network
-            test_after_training (bool): evaluates the test dataset after the training stage is complete
-            print_training_results (bool): print a summary of the test results after training
-            fine_tune (bool): executes fine tuning on the last convolutional layer after training the classifier
-            unfreeze_layers (list): list of layer names to be unfrozen in the convolutional base for fine tuning
-            plot_training_loss (bool): plot the loss graphic after the training stage
-            plot_training_accuracy (bool): plot the accuracy graphic after the training stage
-            plot_fine_tuning_loss (bool): plot the loss graphic after the fine tuning stage
-            plot_fine_tuning_accuracy (bool): plot the loss graphic after the fine tuning stage
-            training_plot_smooth_factor (float): exponential smooth factor to be applied to the training curves
-            validation_plot_smooth_factor (float): exponential smooth factor to be applied to the validation curves
-            test (bool): evaluates the test dataset after the fine tuning stage is complete
-            print_test_results (bool): print a summary of the results after training and tests
-            save (bool): save the model (architecture and weights) after training and fine tuning
-            model_path (str): system path for the saved model
-            display_progress_bars (bool):
-
+        :param train: executes the training step of the neural network
+        :param test_after_training: evaluates the test dataset after the training stage is complete
+        :param print_training_results: print a summary of the test results after training
+        :param fine_tune: executes fine tuning on the last convolutional layer after training the classifier
+        :param unfreeze_layers: list of layer names to be unfrozen in the convolutional base for fine tuning
+        :param plot_training_loss: plot the loss graphic after the training stage
+        :param plot_training_accuracy: plot the accuracy graphic after the training stage
+        :param plot_fine_tuning_loss: plot the loss graphic after the fine tuning stage
+        :param plot_fine_tuning_accuracy: plot the loss graphic after the fine tuning stage
+        :param training_plot_smooth_factor: exponential smooth factor to be applied to the training curves
+        :param validation_plot_smooth_factor: exponential smooth factor to be applied to the validation curves
+        :param test: evaluates the test dataset after the fine tuning stage is complete
+        :param print_test_results: print a summary of the results after training and tests
+        :param save: save the model (architecture and weights) after training and fine tuning
+        :param model_path: system path for the saved model
+        :param display_progress_bars: display progress bars during the training process
         """
-        if self.corpus_type == CorpusType.CORPUS_DATASET:
+        if (train or fine_tune or test) and self.corpus_type == CorpusType.CORPUS_DATASET:
             self.prepare_sets()
 
         if train:
@@ -311,36 +339,30 @@ class Experiment:
                                                validation_smooth_factor=validation_plot_smooth_factor)
 
     def save_architecture(self, path: str, filename: str = '', verbose: bool = True):
-        """Saves the neural network in its current status to the file path and name
+        """ Saves the neural network in its current status to the file path and name
 
-        Args:
-            path (str): system path of the save directory
-            filename (str): model file name
-            verbose (bool): show save messages on terminal
-
+        :param path: system path of the save directory
+        :param filename: model file name
+        :param verbose: show save messages on terminal
         """
         # save_network_hdf5(network=self.neural_network, path=path, file_name=name)
-        self.neural_network.save_archtecture(path=path, filename=filename, verbose=verbose)
+        self.neural_network.save_architecture(path=path, filename=filename, verbose=verbose)
 
     def save_weights(self, path: str, filename: str = '', verbose: bool = True):
-        """Saves the model status (weights) to a binary H5 file
+        """ Saves the model status (weights) to a binary H5 file
 
-        Args:
-            path (str): system path of the save directory
-            filename (str): weights file name
-            verbose (bool): show save message on terminal
-
+        :param path: system path of the save directory
+        :param filename: weights file name
+        :param verbose: show save message on terminal
         """
         self.neural_network.save_weights(path=path, filename=filename, verbose=verbose)
 
     def save_model(self, path: str, root_filename: str = '', verbose: bool = True):
-        """Saves the neural network architecture and weights
+        """ Saves the neural network architecture and weights
 
-        Args:
-            path (str): system path of the save directory
-            root_filename (str): model file name
-            verbose (bool): show save messages on terminal
-
+        :param path: system path of the save directory
+        :param root_filename: model file name
+        :param verbose: show save messages on terminal
         """
         # save_network_hdf5(network=self.neural_network, path=path, file_name=name)
         self.neural_network.save_model(path=path, root_filename=root_filename, verbose=verbose)
@@ -348,11 +370,10 @@ class Experiment:
     def plot_training_loss(self,
                            training_smooth_factor: float = 0.,
                            validation_smooth_factor: float = 0.):
-        """Plot the Loss function evolution during the training phase
+        """ Plot the Loss function evolution during the training phase
 
-        Args:
-            training_smooth_factor (float): exponential smooth factor for the training curve
-            validation_smooth_factor (float): exponential smooth factor for the validation curve
+        :param training_smooth_factor: exponential smooth factor for the training curve
+        :param validation_smooth_factor: exponential smooth factor for the validation curve
         """
         plot_loss(history=self.training_history,
                   title='Training Loss',
@@ -362,11 +383,10 @@ class Experiment:
     def plot_fine_tuning_loss(self,
                               training_smooth_factor: float = 0.,
                               validation_smooth_factor: float = 0.):
-        """Plot the Loss function evolution during the fine tuning phase
+        """ Plot the Loss function evolution during the fine tuning phase
 
-        Args:
-            training_smooth_factor (float): exponential smooth factor for the training curve
-            validation_smooth_factor (float): exponential smooth factor for the validation curve
+        :param training_smooth_factor: exponential smooth factor for the training curve
+        :param validation_smooth_factor: exponential smooth factor for the validation curve
         """
         plot_loss(history=self.fine_tuning_history,
                   title='Fine Tuning Loss',
@@ -376,11 +396,10 @@ class Experiment:
     def plot_training_accuracy(self,
                                training_smooth_factor: float = 0.,
                                validation_smooth_factor: float = 0.):
-        """Plot the evolution of the accuracy function along the training process
+        """ Plot the evolution of the accuracy function along the training process
 
-        Args:
-            training_smooth_factor (float): exponential smooth factor for the training curve
-            validation_smooth_factor (float): exponential smooth factor for the validation curve
+        :param training_smooth_factor: exponential smooth factor for the training curve
+        :param validation_smooth_factor: exponential smooth factor for the validation curve
         """
         plot_accuracy(history=self.training_history,
                       title='Training Accuracy',
@@ -390,11 +409,10 @@ class Experiment:
     def plot_fine_tuning_accuracy(self,
                                   training_smooth_factor: float = 0.,
                                   validation_smooth_factor: float = 0.):
-        """Plot the evolution of the accuracy function along the fine tuning process
+        """ Plot the evolution of the accuracy function along the fine tuning process
 
-        Args:
-            training_smooth_factor (float): exponential smooth factor for the training curve
-            validation_smooth_factor (float): exponential smooth factor for the validation curve
+        :param training_smooth_factor: exponential smooth factor for the training curve
+        :param validation_smooth_factor: exponential smooth factor for the validation curve
         """
         plot_accuracy(history=self.fine_tuning_history,
                       title='Fine Tuning Accuracy',
@@ -402,58 +420,90 @@ class Experiment:
                       validation_smooth_factor=validation_smooth_factor)
 
     def print_test_results(self):
-        """Print the result of the train session
+        """  Print the performance of the model evaluated against the test dataset
         """
         print("\n{}".format(self.name))
-        print("Test loss     = {:.6}".format(self.test_loss))
+        if self.test_loss is not None:
+            print("Test loss     = {:.6}".format(self.test_loss))
+        else:
+            print("Test loss     = undefined")
+
         if self.test_accuracy is not None:
             print("Test accuracy = {:.2%}".format(self.test_accuracy))
+        else:
+            print("Test accuracy = undefined")
+
         if self.test_mae is not None:
             print("Test MAE      = {}".format(self.test_mae))
+        else:
+            print("Test MAE      = undefined")
 
 
 class ExperimentPlan:
 
     def __init__(self, name: str, experiments: list):
-        """Creates a new Experiment Plan from a list of Experiments
+        """ Creates a new Experiment Plan from a list of Experiments
 
-        Args:
-            name (str): name of the experiment plan
-            experiments (list): list of experiments that take part of the plan
-
+        :param name: name of the experiment plan
+        :param experiments: list of experiments that take part of the plan
         """
-        self.__name = name
-        self.__experiment_list = experiments
+        self.name = name
+        self.experiment_list = experiments
 
     @property
     def name(self):
         return self.__name
 
+    @name.setter
+    def name(self, name):
+        self.__name = name
+
     @property
     def experiment_list(self):
         return self.__experiment_list
+
+    @experiment_list.setter
+    def experiment_list(self, experiment_list: list):
+        self.__experiment_list = experiment_list
+        self.__experiment_map = {}
+        for experiment in self.experiment_list:
+            if experiment.id:
+                self.__experiment_map[experiment.id] = experiment
+
+    def get_experiment(self, id: str):
+        """ Gets an experiment by its name
+
+        :param id: experiment ID
+        :return: matching experiment
+        """
+        if id not in self.__experiment_map:
+            raise ValueError('Experiment ID \'{}\' not found in experiment plan'.format(id))
+
+        return self.__experiment_map[id]
 
     def run(self,
             train: bool = True,
             test: bool = True,
             print_results: bool = False,
             plot_training_loss: bool = False,
+            plot_validation_loss: bool = False,
             plot_training_accuracy: bool = False,
+            plot_validation_accuracy: bool = False,
             display_progress_bars: bool = True,
-            save_models: bool = True,
+            save_models: bool = False,
             models_path: str = None):
+        """ Runs all the experiments
 
-        """Runs all the experiments
-
-        Args:
-            train (bool): execute the training phase
-            test (bool): execute the test phase
-            print_results (bool): print a summary of the test results after each phase
-            plot_training_loss (bool): plots a summary of the comparative loss during the training of all models
-            plot_training_accuracy (bool): plots a summary of the comparative accuracy during the training of all models
-            display_progress_bars (bool): display progress bars during the training process
-            save_models (str): save the trained models
-            models_path (str): system path to save the trained models
+        :param train: execute the training phase
+        :param test: execute the test phase
+        :param print_results: print a summary of the test results after each phase
+        :param plot_training_loss: plots a summary of the comparative loss during the training of all models
+        :param plot_validation_loss: plots a summary of the comparative loss during the validation of all models
+        :param plot_training_accuracy: plots a summary of the comparative accuracy during the training of all models
+        :param plot_validation_accuracy: plots a summary of the comparative accuracy during the validation of all models
+        :param display_progress_bars: display progress bars during the training process
+        :param save_models: save the trained models
+        :param models_path: system path to save the trained models
         """
         for experiment in self.experiment_list:
             experiment.run(train=train,
@@ -472,17 +522,31 @@ class ExperimentPlan:
                            display_progress_bars=display_progress_bars)
 
         if plot_training_loss:
-            self.plot_loss(title="Training Loss",
+            self.plot_loss(title='Training Loss',
                            plot_training_series=True,
-                           plot_validation_series=False)
+                           plot_validation_series=False,
+                           smooth_factor=0.)
+
+        if plot_validation_loss:
+            self.plot_loss(title='Validation Loss',
+                           plot_training_series=False,
+                           plot_validation_series=True,
+                           smooth_factor=0.)
 
         if plot_training_accuracy:
-            self.plot_accuracy(title="Training Accuracy",
+            self.plot_accuracy(title='Training Accuracy',
                                plot_training_series=True,
-                               plot_validation_series=False)
+                               plot_validation_series=False,
+                               smooth_factor=0.)
+
+        if plot_validation_accuracy:
+            self.plot_accuracy(title='Validation Accuracy',
+                               plot_training_series=False,
+                               plot_validation_series=True,
+                               smooth_factor=0.)
 
     def get_history_list(self):
-        """Gets a list of all the training history objects of the experiments
+        """ Gets a list of all the training history objects of the experiments
         """
         history_list = []
         for experiment in self.experiment_list:
@@ -491,7 +555,7 @@ class ExperimentPlan:
         return history_list
 
     def get_labels_list(self):
-        """Gets a list of all the experiment names
+        """ Gets a list of all the experiment names
         """
         labels_list = []
         for experiment in self.experiment_list:
@@ -504,13 +568,12 @@ class ExperimentPlan:
                   plot_training_series: bool = True,
                   plot_validation_series: bool = False,
                   smooth_factor: float = 0.):
-        """Plots the evolution of Loss during train
+        """ Plots the evolution of Loss during train
 
-        Args:
-            title (str): plot title
-            plot_training_series (bool): plot training series
-            plot_validation_series (bool): plot validation series
-            smooth_factor (float): exponential smooth factor
+        :param title: plot title
+        :param plot_training_series: plot training series
+        :param plot_validation_series: plot validation series
+        :param smooth_factor: exponential smooth factor
         """
         plot_loss_list(history_metrics_list=self.get_history_list(),
                        labels_list=self.get_labels_list(),
@@ -524,13 +587,12 @@ class ExperimentPlan:
                       plot_training_series: bool = True,
                       plot_validation_series: bool = False,
                       smooth_factor: float = 0.):
-        """Plots the evolution of Accuracy during train
+        """ Plots the evolution of Accuracy during train
 
-        Args:
-            title (str): plot title
-            plot_training_series (bool): plot training series
-            plot_validation_series (bool): plot validation series
-            smooth_factor (float): exponential smooth factor
+        :param title: plot title
+        :param plot_training_series: plot training series
+        :param plot_validation_series: plot validation series
+        :param smooth_factor: exponential smooth factor
         """
         plot_accuracy_list(history_metrics_list=self.get_history_list(),
                            labels_list=self.get_labels_list(),
@@ -544,13 +606,12 @@ class ExperimentPlan:
                     filename_list: list = None,
                     save_architecture: bool = True,
                     save_weights: bool = True):
-        """Saves all models architectures to files
+        """ Saves all models architectures to files
 
-        Args:
-            path (str): system path of the save directory
-            filename_list (str): list of file names
-            save_architecture (bool): save architecture of each model
-            save_weights (bool): save weights of each model
+        :param path: system path of the save directory
+        :param filename_list: list of file names
+        :param save_architecture: save architecture of each model
+        :param save_weights: save weights of each model
         """
         if not save_architecture and not save_weights:
             return

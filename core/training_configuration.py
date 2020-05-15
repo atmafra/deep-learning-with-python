@@ -14,10 +14,16 @@ class TrainingConfiguration:
     def validation_configuration(self):
         return get_parameter(parameters=self.__configuration,
                              key='validation',
-                             mandatory=False)
+                             mandatory=True)
 
     @property
     def validation_strategy(self):
-        validation_configuration = self.validation_configuration
-        return get_parameter(parameters=validation_configuration,
-                             key='strategy', mandatory=False)
+        return get_parameter(parameters=self.validation_configuration,
+                             key='strategy',
+                             mandatory=True)
+
+    @property
+    def validation_set_size(self):
+        return get_parameter(parameters=self.validation_configuration,
+                             key='set_size',
+                             mandatory=True)

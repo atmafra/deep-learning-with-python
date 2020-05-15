@@ -1,3 +1,5 @@
+import warnings
+
 import matplotlib.pyplot as plt
 import numpy as np
 from keras.callbacks import History
@@ -28,15 +30,14 @@ def plot_1_metric(metric_values: np.array,
                   x_label: str = 'Epochs',
                   y_label: str = None,
                   smooth_factor: float = 0.):
-    """ Plots a single metric
-
-    Args:
-        metric_values (np.array): array of metric values
-        title (str): plot title
-        metric_style (str): color and style of the curve plot
-        x_label (str): horizontal axis label
-        y_label (str): vertical axis label
-        smooth_factor (float): if > 0, applies smoothing to the curve
+    """
+     Plots a single metric
+     :param metric_values: array of metric values
+     :param title: plot title
+     :param metric_style: color and style of the curve plot
+     :param x_label: horizontal axis label
+     :param y_label: vertical axis label
+     :param smooth_factor: if > 0, applies smoothing to the curve
     """
     epochs = range(1, len(metric_values) + 1)
     plt.clf()
@@ -44,14 +45,16 @@ def plot_1_metric(metric_values: np.array,
         plt.plot(epochs, smooth_curve(metric_values, smooth_factor), metric_style)
     else:
         plt.plot(epochs, metric_values, metric_style)
+
     if x_label:
         plt.xlabel(x_label)
+
     if y_label:
         plt.ylabel(y_label)
+
     plt.title(title)
     plt.grid()
-    plt.legend()
-    plt.show(block=False)
+    plt.show()
 
 
 def plot_1_metric_history(history: History,
@@ -61,19 +64,23 @@ def plot_1_metric_history(history: History,
                           x_label: str = 'Epochs',
                           y_label: str = None,
                           smooth_factor: float = 0.):
-    """ Plots a single metric based on a History object
-
-    Args:
-        history (History): training history object, containing the training metrics series
-        metric (str): metric key of the series to be plotted
-        title (str): plot title
-        metric_style (str): color and style of the curve plot
-        x_label (str): horizontal axis label
-        y_label (str): vertical axis label
-        smooth_factor (float): if > 0, applies smoothing to the curve
     """
-    metric_values = history.history[metric]
-    plot_1_metric(metric_values=metric_values,
+    Plots a single metric based on a History object
+    :param history: training history object, containing the training metrics series
+    :param metric: metric key of the series to be plotted
+    :param title: plot title
+    :param metric_style: color and style of the curve plot
+    :param x_label: horizontal axis label
+    :param y_label: vertical axis label
+    :param smooth_factor: if > 0, applies smoothing to the curve
+    """
+    if history is None:
+        raise ValueError('No history object passed, trying to plot history metric')
+
+    if metric not in history.history:
+        raise RuntimeError('Metric {} not in history object, trying to plot history metric'.format(metric))
+
+    plot_1_metric(metric_values=history.history[metric],
                   title=title,
                   metric_style=metric_style,
                   x_label=x_label,
@@ -93,44 +100,54 @@ def plot_2_metrics(metric1_values: np.array,
                    x_label: str = 'Epochs',
                    y_label: str = '',
                    clear: bool = True):
-    """ Plots two metrics (y1 and y2) sharing the same horizontal axis
-
-    Args:
-        metric1_values (np.array): first array of metric values
-        metric2_values (np.array): second array of metric values
-        title (str): plot title
-        metric1_label (str): first metric legend label
-        metric2_label (str): second metric legend label
-        metric1_style (str): plot style of the first metric
-        metric2_style (str): plot style of the second metric
-        metric1_smooth_factor (float): if > 0, apply exponential smoothing to the first metric
-        metric2_smooth_factor (float): if > 0, apply exponential smoothing to the second metric
-        x_label (str): horizontal axis label
-        y_label (str): vertical axis label
-        clear (bool): clear last plot before current plot
+    """
+    Plots two metrics (y1 and y2) sharing the same horizontal axis
+    :param metric1_values: first array of metric values
+    :param metric2_values: second array of metric values
+    :param title: plot title
+    :param metric1_label: first metric legend label
+    :param metric2_label: second metric legend label
+    :param metric1_style: plot style of the first metric
+    :param metric2_style: plot style of the second metric
+    :param metric1_smooth_factor: if > 0, apply exponential smoothing to the first metric
+    :param metric2_smooth_factor: if > 0, apply exponential smoothing to the second metric
+    :param x_label: horizontal axis label
+    :param y_label: vertical axis label
+    :param clear: clear last plot before current plot
     """
     if metric1_values is None:
-        raise ValueError('Metric 1 array is empty')
+        warnings.warn('Metric 1 ({}) array is empty: cannot be plot in graphic'.format(metric1_label))
+
     if metric2_values is None:
-        raise ValueError('Metric 2 array is empty')
-    len1 = len(metric1_values)
-    len2 = len(metric2_values)
-    if len1 != len2:
-        raise ValueError('Metric 1 array is size {} and metric 2 array is size {}'.format(len1, len2))
+        warnings.warn('Metric 2 ({}) array is empty: cannot be plot in graphic'.format(metric2_label))
+
+    len1 = 0
+    if metric1_values is not None:
+        len1 = len(metric1_values)
+
+    len2 = 0
+    if metric2_values is not None:
+        len2 = len(metric2_values)
+
+    if len1 > 0 and len2 > 0:
+        if len1 != len2:
+            raise ValueError('Metric 1 array is size {} and metric 2 array is size {}'.format(len1, len2))
 
     epochs = range(1, len1 + 1)
     if clear:
         plt.clf()
 
-    if metric1_smooth_factor > 0.:
-        plt.plot(epochs, smooth_curve(metric1_values, metric1_smooth_factor), metric1_style, label=metric1_label)
-    else:
-        plt.plot(epochs, metric1_values, metric1_style, label=metric1_label)
+    if metric1_values is not None:
+        if metric1_smooth_factor > 0.:
+            plt.plot(epochs, smooth_curve(metric1_values, metric1_smooth_factor), metric1_style, label=metric1_label)
+        else:
+            plt.plot(epochs, metric1_values, metric1_style, label=metric1_label)
 
-    if metric2_smooth_factor > 0.:
-        plt.plot(epochs, smooth_curve(metric2_values, metric2_smooth_factor), metric2_style, label=metric2_label)
-    else:
-        plt.plot(epochs, metric2_values, metric2_style, label=metric2_label)
+    if metric2_values is not None:
+        if metric2_smooth_factor > 0.:
+            plt.plot(epochs, smooth_curve(metric2_values, metric2_smooth_factor), metric2_style, label=metric2_label)
+        else:
+            plt.plot(epochs, metric2_values, metric2_style, label=metric2_label)
 
     if x_label:
         plt.xlabel(x_label)
@@ -189,7 +206,7 @@ def plot_metrics_list(metric_values_list: list,
     plt.ylabel(y_label)
     plt.legend()
     plt.grid()
-    plt.show(block=False)
+    plt.show()
 
 
 def plot_2_metrics_dict(history_metrics: dict,
@@ -260,83 +277,125 @@ def plot_2_metrics_history(history: History,
                         clear=clear)
 
 
+def plot_metric_history(history: History,
+                        training_metric: str,
+                        validation_metric: str,
+                        title: str,
+                        x_label: str,
+                        y_label: str,
+                        training_smooth_factor: float,
+                        validation_smooth_factor: float):
+    """
+    Plots the training and validation metrics in the history object
+    :param history:
+    :param training_metric:
+    :param validation_metric:
+    :param title:
+    :param x_label:
+    :param y_label:
+    :param training_smooth_factor:
+    :param validation_smooth_factor:
+    """
+    if history is None:
+        raise RuntimeError('No training History object trying to plot training loss evolution')
+
+    if training_metric not in history.history:
+        raise RuntimeError(
+            'Error trying to plot metric: History object does not have {} metric'.format(training_metric))
+
+    if validation_metric not in history.history:
+        plot_1_metric_history(history=history,
+                              metric=training_metric,
+                              title=title,
+                              x_label=x_label,
+                              y_label=y_label,
+                              smooth_factor=training_smooth_factor)
+    else:
+        plot_2_metrics_history(history=history,
+                               title=title,
+                               metric1=training_metric,
+                               metric2=validation_metric,
+                               metric1_label='Training',
+                               metric2_label='Validation',
+                               metric1_smooth_factor=training_smooth_factor,
+                               metric2_smooth_factor=validation_smooth_factor,
+                               x_label=x_label,
+                               y_label=y_label)
+
+
 def plot_loss(history: History,
               title: str = 'Loss',
               training_smooth_factor: float = 0.,
               validation_smooth_factor: float = 0.):
-    """ Plot the evolution of the loss function
-
-    Args:
-        history (History): training history object, containing a dictionary of metrics
-        title (str): plot title
-        training_smooth_factor (float): exponential smooth factor applied to the training series
-        validation_smooth_factor (float): exponential smooth factor applied to the validation series
     """
-    plot_2_metrics_history(history=history,
-                           title=title,
-                           metric1='loss',
-                           metric2='val_loss',
-                           metric1_label='Training loss',
-                           metric2_label='Validation loss',
-                           metric1_smooth_factor=training_smooth_factor,
-                           metric2_smooth_factor=validation_smooth_factor,
-                           x_label='Epochs',
-                           y_label='Loss')
-
-
-def plot_loss_dict(history_metrics: dict,
-                   title: str = 'Training and Validation Losses',
-                   clear: bool = False):
-    """ Plot the evolution of the loss function
+    Plot the evolution of the loss function during training
+    :param history: training history object, containing a dictionary of metrics
+    :param title: plot title
+    :param training_smooth_factor: exponential smooth factor applied to the training series
+    :param validation_smooth_factor: exponential smooth factor applied to the validation series
     """
-    loss_training = None
-    loss_validation = None
-
-    if 'loss' in history_metrics:
-        loss_training = history_metrics['loss']
-
-    if 'val_loss' in history_metrics:
-        loss_validation = history_metrics['val_loss']
-
-    plot_2_metrics(metric1_values=loss_training,
-                   metric2_values=loss_validation,
-                   title=title,
-                   metric1_label='Training loss',
-                   metric2_label='Validation loss',
-                   y_label='Loss',
-                   clear=clear)
+    plot_metric_history(history=history,
+                        training_metric='loss',
+                        validation_metric='val_loss',
+                        title=title,
+                        x_label='Epoch',
+                        y_label='Loss',
+                        training_smooth_factor=training_smooth_factor,
+                        validation_smooth_factor=validation_smooth_factor)
 
 
 def plot_accuracy(history: History,
                   title: str = 'Accuracy',
                   training_smooth_factor: float = 0.,
                   validation_smooth_factor: float = 0.):
-    """ Plot the evolution of the loss function
     """
-    plot_2_metrics_history(history=history,
-                           title=title,
-                           metric1='accuracy',
-                           metric2='val_accuracy',
-                           metric1_label='Training accuracy',
-                           metric2_label='Validation accuracy',
-                           metric1_smooth_factor=training_smooth_factor,
-                           metric2_smooth_factor=validation_smooth_factor,
-                           y_label='Accuracy')
-
-
-def plot_accuracy_dict(history_metrics: dict,
-                       title: str = 'Training and Validation Accuracies',
-                       clear: bool = False):
-    """ Plot the evolution of the accuracy
+    Plot the evolution of the accuracy function during training
+    :param history: training history object, containing a dictionary of metrics
+    :param title: plot title
+    :param training_smooth_factor: exponential smooth factor applied to the training series
+    :param validation_smooth_factor: exponential smooth factor applied to the validation series
     """
-    plot_2_metrics_dict(history_metrics=history_metrics,
-                        metric1='accuracy',
-                        metric2='val_accuracy',
+    if history is None:
+        raise RuntimeError('No training History object trying to plot accuracy evolution')
+
+    if 'accuracy' in history.history:
+        training_metric = 'accuracy'
+
+    elif 'acc' in history.history:
+        training_metric = 'acc'
+
+    else:
+        raise RuntimeError('History object doesn\'t have accuracy values')
+
+    plot_metric_history(history=history,
+                        training_metric=training_metric,
+                        validation_metric='val_' + training_metric,
                         title=title,
-                        metric1_label='Training accuracy',
-                        metric2_label='Validation accuracy',
+                        x_label='Epoch',
                         y_label='Accuracy',
-                        clear=clear)
+                        training_smooth_factor=training_smooth_factor,
+                        validation_smooth_factor=validation_smooth_factor)
+
+
+def plot_mae(history: History,
+             title: str = 'Mean Absolute Error (MAE)',
+             training_smooth_factor: float = 0.,
+             validation_smooth_factor: float = 0.):
+    """
+    Plot the evolution of the Mean Absolute Error (MAE) during training
+    :param history: training history object, containing a dictionary of metrics
+    :param title: plot title
+    :param training_smooth_factor: exponential smooth factor applied to the training series
+    :param validation_smooth_factor: exponential smooth factor applied to the validation series
+    """
+    plot_metric_history(history=history,
+                        training_metric='mae',
+                        validation_metric='val_mae',
+                        title=title,
+                        x_label='Epoch',
+                        y_label='Accuracy',
+                        training_smooth_factor=training_smooth_factor,
+                        validation_smooth_factor=validation_smooth_factor)
 
 
 def plot_loss_list(history_metrics_list: list,
@@ -345,14 +404,14 @@ def plot_loss_list(history_metrics_list: list,
                    plot_training: bool = True,
                    plot_validation: bool = True,
                    smooth_factor: float = 0.):
-    """Plot the compared evolution of the loss functions
-
-    Args:
-        history_metrics_list (list): list of History objects containing the metrics series
-        labels_list (list): list of labels of the individual series
-        title (list): plot title
-        plot_training (bool): plot training series
-        plot_validation (bool): plot validation series
+    """
+    Plot the compared evolution of the loss functions
+    :param history_metrics_list: list of History objects containing the metrics series
+    :param labels_list: list of labels of the individual series
+    :param title: plot title
+    :param plot_training: plot training series
+    :param plot_validation: plot validation series
+    :param smooth_factor: smooth factor to be applied to all curves
     """
     clear = True
     metric_values_list = []
@@ -402,50 +461,35 @@ def plot_accuracy_list(history_metrics_list: list,
                       metrics_smooth_factor=smooth_factor)
 
 
-def plot_mae(mae_training: np.array,
-             mae_validation: np.array,
-             title: str = 'Mean Absolute Error (MAE)'):
-    """ Plot the evolution of the Mean Absolute Error (MAE)
-    """
-    plot_2_metrics(metric1_values=mae_training,
-                   metric2_values=mae_validation,
-                   title=title,
-                   metric1_label='Training MAE',
-                   metric2_label='Validation MAE',
-                   metric1_style='b',
-                   metric2_style='r',
-                   y_label='Mean Absolute Error (MAE)')
-
-
-def plot_mae_dict(history_metrics: dict,
-                  title: str = 'Mean Absolute Error (MAE)'):
-    """ Plot the evolution of the Mean Absolute Error (MAE)
-    """
-    mae_training = None
-    mae_validation = None
-
-    if 'mae' in history_metrics:
-        mae_training = history_metrics['mae']
-
-    if 'val_mae' in history_metrics:
-        mae_validation = history_metrics['val_mae']
-
-    plot_2_metrics(metric1_values=mae_training,
-                   metric2_values=mae_validation,
-                   title=title,
-                   metric1_label='Training MAE',
-                   metric2_label='Validation MAE',
-                   x_label='Epochs',
-                   y_label='Mean Absolute Error (MAE)')
-
-
 def merge_history_metrics(history_list: list):
-    """ Merges and averages all metrics from a list of train histories
     """
-    merged_metrics = {}
+    Merges and averages all metrics from a list of training histories, typically from K-Fold cross validation
+    :param history_list: list of History objects that resulted from many training processes
+    :return: merged list of metrics
+    """
+    if list is None:
+        raise ValueError('History list is None')
 
-    # history list loop
+    if len(history_list) == 0:
+        return None
+
+    merged_metrics = {}
+    merged_history = History()
+    first_history: History = history_list[0]
+    merged_history.model = first_history.model
+    merged_history.epoch = first_history.epoch
+    merged_history.params = first_history.params
+
     for history in history_list:
+        if history.model != merged_history.model:
+            raise ValueError('Cannot merge history from different models')
+
+        if history.epoch != merged_history.epoch:
+            raise ValueError('Cannot merge history with different epoch vectors')
+
+        if history.params != merged_history.params:
+            raise ValueError('Cannot merge history with different parameters')
+
         history_metrics = history.history
 
         # metrics loop
@@ -460,7 +504,8 @@ def merge_history_metrics(history_list: list):
     for metric in merged_metrics.keys():
         average_history_metrics[metric] = np.mean(merged_metrics[metric], axis=0)
 
-    return average_history_metrics
+    merged_history.history = average_history_metrics
+    return merged_history
 
 
 def smooth_metric_values(metric_values: np.array, factor: float = 0.9):

@@ -117,16 +117,12 @@ def build_corpus(corpus_file_structure: CorpusFileStructure,
 def run(build_dataset: bool = False):
     corpus_name = 'Cats and Dogs'
     base_path = 'data/features'
-    corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus_name,
-                                                              base_path=base_path)
+    corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus_name, base_path=base_path)
 
-    corpus = None
     if build_dataset:
-        corpus = build_corpus(corpus_file_structure=corpus_file_structure,
-                              name=corpus_name)
+        corpus = build_corpus(corpus_file_structure=corpus_file_structure, name=corpus_name)
     else:
-        corpus = corpus_file_structure.load_corpus(corpus_name=corpus_name,
-                                                   datasets_base_name=corpus_name)
+        corpus = corpus_file_structure.load_corpus(corpus_name=corpus_name, datasets_base_name=corpus_name)
 
     experiment = load_experiment(corpus=corpus)
     experiment.run(train=True,

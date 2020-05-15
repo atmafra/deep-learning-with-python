@@ -56,6 +56,11 @@ def split_dataset(dataset: np.array,
                   split_start: int = 0,
                   shuffle: bool = False):
     """ Splits a dataset into two subsets
+    :param dataset: dataset to be split
+    :param split_size: number of elements to be split
+    :param split_start: split point
+    :param shuffle: shuffle element order before split
+    :return: split datasets: split, remain
     """
     assert dataset is not None, 'Empty train set trying to split validation set'
 
@@ -85,6 +90,31 @@ def split_dataset(dataset: np.array,
         remain = dataset[split_stop:split_start]
 
     return split, remain
+
+
+def merge_datasets(dataset1: np.array,
+                   dataset2: np.array):
+    """ Returns a new dataset that merges the input and output data of the two datasets
+    :param dataset1: first dataset
+    :param dataset2: second dataset
+    :return: merged dataset
+    """
+    empty1 = dataset1 is None or len(dataset1) == 0
+    empty2 = dataset2 is None or len(dataset2) == 0
+
+    if empty1 and empty2:
+        raise ValueError('No valid datasets passed for merge')
+
+    if empty1 and not empty2:
+        return dataset2.copy()
+
+    if empty2 and not empty1:
+        return dataset1.copy()
+
+    if len(dataset1) != len(dataset2):
+        raise RuntimeError('Cannot merge arrays: input dimensions are different')
+
+    return np.append([dataset1, dataset2])
 
 
 def count_unique_values(sequence: np.array):

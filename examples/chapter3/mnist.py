@@ -11,6 +11,7 @@ from core.file_structures import CorpusFileStructure
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
+from utils.file_utils import str_to_filename
 
 
 class ModelSource(Enum):
@@ -80,7 +81,11 @@ def load_corpus(corpus_name: str,
     return corpus_file_structure.load_corpus(corpus_name=corpus_name, datasets_base_name=corpus_name)
 
 
-def create_neural_network(corpus: Corpus, model_source: ModelSource):
+def create_neural_network(corpus: Corpus,
+                          network_name: str,
+                          model_source: ModelSource,
+                          model_path: str,
+                          model_filename: str = ''):
     """Loads the experiment hyperparameters
     """
     # layer parameters
@@ -95,12 +100,15 @@ def create_neural_network(corpus: Corpus, model_source: ModelSource):
         {'layer_type': 'Dense', 'name': 'Dense-2', 'units': output_size, 'activation': 'softmax'}]
 
     if model_source == ModelSource.CONFIGURATION:
-        return NeuralNetwork.from_configurations(name='MNIST: MLP, 2 dense layers',
+        return NeuralNetwork.from_configurations(name=network_name,
                                                  layers_configuration=layers_configuration)
 
     elif model_source == ModelSource.FILE:
-        return NeuralNetwork.from_file(path='models/mnist',
-                                       filename='mnist-mlp-2-dense-layers-short.json',
+        if not model_filename:
+            model_filename = str_to_filename(network_name) + '.json'
+
+        return NeuralNetwork.from_file(path=model_path,
+                                       filename=model_filename,
                                        verbose=True)
 
     raise RuntimeError('Unknown model source')
@@ -133,25 +141,43 @@ def create_experiment(corpus: Corpus,
 
     training_configuration = TrainingConfiguration(configuration=training_parameters)
 
-    return Experiment(name="MNIST",
+    return Experiment(name=neural_network.name,
                       corpus_type=CorpusType.CORPUS_DATASET,
                       corpus=corpus,
                       neural_network=neural_network,
                       training_configuration=training_configuration)
 
 
-def run(build: bool = True):
-    """Runs the MNIST digit recognition example
+def run(build: bool = True,
+        load_model_configuration: bool = True):
     """
-    num_labels = 10
-    corpus = None
+    Runs the MNIST digit recognition example
+    :param build: build (or load, if False) the corpus before training
+    :param load_model_configuration: load configuration from JSON file
+    """
+    model_path = 'models/mnist'
+
     if build:
         corpus = build_corpus(save=True)
     else:
         corpus = load_corpus(corpus_name='MNIST')
 
-    neural_network = create_neural_network(corpus=corpus, model_source=ModelSource.FILE)
+    network_name = 'MNIST: MLP, 2 dense layers'
+    if load_model_configuration:
+        model_source = ModelSource.FILE
+    else:
+        model_source = ModelSource.CONFIGURATION
+
+    neural_network = create_neural_network(corpus=corpus,
+                                           network_name=network_name,
+                                           model_source=model_source,
+                                           model_path=model_path)
+
     experiment = create_experiment(corpus, neural_network)
-    path = 'models/mnist'
-    experiment.run(print_results=True, plot_history=True, display_progress_bars=True)
-    experiment.save_model(path='models/mnist')
+
+    experiment.run(train=True,
+                   display_progress_bars=True,
+                   print_training_results=True,
+                   plot_training_loss=True,
+                   save=True,
+                   model_path=model_path)

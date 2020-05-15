@@ -40,8 +40,4 @@ class ConvolutionalNeuralNetwork(NeuralNetwork):
     def set_convolutional_layer_trainable(self, layer_names: set, trainable: bool):
         """Sets the trainable property for a list of specific layers in the network
         """
-        for layer in self.convolutional_base.layers:
-            layer.trainable = False
-            if layer.name in layer_names:
-                layer.trainable = trainable
-            # print('Layer {} trainable: {}'.format(layer.name, layer.trainable))
+        self.convolutional_base.layers.set_layers_trainable(layer_names, trainable)
