@@ -1,8 +1,5 @@
 # maximum
-from core.experiment import Experiment, ExperimentPlan
-from core.neural_network import NeuralNetwork
 from corpora.imdb import imdb
-from embeddings.glove import glove
 from examples.chapter6.word_embeddings_configurations import load_experiment_plan
 
 default_maxlen = 20
