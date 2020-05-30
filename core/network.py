@@ -96,7 +96,10 @@ def add_layers(model: Sequential,
 
 def append_model(base_model: Sequential,
                  model: Model):
-    """Adds a model to the current sequential model
+    """ Appends a model to the current sequential model (in-place)
+
+    :param base_model: current sequential model
+    :param model: model to be appended
     """
     if base_model is None:
         raise ValueError('Empty base_model')
@@ -110,12 +113,10 @@ def append_model(base_model: Sequential,
 
 def create_model_from_file(filepath: str,
                            verbose: bool = True):
-    """Creates a new model from a JSON architecture file
+    """ Creates a new model from a JSON architecture file
 
-    Args:
-        filepath (str): fully qualified path to JSON file
-        verbose (bool): display load messages in terminal
-
+    :param filepath: fully qualified path to JSON file
+    :param verbose: display load messages in terminal
     """
     json_file = open(filepath, 'r')
     network_architecture_json = json_file.read()
@@ -160,15 +161,13 @@ def train_network(network: Model,
                   training_set: Dataset,
                   validation_set: Dataset = None,
                   verbose: bool = True):
-    """Train the neural network, returning the evolution of the train metrics
+    """ Train the neural network, returning the evolution of the train metrics
 
-    Args:
-        network (Model): neural network model to be trained
-        training_configuration (dict): train algorithm parameters
-        training_set (Dataset): train set
-        validation_set (Dataset): validation set
-        verbose (bool): display train progress bars if True
-
+    :param network: neural network model to be trained
+    :param training_configuration: train algorithm parameters
+    :param training_set: train set
+    :param validation_set: validation set
+    :param verbose: display train progress bars if True
     """
     validation_strategy = putl.get_parameter(parameters=training_configuration,
                                              key='validation.strategy',

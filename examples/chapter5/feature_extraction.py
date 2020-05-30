@@ -1,5 +1,5 @@
 import numpy as np
-from keras import Model, optimizers
+from keras import Model
 from keras.applications import VGG16
 from keras.utils import Progbar
 
@@ -7,28 +7,10 @@ from core.corpus import Corpus, CorpusType
 from core.datasets import Dataset
 from core.experiment import Experiment
 from core.file_structures import CorpusFileStructure
-from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
 from examples.chapter5.cats_and_dogs_files import *
-
-classifier = [
-    {'layer_type': 'Dense', 'units': 256, 'activation': 'relu', 'input_dim': 4 * 4 * 512},
-    {'layer_type': 'Dropout', 'rate': 0.5},
-    {'layer_type': 'Dense', 'units': 1, 'activation': 'sigmoid'}]
-
-learning_rate = 2e-5
-training_parameters = {
-    'keras': {
-        'compile': {
-            'optimizer': optimizers.RMSprop(lr=learning_rate),
-            'loss': 'binary_crossentropy',
-            'metrics': ['accuracy']},
-        'fit': {
-            'epochs': 30,
-            'batch_size': 20}},
-    'validation': {
-        'strategy': ValidationStrategy.CROSS_VALIDATION}}
+from examples.chapter5.feature_extraction_configuration import *
 
 
 def load_convolutional_base():
@@ -40,7 +22,7 @@ def load_convolutional_base():
 
 def load_experiment(corpus: Corpus):
     classifier_network = NeuralNetwork.from_configurations(name='Cats & Dogs Classifier',
-                                                           layers_configuration=classifier)
+                                                           layers_configuration=classifier_configuration)
 
     training_configuration = TrainingConfiguration(training_parameters)
 

@@ -1,6 +1,6 @@
 from corpora.imdb import imdb
 from embeddings.glove import glove
-from examples.chapter6 import one_hot_encoding, word_embeddings, recurrent_toy, recurrent_imdb
+from examples.chapter6 import one_hot_encoding, word_embeddings, recurrent_toy, recurrent_imdb, temperature_forecasting
 
 default_glove_embeddings_filename = 'glove.6B.100d.txt'
 default_glove_dir = '../../embeddings/glove/data/glove.6B'
@@ -11,7 +11,8 @@ if __name__ == '__main__':
         # 'one_hot_encoding',
         # 'word_embeddings',
         # 'recurrent_toy',
-        'recurrent_imdb'
+        # 'recurrent_imdb',
+        'temperature_forecasting'
     ]
 
     if 'one_hot_encoding' in experiments:
@@ -28,3 +29,5 @@ if __name__ == '__main__':
     if 'recurrent_imdb' in experiments:
         recurrent_imdb.run()
 
+    if 'temperature_forecasting' in experiments:
+        temperature_forecasting.run()

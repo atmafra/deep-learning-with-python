@@ -16,8 +16,8 @@ class NeuralNetwork():
 
     def __init__(self, model: Sequential = Sequential(),
                  name: str = None):
-        """
-        Instantiates a neural network object that encapsulates the Keras sequential model
+        """ Instantiates a neural network object that encapsulates the Keras sequential model
+
         :param model: Keras sequential model
         :param name: neural network name
         """
@@ -36,6 +36,8 @@ class NeuralNetwork():
 
     def __map_layers(self, model: Sequential):
         for layer in model.layers:
+            if isinstance(layer, Model) or isinstance(layer, Sequential):
+                self.__map_layers(layer)
             self.__layer_map[layer.name] = layer
 
     @model.setter
@@ -55,10 +57,9 @@ class NeuralNetwork():
             self.model.name = name
 
     @classmethod
-    def from_configurations(cls, name: str,
-                            layers_configuration: list):
-        """
-        Creates a new neural network from configurations
+    def from_configurations(cls, name: str, layers_configuration: list):
+        """ Creates a new neural network from configurations
+
         :param name: neural network name
         :param layers_configuration: neural network architecture
         :return: a new NeuralNetwork object
@@ -67,11 +68,9 @@ class NeuralNetwork():
         return NeuralNetwork(model=model)
 
     @classmethod
-    def from_file(cls, path: str,
-                  filename: str,
-                  verbose: bool = True):
-        """
-        Creates a new neural network from JSON architecture file
+    def from_file(cls, path: str, filename: str, verbose: bool = True):
+        """ Creates a new neural network from JSON architecture file
+
         :param path: file path
         :param filename: file name
         :param verbose: display load messages in terminal
@@ -82,10 +81,9 @@ class NeuralNetwork():
         return NeuralNetwork(model=model)
 
     def append_layers(self, layers_configuration: list):
-        """
-        Appends a list of layers according to their configurations
+        """ Appends a list of layers according to their configurations
+
         :param layers_configuration: list of layer configurations to be appended
-        :return: void
         """
         if layers_configuration is None:
             raise ValueError('Null model passed, trying to append neural network')
@@ -93,8 +91,8 @@ class NeuralNetwork():
         net.add_layers(self.model, layers_configuration)
 
     def append_model(self, model: Model):
-        """
-        Appends a pre-existing model to the current model in a sequential way
+        """ Appends a pre-existing model to the current model in a sequential way
+
         :param model: model to be appended to the base model
         """
         if model is None:
@@ -104,8 +102,8 @@ class NeuralNetwork():
         self.__map_layers(model=model)
 
     def get_layer(self, layer_name: str) -> Layer:
-        """
-        Gets a layer by its name
+        """ Gets a layer by its name
+
         :param layer_name: requested layer name
         :return: layer (if found) or None
         """
@@ -118,8 +116,8 @@ class NeuralNetwork():
             raise ValueError('No layer name passed to get_layer()')
 
     def get_weights(self, layer_name: str) -> list:
-        """
-        Gets the weights of a layer, given its name
+        """ Gets the weights of a layer, given its name
+
         :param layer_name: layer name
         :return: weights as a matrix
         """
@@ -127,22 +125,19 @@ class NeuralNetwork():
         if layer is not None:
             return layer.get_weights()
 
-    def set_weights(self,
-                    layer_name: str,
-                    weights: np.array):
-        """
-        Sets the weights of a layer, given its name and the weight matrix
+    def set_weights(self, layer_name: str, weights: np.array):
+        """ Sets the weights of a layer, given its name and the weight matrix
+
         :param layer_name: layer name
         :param weights: weight matrix
         """
         layer = self.get_layer(layer_name)
         layer.set_weights(weights=weights)
 
-    def set_layers_trainable(self,
-                             layer_names: list,
-                             trainable: bool):
-        """
-        Freezes the layer, avoiding or allowing its weights to be updated during training
+    def set_layers_trainable(self, layer_names: list, trainable: bool):
+        """ Freezes or unfreezes the layers in the list,
+        avoiding or allowing its weights to be updated during training
+
         :param layer_names: list of layer names
         :param trainable: sets if the layer is trainable or not
         """
@@ -157,50 +152,40 @@ class NeuralNetwork():
             raise ValueError('Empty layer name vector trying to freeze layers')
 
     def freeze_layer(self, layer_name: str):
-        """
-        Freezes the layer, avoiding its weights to be updated during training
+        """ Freezes the layer, avoiding its weights to be updated during training
+
         :param layer_name: layer name
         """
         self.set_layers_trainable([layer_name], False)
 
     def unfreeze_layer(self, layer_name: str):
-        """
-        Unfreezes the layer, allowing its weights to be updated during training
+        """ Unfreezes the layer, allowing its weights to be updated during training
+
         :param layer_name: layer name
         """
         self.set_layers_trainable([layer_name], True)
 
-    def save_architecture(self,
-                          path: str,
-                          filename: str,
-                          verbose: bool = True):
-        """
-        Saves the neural network architecture as a JSON file
+    def save_architecture(self, path: str, filename: str, verbose: bool = True):
+        """ Saves the neural network architecture as a JSON file
+
         :param path: system path of the save directory
         :param filename: architecture file name
         :param verbose:  display save messages on terminal
-        :return: void
         """
         net.save_architecture_json(network=self.model, path=path, filename=filename, verbose=verbose)
 
-    def save_weights(self,
-                     path: str,
-                     filename: str,
-                     verbose: bool = True):
-        """
-        Saves the neural network weights (status) as a H5 file
+    def save_weights(self, path: str, filename: str, verbose: bool = True):
+        """ Saves the neural network weights (status) as a H5 file
+
         :param path: system path of the save directory
         :param filename: weights file name
         :param verbose: show save messages in terminal
         """
         net.save_weights_h5(network=self.model, path=path, filename=filename, verbose=verbose)
 
-    def save_model(self,
-                   path: str,
-                   root_filename: str,
-                   verbose: bool = True):
-        """
-        Saves the neural network architecture and weights in the same path
+    def save_model(self, path: str, root_filename: str, verbose: bool = True):
+        """ Saves the neural network architecture and weights in the same file system path
+
         :param path: system path of the save directory
         :param root_filename: root file name (without extension)
         :param verbose: show save messages in terminal
@@ -231,8 +216,8 @@ class NeuralNetwork():
               training_configuration: TrainingConfiguration,
               validation_set: Dataset = None,
               display_progress_bars: bool = True):
-        """
-        Trains the neural network
+        """ Trains the neural network
+
         :param training_set: training set
         :param training_configuration: train configuration hyperparameters
         :param validation_set: validation set (optional, depending on validation strategy)
@@ -272,11 +257,12 @@ class NeuralNetwork():
 
         return training_history
 
-    def train_generator(self, corpus_files: CorpusFiles,
+    def train_generator(self,
+                        corpus_files: CorpusFiles,
                         training_configuration: TrainingConfiguration,
                         display_progress_bars: bool = True):
-        """
-        Trains the neural network using an image training set generator
+        """ Trains the neural network using a file training set generator
+
         :param corpus_files: corpus files configuration
         :param training_configuration: training configuration
         :param display_progress_bars: display progress bars during training
@@ -309,8 +295,8 @@ class NeuralNetwork():
 
     def evaluate(self, test_set: Dataset,
                  display_progress_bars: bool = True):
-        """
-        Evaluate the neural network
+        """ Evaluate the neural network
+
         :param test_set: validation set, used to assess performance metrics
         :param display_progress_bars: display progress bars in terminal during evaluation
         :return: test metrics object
@@ -321,8 +307,8 @@ class NeuralNetwork():
 
     def evaluate_generator(self, test_set_generator: DatasetFileIterator,
                            display_progress_bars: bool = True):
-        """
-        Evaluate the neural network using a test set generator
+        """ Evaluate the neural network using a test set generator
+
         :param test_set_generator: test set generator
         :param display_progress_bars: display progress bars in terminal during evaluation
         :return: test metrics object

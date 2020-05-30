@@ -7,17 +7,16 @@ from keras.callbacks import History
 
 def smooth_curve(points: np.array,
                  factor: float = 0.8):
-    """Applies exponential moving average smoothing to the series
+    """ Applies exponential moving average smoothing to the series
 
-    Args:
-        points (np.array): array of metric_values
-        factor (float): smoothing factor
+    :param points: array of metric_values
+    :param factor: smoothing factor
     """
     smoothed_points = []
     for point in points:
-        if smoothed_points:
+        if len(smoothed_points) > 0:
             previous = smoothed_points[-1]
-            smoothed_points.append(previous * factor + point * (1 - factor))
+            smoothed_points.append(previous * factor + point * (1. - factor))
         else:
             smoothed_points.append(point)
 
@@ -285,16 +284,16 @@ def plot_metric_history(history: History,
                         y_label: str,
                         training_smooth_factor: float,
                         validation_smooth_factor: float):
-    """
-    Plots the training and validation metrics in the history object
-    :param history:
-    :param training_metric:
-    :param validation_metric:
-    :param title:
-    :param x_label:
-    :param y_label:
-    :param training_smooth_factor:
-    :param validation_smooth_factor:
+    """ Plots the training and validation metrics in the history object
+
+    :param history: History object containing the metrics series
+    :param training_metric: which particular metric to plot training (eg.: 'loss')
+    :param validation_metric: which particular metric to plot for validation (eg.: 'val_loss')
+    :param title: plot title
+    :param x_label: x-axis label
+    :param y_label: y-axis label
+    :param training_smooth_factor: smooth factor for the training metric curve
+    :param validation_smooth_factor: smooth factor for the validation metric curve
     """
     if history is None:
         raise RuntimeError('No training History object trying to plot training loss evolution')
@@ -327,8 +326,8 @@ def plot_loss(history: History,
               title: str = 'Loss',
               training_smooth_factor: float = 0.,
               validation_smooth_factor: float = 0.):
-    """
-    Plot the evolution of the loss function during training
+    """ Plot the evolution of the loss function during training
+
     :param history: training history object, containing a dictionary of metrics
     :param title: plot title
     :param training_smooth_factor: exponential smooth factor applied to the training series
@@ -462,8 +461,8 @@ def plot_accuracy_list(history_metrics_list: list,
 
 
 def merge_history_metrics(history_list: list):
-    """
-    Merges and averages all metrics from a list of training histories, typically from K-Fold cross validation
+    """ Merges and averages all metrics from a list of training histories, typically from K-Fold cross validation
+
     :param history_list: list of History objects that resulted from many training processes
     :return: merged list of metrics
     """
@@ -508,7 +507,57 @@ def merge_history_metrics(history_list: list):
     return merged_history
 
 
+def concatenate_history_metrics(history_list: list):
+    """ Concatenates all metrics from a list of training histories, typically from K-Fold cross validation
+
+    :param history_list: list of History objects that resulted from many training processes
+    :return: concatenated list of metrics
+    """
+    if list is None:
+        raise ValueError('History list is None')
+
+    if len(history_list) == 0:
+        return None
+
+    appended_metrics = {}
+    appended_history = History()
+    first_history: History = history_list[0]
+    appended_history.model = first_history.model
+    appended_history.params = []
+    appended_history.epoch = []
+
+    for history in history_list:
+        if history.model != appended_history.model:
+            raise ValueError('Cannot merge history from different models')
+
+        appended_history.params.append(history.params)
+
+        # append epochs
+        if len(appended_history.epoch) == 0:
+            appended_history.epoch = history.epoch
+        else:
+            new_epoch = np.array(history.epoch) + len(appended_history.epoch)
+            appended_history.epoch += new_epoch.tolist()
+
+        # metrics loop
+        history_metrics = history.history
+        for metric in history_metrics.keys():
+            if metric in appended_metrics:
+                appended_metrics[metric] += history_metrics[metric]
+            else:
+                appended_metrics[metric] = history_metrics[metric]
+
+    appended_history.history = appended_metrics
+    return appended_history
+
+
 def smooth_metric_values(metric_values: np.array, factor: float = 0.9):
+    """
+
+    :param metric_values:
+    :param factor:
+    :return:
+    """
     smoothed_points = np.empty(shape=np.shape(metric_values))
     for point in metric_values:
         if smoothed_points.any():

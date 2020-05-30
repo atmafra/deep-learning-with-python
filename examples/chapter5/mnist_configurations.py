@@ -63,21 +63,6 @@ mnist_conv_strided = [
     {'layer_type': 'Dense', 'units': 64, 'activation': 'relu'},
     {'layer_type': 'Dense', 'units': output_size, 'activation': 'softmax'}]
 
-neural_network_mnist_dense = \
-    NeuralNetwork.from_configurations(name='MNIST Dense', layers_configuration=mnist_dense)
-
-neural_network_mnist_conv_max_pooling = \
-    NeuralNetwork.from_configurations(name='MNIST Convolutional Max Pooling',
-                                      layers_configuration=mnist_conv_max_pooling)
-
-neural_network_mnist_conv_avg_pooling = \
-    NeuralNetwork.from_configurations(name='MNIST Convolutional Average Pooling',
-                                      layers_configuration=mnist_conv_avg_pooling)
-
-neural_network_mnist_conv_strided = \
-    NeuralNetwork.from_configurations(name='MNIST Convolutional Strided',
-                                      layers_configuration=mnist_conv_strided)
-
 training_parameters = {
     'keras': {
         'compile': {
@@ -97,10 +82,20 @@ training_configuration = TrainingConfiguration(configuration=training_parameters
 def load_experiment_plan(corpus: Corpus) -> ExperimentPlan:
     """Loads the experiment hyperparameters
     """
-    # experiment_dense = Experiment(name="MNIST Dense",
-    #                               corpus=corpus,
-    #                               layers_configuration_list=mnist_dense,
-    #                               training_configuration=training_configuration)
+    neural_network_mnist_dense = \
+        NeuralNetwork.from_configurations(name='MNIST Dense', layers_configuration=mnist_dense)
+
+    neural_network_mnist_conv_max_pooling = \
+        NeuralNetwork.from_configurations(name='MNIST Convolutional Max Pooling',
+                                          layers_configuration=mnist_conv_max_pooling)
+
+    neural_network_mnist_conv_avg_pooling = \
+        NeuralNetwork.from_configurations(name='MNIST Convolutional Average Pooling',
+                                          layers_configuration=mnist_conv_avg_pooling)
+
+    neural_network_mnist_conv_strided = \
+        NeuralNetwork.from_configurations(name='MNIST Convolutional Strided',
+                                          layers_configuration=mnist_conv_strided)
 
     experiment_conv_max_pooling = Experiment(name="MNIST Convolutional (2x2 Max Polling)",
                                              corpus=corpus,
@@ -122,4 +117,3 @@ def load_experiment_plan(corpus: Corpus) -> ExperimentPlan:
                        experiment_conv_strided]
 
     return ExperimentPlan(name="MNIST Convolutional Experiments", experiments=experiment_list)
-

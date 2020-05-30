@@ -41,15 +41,6 @@ cats_and_dogs_dropout = [
     {'layer_type': 'Dense', 'units': 512, 'activation': 'relu'},
     {'layer_type': 'Dense', 'units': output_size, 'activation': 'sigmoid'}]
 
-# Neural Networks
-neural_network_cats_and_dogs = \
-    NeuralNetwork.from_configurations(name='Cats and Dogs - convolutional',
-                                      layers_configuration=cats_and_dogs)
-
-neural_network_cats_and_dogs_dropout = \
-    NeuralNetwork.from_configurations(name='Cats and Dogs - convolutional with dropout',
-                                      layers_configuration=cats_and_dogs_dropout)
-
 # train configuration
 learning_rate = 2e-5
 training_parameters = {
@@ -72,6 +63,15 @@ def load_experiment_plan(corpus_generator: CorpusFiles,
                          corpus_generator_augmented: CorpusFiles) -> ExperimentPlan:
     """Loads the Cats & Dogs experiment plan
     """
+    # Neural Networks
+    neural_network_cats_and_dogs = \
+        NeuralNetwork.from_configurations(name='Cats and Dogs - convolutional',
+                                          layers_configuration=cats_and_dogs)
+
+    neural_network_cats_and_dogs_dropout = \
+        NeuralNetwork.from_configurations(name='Cats and Dogs - convolutional with dropout',
+                                          layers_configuration=cats_and_dogs_dropout)
+
     regular = Experiment(name='Cats and Dogs',
                          neural_network=neural_network_cats_and_dogs,
                          training_configuration=training_configuration,

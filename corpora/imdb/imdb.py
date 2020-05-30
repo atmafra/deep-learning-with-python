@@ -12,6 +12,7 @@ from utils.dataset_utils import one_hot_encode, separate_corpus
 
 tokenizer = None
 word_index = None
+default_imdb_path = 'corpora/imdb/data/aclImdb',
 
 
 # def download_raw_data(url: str = 'http://mng.bz/0tIo',
@@ -103,7 +104,7 @@ def __get_samples(data: list,
     return x_train, y_train, x_val, y_val
 
 
-def build_corpus(imdb_path: str = 'corpora/imdb/data/aclImdb',
+def build_corpus(imdb_path: str = default_imdb_path,
                  corpus_name: str = 'IMDB',
                  maximum_tokens_per_text: int = 100,
                  vocabulary_size: int = 10000,

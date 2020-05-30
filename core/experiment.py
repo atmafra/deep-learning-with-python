@@ -1,3 +1,6 @@
+from typing import Type
+
+import numpy as np
 from keras.callbacks import History
 
 from core.convolutional_neural_network import ConvolutionalNeuralNetwork
@@ -6,7 +9,8 @@ from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
 from utils.file_utils import str_to_filename
-from utils.history_utils import plot_loss, plot_accuracy, plot_loss_list, plot_accuracy_list
+from utils.history_utils import plot_loss, plot_accuracy, plot_loss_list, plot_accuracy_list, \
+    concatenate_history_metrics
 from utils.parameter_utils import get_parameter
 
 
@@ -129,6 +133,11 @@ class Experiment:
     def fine_tuning_history(self):
         return self.__fine_tuning_history
 
+    @fine_tuning_history.setter
+    def fine_tuning_history(self, history: History):
+        self.__fine_tuning_history = history
+        self.training_history = concatenate_history_metrics([self.training_history, history])
+
     @property
     def test_results(self):
         return self.__test_results
@@ -211,8 +220,7 @@ class Experiment:
                                                     training_configuration=self.training_configuration,
                                                     display_progress_bars=display_progress_bars)
 
-    def fine_tuning(self, layer_names: set,
-                    display_progress_bars: bool = True):
+    def fine_tuning(self, layer_names: set, display_progress_bars: bool = True):
         """ Executes the fine tuning of a Convolutional Neural Network by training the last layers
         of the convolutional base after the classifier is trained.
 
@@ -222,12 +230,21 @@ class Experiment:
         if not isinstance(self.neural_network, ConvolutionalNeuralNetwork):
             raise TypeError('To run fine tuning, neural network model must be Convolutional')
 
-        self.neural_network.set_convolutional_base_trainable(True)
-        self.neural_network.set_convolutional_layer_trainable(layer_names={'block5_conv1'}, trainable=True)
-        self.__fine_tuning_history = \
-            self.neural_network.train_generator(corpus_files=self.corpus_files,
-                                                training_configuration=self.fine_tuning_configuration,
-                                                display_progress_bars=display_progress_bars)
+        convolutional_network: ConvolutionalNeuralNetwork = self.neural_network
+
+        if self.corpus_type == CorpusType.CORPUS_DATASET:
+            self.fine_tuning_history = \
+                convolutional_network.fine_tuning(training_set=self.training_set,
+                                                  training_configuration=self.fine_tuning_configuration,
+                                                  validation_set=self.validation_set,
+                                                  fine_tuning_layers=layer_names,
+                                                  display_progress_bars=display_progress_bars)
+        else:
+            self.fine_tuning_history = \
+                convolutional_network.fine_tuning_generator(corpus_files=self.corpus_files,
+                                                            training_configuration=self.fine_tuning_configuration,
+                                                            fine_tuning_layers=layer_names,
+                                                            display_progress_bars=display_progress_bars)
 
     def evaluation(self, display_progress_bars: bool = True):
         """ Evaluates the neural network performance metrics against the test set

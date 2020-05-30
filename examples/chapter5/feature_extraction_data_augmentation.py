@@ -1,44 +1,13 @@
-from keras import Model, optimizers, layers
+from keras import optimizers
 from keras.applications import VGG16
 
+import core.network as net
 from core.convolutional_neural_network import ConvolutionalNeuralNetwork
 from core.corpus import CorpusType
 from core.experiment import Experiment
-import core.network as net
-from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
 from examples.chapter5.cats_and_dogs_files import *
-
-classifier_configuration = [
-    {'layer_type': 'Dense', 'units': 256, 'activation': 'relu', 'input_dim': 4 * 4 * 512},
-    {'layer_type': 'Dropout', 'rate': 0.5},
-    {'layer_type': 'Dense', 'units': 1, 'activation': 'sigmoid'}]
-
-training_parameters = {
-    'keras': {
-        'compile': {
-            'optimizer': optimizers.RMSprop(lr=2e-5),
-            'loss': 'binary_crossentropy',
-            'metrics': ['accuracy']},
-        'fit_generator': {
-            'epochs': 30,
-            'steps_per_epoch': 100,
-            'validation_steps': 50}},
-    'validation': {
-        'strategy': net.ValidationStrategy.CROSS_VALIDATION}}
-
-fine_tuning_parameters = {
-    'keras': {
-        'compile': {
-            'optimizer': optimizers.RMSprop(lr=1e-5),
-            'loss': 'binary_crossentropy',
-            'metrics': ['accuracy']},
-        'fit_generator': {
-            'epochs': 100,
-            'steps_per_epoch': 100,
-            'validation_steps': 50}},
-    'validation': {
-        'strategy': net.ValidationStrategy.CROSS_VALIDATION}}
+from examples.chapter5.feature_extraction_configuration import *
 
 
 def build_network(name: str):
@@ -62,7 +31,7 @@ def load_experiment(experiment_name: str,
     """Loads the experiment
     """
     neural_network = build_network(name=experiment_name)
-    training_configuration = TrainingConfiguration(training_parameters)
+    training_configuration = TrainingConfiguration(training_parameters_generator)
     fine_tuning_configuration = TrainingConfiguration(fine_tuning_parameters)
 
     experiment = Experiment(name=experiment_name,
@@ -92,8 +61,8 @@ def run(fine_tune: bool = True):
                    unfreeze_layers={'block5_conv1'},
                    plot_training_loss=True,
                    plot_training_accuracy=True,
-                   plot_fine_tuning_loss=True,
-                   plot_fine_tuning_accuracy=True,
+                   plot_fine_tuning_loss=False,
+                   plot_fine_tuning_accuracy=False,
                    training_plot_smooth_factor=0.,
                    validation_plot_smooth_factor=0.8,
                    test=True,
@@ -101,4 +70,3 @@ def run(fine_tune: bool = True):
                    save=True,
                    model_path='models/cats_and_dogs',
                    display_progress_bars=True)
-
