@@ -5,7 +5,7 @@ from keras import Sequential, Model
 from keras.engine import Layer
 
 import core.network as net
-from core.corpus import CorpusFiles
+from core.corpus import CorpusGenerator
 from core.datasets import Dataset, DatasetFileIterator
 from core.training_configuration import TrainingConfiguration
 from utils.history_utils import merge_history_metrics
@@ -258,7 +258,7 @@ class NeuralNetwork():
         return training_history
 
     def train_generator(self,
-                        corpus_files: CorpusFiles,
+                        corpus_files: CorpusGenerator,
                         training_configuration: TrainingConfiguration,
                         display_progress_bars: bool = True):
         """ Trains the neural network using a file training set generator

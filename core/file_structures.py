@@ -37,17 +37,17 @@ class DatasetFileStructure:
     def get_canonical(cls, path: str, set_name: str):
         """Returns a canonical file structure, based on the path and on the set name
         """
-        raise NotImplemented('Must be implemented in the subclass')
+        raise NotImplemented('Must be overridden in the subclass')
 
     def save_dataset(self, dataset: Dataset):
         """Saves the dataset according to the file structure
         """
-        raise NotImplemented('Must be implemented in the subclass')
+        raise NotImplemented('Must be overridden in the subclass')
 
     def load_dataset(self, name: str):
         """Creates a new dataset from previously saved data files
         """
-        raise NotImplemented('Must be implemented in the subclass')
+        raise NotImplemented('Must be overridden in the subclass')
 
 
 class DatasetFileStructureMultipleFiles(DatasetFileStructure):
@@ -70,10 +70,6 @@ class DatasetFileStructureMultipleFiles(DatasetFileStructure):
         self.__input_data_filename: str = input_data_filename
         self.__output_data_filename: str = output_data_filename
 
-    # @DatasetFileStructure.file_format.getter
-    # def file_format(self):
-    #     raise NotImplemented('Must be implemented in the subclass')
-
     @property
     def input_data_filename(self):
         return self.__input_data_filename
@@ -91,12 +87,14 @@ class DatasetFileStructureMultipleFiles(DatasetFileStructure):
         return os.path.join(self.path, self.output_data_filename)
 
     def get_canonical(cls, path: str, set_name: str):
-        raise NotImplemented('Must be implemented in the subclass')
+        raise NotImplemented('Must be overridden in the subclass')
 
     def save_dataset(self, dataset: Dataset):
-        raise NotImplemented('Must be implemented in the subclass')
+        raise NotImplemented('Must be overridden in the subclass')
 
-    def load_dataset(self, name: str):
+    def load_dataset(self, name: str, verbose: bool = True):
+        if verbose:
+            print('Loading dataset "{}" from \'{}\''.format(name, self.input_data_filepath))
         if not os.path.exists(self.input_data_filepath):
             raise FileNotFoundError('input data file: \"{}\"'.format(self.input_data_filepath))
         if not os.path.exists(self.output_data_filepath):
@@ -272,8 +270,7 @@ class DatasetFileStructureNumpyCompressed(DatasetFileStructureSingleFile):
         """
         data_filename = str_to_filename(set_name) + '.npz'
 
-        return DatasetFileStructureNumpyCompressed(path=path,
-                                                   data_filename=data_filename)
+        return DatasetFileStructureNumpyCompressed(path=path, data_filename=data_filename)
 
     def save_dataset(self, dataset: Dataset):
         os.makedirs(os.path.dirname(self.data_filepath), exist_ok=True)

@@ -7,10 +7,10 @@ if __name__ == '__main__':
         # 'mnist',
         # 'cats_and_dogs',
         # 'feature_extraction',
-        'feature_extraction_data_augmentation',
+        # 'feature_extraction_data_augmentation',
         # 'visualize_activations',
         # 'visualize_filters',
-        # 'visualize_heatmaps'
+        'visualize_heatmaps'
     ]
 
     if 'mnist' in experiments:

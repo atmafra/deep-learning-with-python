@@ -26,4 +26,4 @@ class TrainingConfiguration:
     def validation_set_size(self):
         return get_parameter(parameters=self.validation_configuration,
                              key='set_size',
-                             mandatory=True)
+                             mandatory=False)

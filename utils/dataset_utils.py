@@ -1,8 +1,11 @@
+from math import ceil
+
 import numpy as np
+from keras_preprocessing.text import Tokenizer
 
 
 def separate_corpus(corpus: tuple):
-    """ Splits a corpus into train, test, and validation (optional) data sets
+    """ Splits a corpus tuple into train, test, and validation (optional) data sets
     """
     assert corpus is not None, 'No corpus passed to split'
 
@@ -56,6 +59,7 @@ def split_dataset(dataset: np.array,
                   split_start: int = 0,
                   shuffle: bool = False):
     """ Splits a dataset into two subsets
+
     :param dataset: dataset to be split
     :param split_size: number of elements to be split
     :param split_start: split point
@@ -92,6 +96,58 @@ def split_dataset(dataset: np.array,
     return split, remain
 
 
+def three_way_split(dataset: np.array,
+                    sampling_rate: float,
+                    partition_1_share: float,
+                    partition_2_share: float,
+                    partition_3_share: float) -> tuple:
+    """ Samples a dataset and splits the sample in three partitions according to the shares
+
+    :param dataset: input dataset
+    :param sampling_rate: sampling rate
+    :param partition_1_share: partition 1 share
+    :param partition_2_share: partition 2 share
+    :param partition_3_share: partition 3 share
+    :return: triple of 3 partitions
+    """
+    if dataset is None:
+        raise RuntimeError('Error splitting dataset: no dataset passed')
+
+    if sampling_rate < 0. or sampling_rate > 1.:
+        raise RuntimeError('Sampling rate must be between 0 and 1 ({} passed)'.format(sampling_rate))
+
+    if partition_1_share < 0. or partition_1_share > 1.:
+        raise RuntimeError('Share of partition 1 must be between 0 and 1 ({} passed)'.format(partition_1_share))
+
+    if partition_2_share < 0. or partition_2_share > 1.:
+        raise RuntimeError('Share of partition 2 must be between 0 and 1 ({} passed)'.format(partition_2_share))
+
+    if partition_3_share < 0. or partition_3_share > 1.:
+        raise RuntimeError('Share of partition 3 must be between 0 and 1 ({} passed)'.format(partition_3_share))
+
+    samples = ceil(sampling_rate * len(dataset))
+    partition_share_sum = partition_1_share + partition_2_share + partition_3_share
+    partition_1_share = partition_1_share / partition_share_sum
+    partition_2_share = partition_2_share / partition_share_sum
+    partition_3_share = partition_3_share / partition_share_sum
+
+    partition_1_size = ceil(partition_1_share * samples)
+    partition_2_size = ceil(partition_2_share * samples)
+    partition_3_size = samples - partition_1_size - partition_2_size
+
+    partition_1, remain = split_dataset(dataset=dataset,
+                                        split_size=partition_1_size,
+                                        split_start=0,
+                                        shuffle=False)
+
+    partition_2, partition_3 = split_dataset(dataset=remain,
+                                             split_size=partition_2_size,
+                                             split_start=0,
+                                             shuffle=False)
+
+    return partition_1, partition_2, partition_3
+
+
 def merge_datasets(dataset1: np.array,
                    dataset2: np.array):
     """ Returns a new dataset that merges the input and output data of the two datasets
@@ -124,7 +180,7 @@ def count_unique_values(sequence: np.array):
     return len(np.unique(sequence))
 
 
-def one_hot_encode(sequence: np.array, categories: int):
+def one_hot_encode(sequence: np.array, categories: int = None):
     """ One-hot encoding of the sequences
     """
     assert sequence is not None, 'No sequences to one-hot encode'
@@ -132,6 +188,21 @@ def one_hot_encode(sequence: np.array, categories: int):
     results = np.zeros((len(sequence), categories))
     for i, sequence in enumerate(sequence):
         results[i, sequence] = 1.
+
+    return results
+
+
+def one_hot_encode_categories(sequence: np.array):
+    """ One-hot encoding of the sequences
+    """
+    assert sequence is not None, 'No sequences to one-hot encode'
+
+    category_list = np.unique(sequence)
+    category_map = {category: i for i, category in enumerate(category_list)}
+    results = np.zeros((len(sequence), len(category_list)))
+    for i, category in enumerate(sequence):
+        category_index = category_map[category]
+        results[i, category_index] = 1.
 
     return results
 
@@ -149,3 +220,20 @@ def normalize(training_data: np.array, test_data: np.array):
     # test dataset
     test_data -= mean
     test_data /= stddev
+
+
+def tokenize_text(texts: list,
+                  fit: bool,
+                  max_words: int):
+    """ Splits text reviews into tokens (words, in this particular case)
+    """
+    tokenizer = Tokenizer(num_words=max_words)
+    print('Tokenizing (maximum {} words)...'.format(max_words))
+    if fit:
+        print('Fitting tokenizer to the current dataset')
+        tokenizer.fit_on_texts(texts=texts)
+        word_index = tokenizer.word_index
+        print('Word index has {} unique tokens'.format(len(word_index)))
+
+    sequences = tokenizer.texts_to_sequences(texts=texts)
+    return sequences

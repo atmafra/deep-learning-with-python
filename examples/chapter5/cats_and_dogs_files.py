@@ -2,7 +2,7 @@ import os.path
 import shutil
 
 import utils.parameter_utils as putl
-from core.corpus import CorpusFiles
+from core.corpus import CorpusGenerator
 from core.datasets import DatasetFileIterator
 from utils.image_utils import get_image_directory_iterator, show_sample
 
@@ -146,7 +146,7 @@ def load_corpus_files(dirs: dict,
                       check: bool = False,
                       show_training_sample: bool = False,
                       show_validation_sample: bool = False,
-                      show_test_sample: bool = False) -> CorpusFiles:
+                      show_test_sample: bool = False) -> CorpusGenerator:
     """Loads the corpus from files in the directory structure
 
     Args:
@@ -201,9 +201,9 @@ def load_corpus_files(dirs: dict,
     validation_set_files = DatasetFileIterator(directory_iterator=validation_iterator, name='Validation')
     test_set_files = DatasetFileIterator(directory_iterator=test_iterator, name='Test')
 
-    corpus_files = CorpusFiles(training_set_files=training_set_files,
-                               validation_set_files=validation_set_files,
-                               test_set_files=test_set_files)
+    corpus_files = CorpusGenerator(training_set_files=training_set_files,
+                                   validation_set_files=validation_set_files,
+                                   test_set_files=test_set_files)
 
     if show_training_sample:
         show_sample(iterator=training_iterator)

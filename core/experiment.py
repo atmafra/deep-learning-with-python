@@ -4,7 +4,7 @@ import numpy as np
 from keras.callbacks import History
 
 from core.convolutional_neural_network import ConvolutionalNeuralNetwork
-from core.corpus import CorpusType, Corpus, CorpusFiles
+from core.corpus import CorpusType, Corpus, CorpusGenerator
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
@@ -27,7 +27,7 @@ class Experiment:
                  fine_tuning_configuration: TrainingConfiguration = None,
                  corpus_type: CorpusType = CorpusType.CORPUS_DATASET,
                  corpus: Corpus = None,
-                 corpus_files: CorpusFiles = None):
+                 corpus_files: CorpusGenerator = None):
         """ Creates a new Experiment to evaluate the performance of a specific combination
         of data, model, and training hyperparameters
 
@@ -183,6 +183,8 @@ class Experiment:
         """
         validation_strategy = self.training_configuration.validation_strategy
         validation_set_size = self.training_configuration.validation_set_size
+        if validation_set_size is None:
+            validation_set_size = self.corpus.validation_set.length
 
         if validation_strategy in (ValidationStrategy.NO_VALIDATION, ValidationStrategy.K_FOLD_CROSS_VALIDATION):
             self.training_set = self.corpus.training_set
@@ -266,7 +268,7 @@ class Experiment:
             test_after_training: bool = True,
             print_training_results: bool = True,
             fine_tune: bool = False,
-            unfreeze_layers: set = {},
+            unfreeze_layers: set = (),
             plot_training_loss: bool = False,
             plot_training_accuracy: bool = False,
             plot_fine_tuning_loss: bool = False,
@@ -487,7 +489,7 @@ class ExperimentPlan:
             if experiment.id:
                 self.__experiment_map[experiment.id] = experiment
 
-    def get_experiment(self, id: str):
+    def get_experiment(self, id: str) -> Experiment:
         """ Gets an experiment by its name
 
         :param id: experiment ID

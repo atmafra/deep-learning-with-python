@@ -27,7 +27,7 @@ def build_network(name: str):
 
 
 def load_experiment(experiment_name: str,
-                    corpus_files: CorpusFiles):
+                    corpus_files: CorpusGenerator):
     """Loads the experiment
     """
     neural_network = build_network(name=experiment_name)

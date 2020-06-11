@@ -1,7 +1,7 @@
 from keras import Model, Sequential, layers
 
 import core.network as net
-from core.corpus import CorpusFiles
+from core.corpus import CorpusGenerator
 from core.datasets import Dataset
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
@@ -92,7 +92,7 @@ class ConvolutionalNeuralNetwork(NeuralNetwork):
                                    display_progress_bars=display_progress_bars)
 
     def fine_tuning_generator(self,
-                              corpus_files: CorpusFiles,
+                              corpus_files: CorpusGenerator,
                               training_configuration: TrainingConfiguration,
                               fine_tuning_layers: set,
                               display_progress_bars: bool = True):

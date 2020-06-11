@@ -1,6 +1,7 @@
 from corpora.imdb import imdb
 from embeddings.glove import glove
-from examples.chapter6 import one_hot_encoding, word_embeddings, recurrent_toy, recurrent_imdb, temperature_forecasting
+from examples.chapter6 import one_hot_encoding, word_embeddings, recurrent_toy, recurrent_imdb, temperature_forecasting, \
+    rutger
 
 default_glove_embeddings_filename = 'glove.6B.100d.txt'
 default_glove_dir = '../../embeddings/glove/data/glove.6B'
@@ -12,7 +13,8 @@ if __name__ == '__main__':
         # 'word_embeddings',
         # 'recurrent_toy',
         # 'recurrent_imdb',
-        'temperature_forecasting'
+        # 'temperature_forecasting'
+        'rutger'
     ]
 
     if 'one_hot_encoding' in experiments:
@@ -31,3 +33,6 @@ if __name__ == '__main__':
 
     if 'temperature_forecasting' in experiments:
         temperature_forecasting.run()
+
+    if 'rutger' in experiments:
+        rutger.run(build_corpus=True)

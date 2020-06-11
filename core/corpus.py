@@ -21,7 +21,7 @@ class Corpus:
 
     def __init__(self,
                  training_set: Dataset,
-                 test_set: Dataset,
+                 test_set: Dataset = None,
                  validation_set: Dataset = None,
                  name: str = ''):
         """ Creates a new corpus
@@ -32,7 +32,7 @@ class Corpus:
         :param name: corpus name
         """
         self.training_set = training_set
-        self.test_set = test_set
+        self.test_set = test_set or None
         self.validation_set = validation_set or None
         self.__name = name
 
@@ -256,7 +256,7 @@ class Corpus:
         return self.training_set.split_k_fold(fold=fold, k=k)
 
 
-class CorpusFiles:
+class CorpusGenerator:
     """ A corpus generator contains three file sets: train, validation, and test
     """
 
@@ -265,6 +265,7 @@ class CorpusFiles:
                  validation_set_files: DatasetFileIterator,
                  test_set_files: DatasetFileIterator):
         """ Creates a new Corpus based on Set of files
+
         :param training_set_files: train set files
         :param validation_set_files: validation set files
         :param test_set_files: test set files

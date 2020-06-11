@@ -29,8 +29,8 @@ def plot_1_metric(metric_values: np.array,
                   x_label: str = 'Epochs',
                   y_label: str = None,
                   smooth_factor: float = 0.):
-    """
-     Plots a single metric
+    """ Plots a single metric
+
      :param metric_values: array of metric values
      :param title: plot title
      :param metric_style: color and style of the curve plot
@@ -63,10 +63,10 @@ def plot_1_metric_history(history: History,
                           x_label: str = 'Epochs',
                           y_label: str = None,
                           smooth_factor: float = 0.):
-    """
-    Plots a single metric based on a History object
-    :param history: training history object, containing the training metrics series
-    :param metric: metric key of the series to be plotted
+    """ Plots a single metric based on a History object that results from a training process
+
+    :param history: training history object, containing the series of training metrics
+    :param metric: metric key of the series to be plot
     :param title: plot title
     :param metric_style: color and style of the curve plot
     :param x_label: horizontal axis label
