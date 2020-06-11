@@ -17,8 +17,8 @@ output_activation = 'sigmoid'
 
 # global train parameters
 global_epochs = 10
-global_batch_size = 100
-global_validation_set_size = 10000
+global_batch_size = 1000
+# global_validation_set_size = 10000
 shuffle = True
 
 # Training configuration
@@ -89,7 +89,6 @@ def get_network_configuration(input_length: int,
     return [
         {'layer_type': 'Embedding', 'input_dim': vocabulary_size, 'output_dim': embeddings_dimension,
          'input_length': input_length, 'name': 'embeddings'},
-        # {'layer_type': recurrent_layer_type, 'units': recurrent_units},
         recurrent_layer_configuration,
         {'layer_type': 'Dense', 'units': output_categories, 'activation': 'softmax'}
     ]

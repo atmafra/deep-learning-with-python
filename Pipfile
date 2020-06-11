@@ -7,14 +7,21 @@ verify_ssl = true
 
 [packages]
 keras = "*"
-tensorflow = "*"
+tensorflow = "==2.2.0"
 matplotlib = "*"
-pillow = "*"
+pillow = "==7.1.2"
 python-slugify = "*"
 cv2 = "*"
 opencv-python = "*"
 annoy = "*"
 corpora = "*"
+tensorflow-estimator = "==2.2.0"
+tensorboard = "==2.2.2"
+keras-preprocessing = "==1.1.2"
+certifi = "==2020.4.5.2"
+google-auth = "==1.17.0"
+werkzeug = "==1.0.1"
+cachetools = "==4.1.0"
 
 [requires]
 python_version = "3.7"
