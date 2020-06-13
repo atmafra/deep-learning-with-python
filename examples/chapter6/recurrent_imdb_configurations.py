@@ -35,10 +35,10 @@ def get_neural_network(vocabulary_size: int,
                        input_length: int,
                        layer_type: str = 'SimpleRNN'):
     configurations = [
-        {'layer_type': 'Embedding', 'input_dim': vocabulary_size, 'output_dim': embeddings_dimension,
+        {'class_name': 'Embedding', 'input_dim': vocabulary_size, 'output_dim': embeddings_dimension,
          'input_length': input_length, 'name': 'embeddings'},
-        {'layer_type': layer_type, 'units': embeddings_dimension},
-        {'layer_type': 'Dense', 'units': 1, 'activation': 'sigmoid'}
+        {'class_name': layer_type, 'units': embeddings_dimension},
+        {'class_name': 'Dense', 'units': 1, 'activation': 'sigmoid'}
     ]
 
     return NeuralNetwork.from_configurations(name='SimpleRNN',

@@ -13,33 +13,33 @@ output_size = 1
 
 # network architecture
 cats_and_dogs = [
-    {'layer_type': 'Conv2D', 'filters': 32, 'kernel_size': kernel_size, 'activation': 'relu',
+    {'class_name': 'Conv2D', 'filters': 32, 'kernel_size': kernel_size, 'activation': 'relu',
      'input_shape': input_shape},
-    {'layer_type': 'MaxPooling2D', 'pool_size': pool_size},
-    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': kernel_size, 'activation': 'relu'},
-    {'layer_type': 'MaxPooling2D', 'pool_size': pool_size},
-    {'layer_type': 'Conv2D', 'filters': 128, 'kernel_size': kernel_size, 'activation': 'relu'},
-    {'layer_type': 'MaxPooling2D', 'pool_size': pool_size},
-    {'layer_type': 'Conv2D', 'filters': 128, 'kernel_size': kernel_size, 'activation': 'relu'},
-    {'layer_type': 'MaxPooling2D', 'pool_size': pool_size},
-    {'layer_type': 'Flatten'},
-    {'layer_type': 'Dense', 'units': 512, 'activation': 'relu'},
-    {'layer_type': 'Dense', 'units': output_size, 'activation': 'sigmoid'}]
+    {'class_name': 'MaxPooling2D', 'pool_size': pool_size},
+    {'class_name': 'Conv2D', 'filters': 64, 'kernel_size': kernel_size, 'activation': 'relu'},
+    {'class_name': 'MaxPooling2D', 'pool_size': pool_size},
+    {'class_name': 'Conv2D', 'filters': 128, 'kernel_size': kernel_size, 'activation': 'relu'},
+    {'class_name': 'MaxPooling2D', 'pool_size': pool_size},
+    {'class_name': 'Conv2D', 'filters': 128, 'kernel_size': kernel_size, 'activation': 'relu'},
+    {'class_name': 'MaxPooling2D', 'pool_size': pool_size},
+    {'class_name': 'Flatten'},
+    {'class_name': 'Dense', 'units': 512, 'activation': 'relu'},
+    {'class_name': 'Dense', 'units': output_size, 'activation': 'sigmoid'}]
 
 cats_and_dogs_dropout = [
-    {'layer_type': 'Conv2D', 'filters': 32, 'kernel_size': kernel_size, 'activation': 'relu',
+    {'class_name': 'Conv2D', 'filters': 32, 'kernel_size': kernel_size, 'activation': 'relu',
      'input_shape': input_shape},
-    {'layer_type': 'MaxPooling2D', 'pool_size': pool_size},
-    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': kernel_size, 'activation': 'relu'},
-    {'layer_type': 'MaxPooling2D', 'pool_size': pool_size},
-    {'layer_type': 'Conv2D', 'filters': 128, 'kernel_size': kernel_size, 'activation': 'relu'},
-    {'layer_type': 'MaxPooling2D', 'pool_size': pool_size},
-    {'layer_type': 'Conv2D', 'filters': 128, 'kernel_size': kernel_size, 'activation': 'relu'},
-    {'layer_type': 'MaxPooling2D', 'pool_size': pool_size},
-    {'layer_type': 'Flatten'},
-    {'layer_type': 'Dropout', 'rate': 0.5},
-    {'layer_type': 'Dense', 'units': 512, 'activation': 'relu'},
-    {'layer_type': 'Dense', 'units': output_size, 'activation': 'sigmoid'}]
+    {'class_name': 'MaxPooling2D', 'pool_size': pool_size},
+    {'class_name': 'Conv2D', 'filters': 64, 'kernel_size': kernel_size, 'activation': 'relu'},
+    {'class_name': 'MaxPooling2D', 'pool_size': pool_size},
+    {'class_name': 'Conv2D', 'filters': 128, 'kernel_size': kernel_size, 'activation': 'relu'},
+    {'class_name': 'MaxPooling2D', 'pool_size': pool_size},
+    {'class_name': 'Conv2D', 'filters': 128, 'kernel_size': kernel_size, 'activation': 'relu'},
+    {'class_name': 'MaxPooling2D', 'pool_size': pool_size},
+    {'class_name': 'Flatten'},
+    {'class_name': 'Dropout', 'rate': 0.5},
+    {'class_name': 'Dense', 'units': 512, 'activation': 'relu'},
+    {'class_name': 'Dense', 'units': output_size, 'activation': 'sigmoid'}]
 
 # train configuration
 learning_rate = 2e-5

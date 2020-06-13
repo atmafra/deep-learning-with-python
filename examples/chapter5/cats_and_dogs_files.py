@@ -75,16 +75,14 @@ def copy_files_mask(mask: str,
                     end: int,
                     from_dir: str,
                     to_dir: str):
-    """Copy batches files from one directory to another
-       The file names to be copied must fit a mask with numbers (start and end)
+    """ Copy batches files from one directory to another
+        The file names to be copied must fit a mask with numbers (start and end)
 
-    Args:
-        mask (str): file mask to be applied in the origin directory
-        start (int): start number to be injected in the file name mask
-        end (int): end number to be injected in the file name mask
-        from_dir (str): source directory
-        to_dir (str): destination directory
-
+    :param mask: file mask to be applied in the origin directory
+    :param start: start number to be injected in the file name mask
+    :param end: end number to be injected in the file name mask
+    :param from_dir: source directory
+    :param to_dir: destination directory
     """
     fnames = [mask.format(i) for i in range(start, end)]
     for fname in fnames:
@@ -94,7 +92,7 @@ def copy_files_mask(mask: str,
 
 
 def copy_files(dirs: dict, check: bool = True):
-    """Copies files from original dir to structured dirs
+    """ Copies files from original dir to structured dirs
     """
     original_dataset_dir = putl.get_parameter(parameters=dirs, key='original_dataset', mandatory=True)
     original_train_dir = putl.get_parameter(parameters=dirs, key='original_train', mandatory=True)
@@ -119,7 +117,7 @@ def copy_files(dirs: dict, check: bool = True):
 
 
 def check_files(dirs: dict):
-    """Sanity checks if file copying was ok
+    """ Sanity checks if file copying was ok
     """
     print('Training cat images  :', len(os.listdir(dirs['train_cats'])),
           '(\"{}\")'.format(dirs['train_cats']))

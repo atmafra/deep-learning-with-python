@@ -142,9 +142,12 @@ class Dataset:
         """ Shuffles the order of the elements
         """
         p = np.random.permutation(self.length)
-        self.input_data = self.input_data[p]
-        self.output_data = self.output_data[p]
-        self.sample_weights = self.sample_weights[p]
+        if self.input_data is not None:
+            self.input_data = self.input_data[p]
+        if self.output_data is not None:
+            self.output_data = self.output_data[p]
+        if self.sample_weights is not None:
+            self.sample_weights = self.sample_weights[p]
 
     def split(self, size: int, start: int = 0):
         """ Splits the elements of the input and output data into two subsets:
@@ -365,8 +368,6 @@ class DatasetFileIterator:
         """
         if directory_iterator is None:
             raise RuntimeError('No directory iterator passed creating GenSet')
-
-        super().__init__(name)
         self.__directory_iterator = directory_iterator
 
     @property

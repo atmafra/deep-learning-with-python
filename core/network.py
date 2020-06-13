@@ -2,9 +2,9 @@ import os
 import sys
 from enum import Enum
 
-import numpy as np
-from keras import Model, Sequential, backend
+from keras import Model, Sequential
 from keras.engine.saving import load_model, model_from_json
+from keras.layers.wrappers import Wrapper
 from keras.utils import Sequence, layer_utils
 
 import utils.parameter_utils as putl
@@ -40,32 +40,39 @@ default_loss: dict = {
 
 
 def create_layer(parameters: dict):
-    """Creates a layer according to the hyperparameters
+    """ Creates a layer according to the hyperparameters
 
-    Args:
-        parameters (dict): hyperparameters dictionary
-
+    :param parameters: hyperparameters dictionary
+    :returns: new layer
     """
-    parameters_copy = parameters.copy()
-    layer_type = extract_parameter(parameters=parameters_copy,
-                                   key='layer_type',
-                                   mandatory=True)
+    layer_parameters = parameters.copy()
+    layer_class = extract_parameter(parameters=layer_parameters,
+                                    key='class_name',
+                                    mandatory=True)
 
-    layer = getattr(sys.modules['keras.layers'], layer_type)
+    layer = getattr(sys.modules['keras.layers'], layer_class)
     if layer is None:
-        raise RuntimeError('Invalid layer type: \'{}\''.format(layer_type))
+        raise RuntimeError('Invalid layer type: \'{}\''.format(layer_class))
 
-    return layer(**parameters_copy)
+    if not issubclass(layer, Wrapper):
+        return layer(**layer_parameters)
+
+    sublayer_parameters = extract_parameter(parameters=layer_parameters,
+                                            key='layer',
+                                            mandatory=True)
+
+    sublayer = create_layer(sublayer_parameters)
+
+    return layer(layer=sublayer, **layer_parameters)
 
 
 def create_model(name: str,
                  layer_configuration_list: list):
-    """Creates a neural network according to its hyper parameters
+    """ Creates a neural network according to its hyper parameters
 
-    Args:
-        name (str): neural network name
-        layer_configuration_list (list): list of layer hyperparameters
-
+    :param name: neural network name
+    :param layer_configuration_list: list of layer hyperparameters
+    :return: Keras sequential model
     """
     model = Sequential()
     model.name = name
@@ -78,10 +85,10 @@ def create_model(name: str,
 
 def add_layers(model: Sequential,
                layer_configuration_list: list):
-    """
-    Append layers to an existing sequential model
-    :param model (Sequential): previously created sequential model
-    :param layer_configuration_list (list): list of layer hyperparameters
+    """ Append layers to an existing sequential model
+
+    :param model: previously created sequential model
+    :param layer_configuration_list: list of layer hyperparameters
     """
     if model is None:
         raise RuntimeError('Null sequential model trying to append layers')

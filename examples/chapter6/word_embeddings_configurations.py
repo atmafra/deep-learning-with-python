@@ -66,10 +66,10 @@ def get_network_configuration(input_length: int,
     :return: list of neural network layers configuration
     """
     return [
-        {'layer_type': 'Embedding', 'input_dim': vocabulary_size, 'output_dim': embeddings_dimension,
+        {'class_name': 'Embedding', 'input_dim': vocabulary_size, 'output_dim': embeddings_dimension,
          'input_length': input_length, 'name': 'embeddings'},
-        {'layer_type': 'Flatten'},
-        {'layer_type': 'Dense', 'units': 1, 'activation': 'sigmoid'}
+        {'class_name': 'Flatten'},
+        {'class_name': 'Dense', 'units': 1, 'activation': 'sigmoid'}
     ]
 
 

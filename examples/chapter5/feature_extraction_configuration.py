@@ -6,9 +6,9 @@ learning_rate_training = 2e-5
 learning_rate_fine_tuning = 1e-5
 
 classifier_configuration = [
-    {'layer_type': 'Dense', 'units': 256, 'activation': 'relu', 'input_dim': 4 * 4 * 512},
-    {'layer_type': 'Dropout', 'rate': 0.5},
-    {'layer_type': 'Dense', 'units': 1, 'activation': 'sigmoid'}]
+    {'class_name': 'Dense', 'units': 256, 'activation': 'relu', 'input_dim': 4 * 4 * 512},
+    {'class_name': 'Dropout', 'rate': 0.5},
+    {'class_name': 'Dense', 'units': 1, 'activation': 'sigmoid'}]
 
 training_parameters = {
     'keras': {

@@ -1,4 +1,3 @@
-from keras import optimizers
 from keras.applications import VGG16
 
 import core.network as net

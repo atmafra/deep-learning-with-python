@@ -199,7 +199,14 @@ class Corpus:
     def count_categories(self):
         """ Returns the number of distinct labels in the output data
         """
-        return self.training_set.count_unique_values
+        if len(self.training_set.output_data.shape) == 1:
+            dimension = 1
+        else:
+            dimension = self.training_set.output_data.shape[1]
+        if dimension == 1:
+            return self.training_set.count_unique_values
+        else:
+            return dimension
 
     @property
     def min_output(self):

@@ -5,7 +5,7 @@ from examples.chapter6.rutger_configurations import load_experiment_plan
 default_rutger_path = '../../corpora/rutger/data'
 default_filename = 'rutger-2020-06-03.csv'
 default_input_length = 100
-default_sampling_rate = .1
+default_sampling_rate = 1.
 default_training_set_share = .6
 default_validation_set_share = .2
 default_test_set_share = .2
@@ -21,6 +21,17 @@ def run(build_corpus: bool = True,
         input_length: int = default_input_length,
         vocabulary_size: int = default_vocabulary_size,
         embeddings_dimension: int = default_embeddings_dimension):
+    """ Runs the Rutger experiments
+
+    :param build_corpus: build corpus (tries to load corpus if False)
+    :param sampling_rate: corpus data sampling rate
+    :param training_set_share: samples share to be used for training
+    :param validation_set_share: samples share to be used as validation
+    :param test_set_share: samples share to be used as test
+    :param input_length: maximum tokens per phrase (padding/truncation possible)
+    :param vocabulary_size: maximum number of tokes to be kept by the tokenizer
+    :param embeddings_dimension: number of units in the embeddings layer
+    """
     corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name='Rutger', base_path=default_rutger_path)
     if build_corpus:
         corpus = rutger.build_corpus(rutger_path=default_rutger_path,
@@ -37,11 +48,6 @@ def run(build_corpus: bool = True,
     else:
         corpus = corpus_file_structure.load_corpus(corpus_name='Rutger', datasets_base_name='Rutger')
 
-    # rutger_embeddings = load_embeddings_experiment(corpus=corpus,
-    #                                                input_length=default_input_length,
-    #                                                vocabulary_size=default_vocabulary_size,
-    #                                                embeddings_dimension=embeddings_dimension)
-
     rutger_experiment_plan = load_experiment_plan(corpus=corpus,
                                                   input_length=input_length,
                                                   vocabulary_size=vocabulary_size,
@@ -57,4 +63,3 @@ def run(build_corpus: bool = True,
                                display_progress_bars=True,
                                save_models=True,
                                models_path='models/rutger')
-

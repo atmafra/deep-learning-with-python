@@ -35,22 +35,24 @@ training_parameters_embeddings = {
     'validation': {
         'strategy': ValidationStrategy.CROSS_VALIDATION}}
 
-training_parameters_glove = {
-    'keras': {
-        'compile': {
-            'optimizer': optimizers.RMSprop(lr=0.001),
-            'loss': 'binary_crossentropy',
-            'metrics': ['accuracy']},
-        'fit': {
-            'epochs': global_epochs,
-            'batch_size': global_batch_size,
-            'shuffle': shuffle}},
-    'validation': {
-        'strategy': ValidationStrategy.CROSS_VALIDATION,
-        'set_size': global_validation_set_size}}
+# training_parameters_glove = {
+#     'keras': {
+#         'compile': {
+#             'optimizer': optimizers.RMSprop(lr=0.001),
+#             'loss': 'binary_crossentropy',
+#             'metrics': ['accuracy']},
+#         'fit': {
+#             'epochs': global_epochs,
+#             'batch_size': global_batch_size,
+#             'shuffle': shuffle}},
+#     'validation': {
+#         'strategy': ValidationStrategy.CROSS_VALIDATION,
+#         'set_size': global_validation_set_size}}
 
 training_configuration_embeddings = TrainingConfiguration(configuration=training_parameters_embeddings)
-training_configuration_glove = TrainingConfiguration(configuration=training_parameters_glove)
+
+
+# training_configuration_glove = TrainingConfiguration(configuration=training_parameters_glove)
 
 
 # def get_network_configuration(input_length: int,
@@ -58,10 +60,10 @@ training_configuration_glove = TrainingConfiguration(configuration=training_para
 #                               embeddings_dimension: int,
 #                               output_categories: int):
 #     return [
-#         {'layer_type': 'Embedding', 'input_dim': vocabulary_size, 'output_dim': embeddings_dimension,
+#         {'class_name': 'Embedding', 'input_dim': vocabulary_size, 'output_dim': embeddings_dimension,
 #          'input_length': input_length, 'name': 'embeddings'},
-#         {'layer_type': 'Flatten'},
-#         {'layer_type': 'Dense', 'units': output_categories, 'activation': 'softmax'}
+#         {'class_name': 'Flatten'},
+#         {'class_name': 'Dense', 'units': output_categories, 'activation': 'softmax'}
 #     ]
 
 
@@ -82,19 +84,22 @@ def get_network_configuration(input_length: int,
     :return: list of neural network layers configuration
     """
     if recurrent_layer_type == 'Flatten':
-        recurrent_layer_configuration = {'layer_type': recurrent_layer_type}
+        recurrent_layer_configuration = {'class_name': recurrent_layer_type}
+    elif recurrent_layer_type == 'BILSTM':
+        recurrent_layer_configuration = {'class_name': 'Bidirectional', 'layer': {'class_name': 'LSTM', 'units': 64}}
     else:
-        recurrent_layer_configuration = {'layer_type': recurrent_layer_type, 'units': recurrent_units}
+        recurrent_layer_configuration = {'class_name': recurrent_layer_type, 'units': recurrent_units}
 
     return [
-        {'layer_type': 'Embedding', 'input_dim': vocabulary_size, 'output_dim': embeddings_dimension,
+        {'class_name': 'Embedding', 'input_dim': vocabulary_size, 'output_dim': embeddings_dimension,
          'input_length': input_length, 'name': 'embeddings'},
         recurrent_layer_configuration,
-        {'layer_type': 'Dense', 'units': output_categories, 'activation': 'softmax'}
+        {'class_name': 'Dense', 'units': output_categories, 'activation': 'softmax'}
     ]
 
 
-def get_neural_network(input_length: int,
+def get_neural_network(name: str,
+                       input_length: int,
                        vocabulary_size: int,
                        embeddings_dimension: int,
                        output_categories: int,
@@ -102,6 +107,7 @@ def get_neural_network(input_length: int,
                        recurrent_units: int):
     """ Creates the neural network model according to the configurations
 
+    :param name: neural network name
     :param input_length: maximum number of tokens in the input
     :param vocabulary_size: vocabulary size, for one-hot encoding
     :param embeddings_dimension: dimension of the embeddings
@@ -110,16 +116,18 @@ def get_neural_network(input_length: int,
     :param recurrent_units: number of processing units of the recurrent layer
     :return: neural network created according to the configurations
     """
-    embeddings = get_network_configuration(input_length=input_length,
-                                           vocabulary_size=vocabulary_size,
-                                           embeddings_dimension=embeddings_dimension,
-                                           output_categories=output_categories,
-                                           recurrent_layer_type=recurrent_layer_type,
-                                           recurrent_units=recurrent_units)
-    return NeuralNetwork.from_configurations(name='Embeddings', layers_configuration=embeddings)
+    configuration = get_network_configuration(input_length=input_length,
+                                              vocabulary_size=vocabulary_size,
+                                              embeddings_dimension=embeddings_dimension,
+                                              output_categories=output_categories,
+                                              recurrent_layer_type=recurrent_layer_type,
+                                              recurrent_units=recurrent_units)
+
+    return NeuralNetwork.from_configurations(name=name, layers_configuration=configuration)
 
 
 def load_experiment(corpus: Corpus,
+                    network_name: str,
                     experiment_id: str,
                     input_length: int,
                     vocabulary_size: int,
@@ -129,6 +137,7 @@ def load_experiment(corpus: Corpus,
     """ Loads the Word Embeddings network experiment
 
     :param corpus: corpus (common to all experiments)
+    :param name: neural network name
     :param input_length: number of tokens in the input
     :param vocabulary_size: vocabulary size (in words)
     :param embeddings_dimension: dimension of the embeddings layer
@@ -139,7 +148,8 @@ def load_experiment(corpus: Corpus,
     experiment_name = 'Embeddings (input length = {}, embeddings dimension = {}, recurrent type = {})'. \
         format(input_length, embeddings_dimension, recurrent_layer_type)
 
-    network = get_neural_network(input_length=input_length,
+    network = get_neural_network(name=network_name,
+                                 input_length=input_length,
                                  vocabulary_size=vocabulary_size,
                                  embeddings_dimension=embeddings_dimension,
                                  output_categories=corpus.training_set.output_size,
@@ -154,42 +164,42 @@ def load_experiment(corpus: Corpus,
     return experiment
 
 
-def load_glove_experiment(corpus: Corpus,
-                          input_length: int,
-                          vocabulary_size: int,
-                          embeddings_dimension: int,
-                          inject_embeddings: bool = True) -> Experiment:
-    """ Loads the GloVe experiment
-
-    :param corpus: corpus (common to all experiments)
-    :param input_length: number of tokens in the input
-    :param vocabulary_size: vocabulary size (in words)
-    :param embeddings_dimension: dimension of the embeddings layer
-    :return: the GloVe experiment
-    """
-    glove_experiment_name = 'GloVe (input length = {}, embeddings dimension = {}, inject = {})'. \
-        format(input_length, embeddings_dimension, inject_embeddings)
-
-    glove_network = get_neural_network(input_length=input_length,
-                                       vocabulary_size=vocabulary_size,
-                                       embeddings_dimension=embeddings_dimension)
-
-    if inject_embeddings:
-        glove_embeddings = glove.load_embeddings_matrix(embeddings_dimension=embeddings_dimension)
-        glove_network.set_weights(layer_name='embeddings', weights=[glove_embeddings])
-        glove_network.freeze_layer('embeddings')
-
-    glove_corpus = corpus.copy()
-    glove_corpus.get_validation_from_training_set(validation_size=training_configuration_glove.validation_set_size)
-    glove_corpus.resize(training_set_size=200)
-
-    glove_experiment = Experiment(name=glove_experiment_name,
-                                  id='glove',
-                                  corpus=glove_corpus,
-                                  neural_network=glove_network,
-                                  training_configuration=training_configuration_glove)
-
-    return glove_experiment
+# def load_glove_experiment(corpus: Corpus,
+#                           input_length: int,
+#                           vocabulary_size: int,
+#                           embeddings_dimension: int,
+#                           inject_embeddings: bool = True) -> Experiment:
+#     """ Loads the GloVe experiment
+#
+#     :param corpus: corpus (common to all experiments)
+#     :param input_length: number of tokens in the input
+#     :param vocabulary_size: vocabulary size (in words)
+#     :param embeddings_dimension: dimension of the embeddings layer
+#     :return: the GloVe experiment
+#     """
+#     glove_experiment_name = 'GloVe (input length = {}, embeddings dimension = {}, inject = {})'. \
+#         format(input_length, embeddings_dimension, inject_embeddings)
+#
+#     glove_network = get_neural_network(input_length=input_length,
+#                                        vocabulary_size=vocabulary_size,
+#                                        embeddings_dimension=embeddings_dimension)
+#
+#     if inject_embeddings:
+#         glove_embeddings = glove.load_embeddings_matrix(embeddings_dimension=embeddings_dimension)
+#         glove_network.set_weights(layer_name='embeddings', weights=[glove_embeddings])
+#         glove_network.freeze_layer('embeddings')
+#
+#     glove_corpus = corpus.copy()
+#     glove_corpus.get_validation_from_training_set(validation_size=training_configuration_glove.validation_set_size)
+#     glove_corpus.resize(training_set_size=200)
+#
+#     glove_experiment = Experiment(name=glove_experiment_name,
+#                                   id='glove',
+#                                   corpus=glove_corpus,
+#                                   neural_network=glove_network,
+#                                   training_configuration=training_configuration_glove)
+#
+#     return glove_experiment
 
 
 def load_experiment_plan(corpus: Corpus,
@@ -206,6 +216,7 @@ def load_experiment_plan(corpus: Corpus,
     """
     flatten_experiment = load_experiment(corpus=corpus,
                                          experiment_id='flatten',
+                                         network_name='Flatten',
                                          input_length=input_length,
                                          vocabulary_size=vocabulary_size,
                                          embeddings_dimension=embeddings_dimension,
@@ -213,6 +224,7 @@ def load_experiment_plan(corpus: Corpus,
 
     simplernn_experiment = load_experiment(corpus=corpus,
                                            experiment_id='simplernn',
+                                           network_name='SimpleRNN',
                                            input_length=input_length,
                                            vocabulary_size=vocabulary_size,
                                            embeddings_dimension=embeddings_dimension,
@@ -220,12 +232,22 @@ def load_experiment_plan(corpus: Corpus,
                                            recurrent_units=100)
 
     lstm_experiment = load_experiment(corpus=corpus,
-                                      experiment_id='simplernn',
+                                      experiment_id='lstm',
+                                      network_name='LSTM',
                                       input_length=input_length,
                                       vocabulary_size=vocabulary_size,
                                       embeddings_dimension=embeddings_dimension,
                                       recurrent_layer_type='LSTM',
                                       recurrent_units=100)
+
+    bilstm_experiment = load_experiment(corpus=corpus,
+                                        experiment_id='bilstm',
+                                        network_name='BiLSTM',
+                                        input_length=input_length,
+                                        vocabulary_size=vocabulary_size,
+                                        embeddings_dimension=embeddings_dimension,
+                                        recurrent_layer_type='BILSTM',
+                                        recurrent_units=100)
 
     # glove_experiment_1 = load_glove_experiment(corpus=corpus,
     #                                          input_length=input_length,
@@ -243,9 +265,9 @@ def load_experiment_plan(corpus: Corpus,
     experiment_list = [
         flatten_experiment,
         simplernn_experiment,
-        lstm_experiment
+        lstm_experiment,
+        bilstm_experiment,
     ]
 
     experiment_plan = ExperimentPlan(name='Rutger Intent Detection', experiments=experiment_list)
-
     return experiment_plan

@@ -3,16 +3,11 @@ from examples.chapter4.imdb_configurations import *
 
 
 def run(plan: str = 'comparison', build: bool = True):
-    """Runs the selected experiment plan
+    """ Runs the selected experiment plan
 
-    Args:
-        plan (str): key of the experiment to run. Possible values are
-            'dropout'
-            'weight_regularization_l1'
-            'weight_regularization_l2'
-            'comparison'
-        build (bool): force rebuild of the datasets
-
+    :param plan: key of the experiment to run. Possible values are:
+                 'dropout', 'weight_regularization_l1', 'weight_regularization_l2', 'comparison'
+    :param build: force rebuild of the datasets
     """
     # loads the corpus and the experiment plans
     corpus_name = 'IMDB'

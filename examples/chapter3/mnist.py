@@ -95,9 +95,9 @@ def create_neural_network(corpus: Corpus,
     hidden_layer_activation = 'relu'
 
     layers_configuration = [
-        {'layer_type': 'Dense', 'name': 'Dense-1', 'units': hidden_layer_units, 'activation': hidden_layer_activation,
+        {'class_name': 'Dense', 'name': 'Dense-1', 'units': hidden_layer_units, 'activation': hidden_layer_activation,
          'input_shape': (input_size,)},
-        {'layer_type': 'Dense', 'name': 'Dense-2', 'units': output_size, 'activation': 'softmax'}]
+        {'class_name': 'Dense', 'name': 'Dense-2', 'units': output_size, 'activation': 'softmax'}]
 
     if model_source == ModelSource.CONFIGURATION:
         return NeuralNetwork.from_configurations(name=network_name,

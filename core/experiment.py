@@ -184,7 +184,10 @@ class Experiment:
         validation_strategy = self.training_configuration.validation_strategy
         validation_set_size = self.training_configuration.validation_set_size
         if validation_set_size is None:
-            validation_set_size = self.corpus.validation_set.length
+            if self.corpus.validation_set is not None:
+                validation_set_size = self.corpus.validation_set.length
+            else:
+                validation_set_size = 0
 
         if validation_strategy in (ValidationStrategy.NO_VALIDATION, ValidationStrategy.K_FOLD_CROSS_VALIDATION):
             self.training_set = self.corpus.training_set

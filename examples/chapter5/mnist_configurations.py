@@ -28,40 +28,40 @@ shuffle = True
 
 # Network configurations
 mnist_dense = [
-    {'layer_type': 'Dense', 'units': 16, 'activation': 'relu',
+    {'class_name': 'Dense', 'units': 16, 'activation': 'relu',
      'input_shape': input_shape_array},
-    {'layer_type': 'Dense', 'units': output_size, 'activation': 'softmax'}]
+    {'class_name': 'Dense', 'units': output_size, 'activation': 'softmax'}]
 
 mnist_conv_max_pooling = [
-    {'layer_type': 'Conv2D', 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
+    {'class_name': 'Conv2D', 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
      'input_shape': input_shape_image},
-    {'layer_type': 'MaxPooling2D', 'pool_size': (2, 2)},
-    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
-    {'layer_type': 'MaxPooling2D', 'pool_size': (2, 2)},
-    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
-    {'layer_type': 'Flatten'},
-    {'layer_type': 'Dense', 'units': 64, 'activation': 'relu'},
-    {'layer_type': 'Dense', 'units': output_size, 'activation': 'softmax'}]
+    {'class_name': 'MaxPooling2D', 'pool_size': (2, 2)},
+    {'class_name': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    {'class_name': 'MaxPooling2D', 'pool_size': (2, 2)},
+    {'class_name': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    {'class_name': 'Flatten'},
+    {'class_name': 'Dense', 'units': 64, 'activation': 'relu'},
+    {'class_name': 'Dense', 'units': output_size, 'activation': 'softmax'}]
 
 mnist_conv_avg_pooling = [
-    {'layer_type': 'Conv2D', 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
+    {'class_name': 'Conv2D', 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
      'input_shape': input_shape_image},
-    {'layer_type': 'AveragePooling2D', 'pool_size': (2, 2)},
-    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
-    {'layer_type': 'AveragePooling2D', 'pool_size': (2, 2)},
-    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
-    {'layer_type': 'Flatten'},
-    {'layer_type': 'Dense', 'units': 64, 'activation': 'relu'},
-    {'layer_type': 'Dense', 'units': output_size, 'activation': 'softmax'}]
+    {'class_name': 'AveragePooling2D', 'pool_size': (2, 2)},
+    {'class_name': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    {'class_name': 'AveragePooling2D', 'pool_size': (2, 2)},
+    {'class_name': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu'},
+    {'class_name': 'Flatten'},
+    {'class_name': 'Dense', 'units': 64, 'activation': 'relu'},
+    {'class_name': 'Dense', 'units': output_size, 'activation': 'softmax'}]
 
 mnist_conv_strided = [
-    {'layer_type': 'Conv2D', 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
+    {'class_name': 'Conv2D', 'filters': 32, 'kernel_size': (3, 3), 'activation': 'relu',
      'strides': 2, 'input_shape': input_shape_image},
-    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu', 'strides': 2},
-    {'layer_type': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu', 'strides': 2},
-    {'layer_type': 'Flatten'},
-    {'layer_type': 'Dense', 'units': 64, 'activation': 'relu'},
-    {'layer_type': 'Dense', 'units': output_size, 'activation': 'softmax'}]
+    {'class_name': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu', 'strides': 2},
+    {'class_name': 'Conv2D', 'filters': 64, 'kernel_size': (3, 3), 'activation': 'relu', 'strides': 2},
+    {'class_name': 'Flatten'},
+    {'class_name': 'Dense', 'units': 64, 'activation': 'relu'},
+    {'class_name': 'Dense', 'units': output_size, 'activation': 'softmax'}]
 
 training_parameters = {
     'keras': {
