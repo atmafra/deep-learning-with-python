@@ -50,7 +50,7 @@ def load_experiment_plan(corpus: Corpus):
     vocabulary_size = 10000
     embeddings_dimension = 32
 
-    set_size = corpus.size
+    set_size = corpus.length
     validation_split = 0.2
 
     training_configuration = get_training_configuration(set_size=set_size, validation_split=validation_split)

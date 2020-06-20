@@ -1,10 +1,20 @@
-from typing import Type
-
-import numpy as np
 from keras.callbacks import History
 
 from core.convolutional_neural_network import ConvolutionalNeuralNetwork
 from core.corpus import CorpusType, Corpus, CorpusGenerator
+from core.datasets import Dataset
+from core.network import ValidationStrategy
+from core.neural_network import NeuralNetwork
+from core.training_configuration import TrainingConfiguration
+from utils.file_utils import str_to_filename
+from utils.history_utils import plot_loss, plot_accuracy, plot_loss_list, plot_accuracy_list, \
+    concatenate_history_metrics
+from utils.parameter_utils import get_parameter
+from keras.callbacks import History
+
+from core.convolutional_neural_network import ConvolutionalNeuralNetwork
+from core.corpus import CorpusType, Corpus, CorpusGenerator
+from core.datasets import Dataset
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
@@ -207,9 +217,12 @@ class Experiment:
 
         self.test_set = self.corpus.test_set
 
-    def training(self, display_progress_bars: bool = True):
+    def training(self,
+                 use_sample_weights: bool = False,
+                 display_progress_bars: bool = True):
         """ Train the neural network model
 
+        :param use_sample_weights: use sample weights (if defined)
         :param display_progress_bars: display progress bars in terminal during evaluation
         """
         if self.corpus_type == CorpusType.CORPUS_DATASET:
@@ -217,6 +230,7 @@ class Experiment:
                 self.neural_network.train(training_set=self.training_set,
                                           training_configuration=self.training_configuration,
                                           validation_set=self.validation_set,
+                                          use_sample_weights=use_sample_weights,
                                           display_progress_bars=display_progress_bars)
 
         else:
@@ -225,11 +239,15 @@ class Experiment:
                                                     training_configuration=self.training_configuration,
                                                     display_progress_bars=display_progress_bars)
 
-    def fine_tuning(self, layer_names: set, display_progress_bars: bool = True):
+    def fine_tuning(self,
+                    layer_names: set,
+                    use_sample_weights: bool = False,
+                    display_progress_bars: bool = True):
         """ Executes the fine tuning of a Convolutional Neural Network by training the last layers
         of the convolutional base after the classifier is trained.
 
         :param layer_names: list of layer names to be unfrozen for fine tuning
+        :param use_sample_weights: use sample weights if available
         :param display_progress_bars: display progress bars during training
         """
         if not isinstance(self.neural_network, ConvolutionalNeuralNetwork):
@@ -241,8 +259,9 @@ class Experiment:
             self.fine_tuning_history = \
                 convolutional_network.fine_tuning(training_set=self.training_set,
                                                   training_configuration=self.fine_tuning_configuration,
-                                                  validation_set=self.validation_set,
                                                   fine_tuning_layers=layer_names,
+                                                  validation_set=self.validation_set,
+                                                  use_sample_weights=use_sample_weights,
                                                   display_progress_bars=display_progress_bars)
         else:
             self.fine_tuning_history = \
@@ -251,14 +270,18 @@ class Experiment:
                                                             fine_tuning_layers=layer_names,
                                                             display_progress_bars=display_progress_bars)
 
-    def evaluation(self, display_progress_bars: bool = True):
+    def evaluation(self,
+                   use_sample_weights: bool = False,
+                   display_progress_bars: bool = True):
         """ Evaluates the neural network performance metrics against the test set
 
+        :param use_sample_weights: use sample weights if available
         :param display_progress_bars: display progress bars in terminal during evaluation
         """
         if self.corpus_type == CorpusType.CORPUS_DATASET:
             self.__test_results = \
                 self.neural_network.evaluate(test_set=self.corpus.test_set,
+                                             use_sample_weights=use_sample_weights,
                                              display_progress_bars=display_progress_bars)
 
         elif self.corpus_type == CorpusType.CORPUS_GENERATOR:
@@ -268,6 +291,7 @@ class Experiment:
 
     def run(self,
             train: bool = True,
+            use_sample_weights: bool = False,
             test_after_training: bool = True,
             print_training_results: bool = True,
             fine_tune: bool = False,
@@ -286,6 +310,7 @@ class Experiment:
         """ Runs the experiment
 
         :param train: executes the training step of the neural network
+        :param use_sample_weights: use weight samples if defined
         :param test_after_training: evaluates the test dataset after the training stage is complete
         :param print_training_results: print a summary of the test results after training
         :param fine_tune: executes fine tuning on the last convolutional layer after training the classifier
@@ -307,7 +332,7 @@ class Experiment:
 
         if train:
             print("Starting training")
-            self.training(display_progress_bars=display_progress_bars)
+            self.training(use_sample_weights=use_sample_weights, display_progress_bars=display_progress_bars)
             print("Training finished successfully")
 
             if test_after_training:
@@ -321,6 +346,7 @@ class Experiment:
         if fine_tune:
             print("Starting fine tuning")
             self.fine_tuning(layer_names=unfreeze_layers,
+                             use_sample_weights=use_sample_weights,
                              display_progress_bars=display_progress_bars)
             print("Fine tuning finished successfully")
 
@@ -331,7 +357,7 @@ class Experiment:
 
         if test:
             print("Starting final tests")
-            self.evaluation(display_progress_bars=display_progress_bars)
+            self.evaluation(use_sample_weights=use_sample_weights, display_progress_bars=display_progress_bars)
             print("Final tests finished successfully")
             if print_test_results:
                 print("Final test results")
@@ -360,17 +386,21 @@ class Experiment:
                 self.plot_fine_tuning_accuracy(training_smooth_factor=training_plot_smooth_factor,
                                                validation_smooth_factor=validation_plot_smooth_factor)
 
-    def save_architecture(self, path: str, filename: str = '', verbose: bool = True):
+    def save_architecture(self,
+                          path: str,
+                          filename: str = '',
+                          verbose: bool = True):
         """ Saves the neural network in its current status to the file path and name
 
         :param path: system path of the save directory
         :param filename: model file name
         :param verbose: show save messages on terminal
         """
-        # save_network_hdf5(network=self.neural_network, path=path, file_name=name)
         self.neural_network.save_architecture(path=path, filename=filename, verbose=verbose)
 
-    def save_weights(self, path: str, filename: str = '', verbose: bool = True):
+    def save_weights(self, path: str,
+                     filename: str = '',
+                     verbose: bool = True):
         """ Saves the model status (weights) to a binary H5 file
 
         :param path: system path of the save directory
@@ -379,7 +409,9 @@ class Experiment:
         """
         self.neural_network.save_weights(path=path, filename=filename, verbose=verbose)
 
-    def save_model(self, path: str, root_filename: str = '', verbose: bool = True):
+    def save_model(self, path: str,
+                   root_filename: str = '',
+                   verbose: bool = True):
         """ Saves the neural network architecture and weights
 
         :param path: system path of the save directory
@@ -506,6 +538,7 @@ class ExperimentPlan:
     def run(self,
             train: bool = True,
             test: bool = True,
+            use_sample_weights: bool = False,
             print_results: bool = False,
             plot_training_loss: bool = False,
             plot_validation_loss: bool = False,
@@ -518,6 +551,7 @@ class ExperimentPlan:
 
         :param train: execute the training phase
         :param test: execute the test phase
+        :param use_sample_weights: use sample weights if available
         :param print_results: print a summary of the test results after each phase
         :param plot_training_loss: plots a summary of the comparative loss during the training of all models
         :param plot_validation_loss: plots a summary of the comparative loss during the validation of all models
@@ -529,6 +563,7 @@ class ExperimentPlan:
         """
         for experiment in self.experiment_list:
             experiment.run(train=train,
+                           use_sample_weights=use_sample_weights,
                            test_after_training=False,
                            print_training_results=print_results,
                            fine_tune=False,
@@ -566,6 +601,42 @@ class ExperimentPlan:
                                plot_training_series=False,
                                plot_validation_series=True,
                                smooth_factor=0.)
+
+    def evaluate(self,
+                 dataset: Dataset,
+                 use_sample_weights: bool = False,
+                 display_progress_bars: bool = True):
+        """ Evaluates the performance of all the models in the experiments against the given dataset
+
+        :param dataset: evaluation dataset
+        :param use_sample_weights: use sample weights if available
+        :param display_progress_bars: display progress bars during the training process
+        :return:
+        """
+        test_results = []
+        for experiment in self.experiment_list:
+            test_result = experiment.neural_network.evaluate(test_set=dataset,
+                                                             use_sample_weights=use_sample_weights,
+                                                             display_progress_bars=display_progress_bars)
+            test_results.append(test_result)
+        return test_results
+
+    def predict(self,
+                dataset: Dataset,
+                display_progress_bars: bool = True):
+        """ Evaluates the performance of all the models in the experiments against the given dataset
+
+        :param dataset: evaluation dataset
+        :param display_progress_bars: display progress bars during the training process
+        :return:
+        """
+        predictions = []
+        for experiment in self.experiment_list:
+            test_result = experiment.neural_network.predict(dataset=dataset,
+                                                            display_progress_bars=display_progress_bars)
+            predictions.append(test_result)
+
+        return predictions
 
     def get_history_list(self):
         """ Gets a list of all the training history objects of the experiments

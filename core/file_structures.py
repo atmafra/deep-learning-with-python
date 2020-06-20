@@ -282,7 +282,7 @@ class DatasetFileStructureNumpyCompressed(DatasetFileStructureSingleFile):
         try:
             DatasetFileStructureSingleFile.load_dataset(self, name=name)
         except FileNotFoundError:
-            return None
+            raise RuntimeError('Cannot load dataset "{}": file not found'.format(name))
         datasets = np.load(file=self.data_filepath)
         return Dataset(input_data=datasets['input'],
                        output_data=datasets['output'],
@@ -358,12 +358,10 @@ class CorpusFileStructure:
 
     def load_corpus(self, corpus_name: str,
                     datasets_base_name: str):
-        """Creates a corpus by loading feature files directly from disk
+        """ Creates a corpus by loading feature files directly from disk
 
-        Args:
-            corpus_name (str): name of the corpus
-            datasets_base_name (str): common part (basename) of the datasets
-
+        :param corpus_name: name of the corpus
+        :param datasets_base_name: common part (basename) of the datasets
         """
         training_set = self.training_file_structure.load_dataset(name=datasets_base_name + ' - train')
         test_set = self.test_file_structure.load_dataset(name=datasets_base_name + ' - test')

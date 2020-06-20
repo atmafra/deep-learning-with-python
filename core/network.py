@@ -12,6 +12,9 @@ from core.datasets import Dataset, DatasetFileIterator
 from utils.file_utils import str_to_filename
 from utils.parameter_utils import extract_parameter
 
+default_architecture_extension='-arch.json'
+default_weights_extension='-wght.h5'
+
 
 class NetworkOutputType(Enum):
     BOOLEAN = 1
@@ -167,6 +170,7 @@ def train_network(network: Model,
                   training_configuration: dict,
                   training_set: Dataset,
                   validation_set: Dataset = None,
+                  use_sample_weights: bool = False,
                   verbose: bool = True):
     """ Train the neural network, returning the evolution of the train metrics
 
@@ -174,12 +178,9 @@ def train_network(network: Model,
     :param training_configuration: train algorithm parameters
     :param training_set: train set
     :param validation_set: validation set
+    :param use_sample_weights: use sample weights in traininig if defined
     :param verbose: display train progress bars if True
     """
-    validation_strategy = putl.get_parameter(parameters=training_configuration,
-                                             key='validation.strategy',
-                                             mandatory=True)
-
     compile_parameters = putl.get_parameter(parameters=training_configuration,
                                             key='keras.compile',
                                             mandatory=True)
@@ -195,9 +196,15 @@ def train_network(network: Model,
     network.compile(**compile_parameters)
 
     working_training_set = training_set
+
+    sample_weight = None
+    if use_sample_weights:
+        sample_weight = training_set.sample_weights
+
     history = network.fit(x=working_training_set.input_data,
                           y=working_training_set.output_data,
                           validation_data=validation_data,
+                          sample_weight=sample_weight,
                           verbose=verbose,
                           **fit_parameters)
 
@@ -276,24 +283,30 @@ def train_network_k_fold(network: Model,
     return all_histories
 
 
-def test_network(network: Model,
-                 test_set: Dataset,
-                 verbose: bool = True) -> dict:
-    """Evaluates all the test inputs according to the current network
+def evaluate_dataset(network: Model,
+                     test_set: Dataset,
+                     use_sample_weights: bool = False,
+                     verbose: bool = True) -> dict:
+    """ Evaluates all the test inputs according to the given network
 
-    Args:
-        network (Model): neural network model to be tested
-        test_set (Dataset): test set to be used for metrics evaluation
-        verbose (bool): display evaluation progress bar if True
-
+    :param network: neural network model to be tested
+    :param test_set: test set to be used for metrics evaluation
+    :param use_sample_weights: use sample weights in evaluation
+    :param verbose: display evaluation progress bar if True
+    :return: map of performance metrics
     """
     metrics = {}
+
+    sample_weight = None
+    if use_sample_weights:
+        sample_weight = test_set.sample_weights
+
     if test_set.length > 0:
         result = network.evaluate(x=test_set.input_data,
                                   y=test_set.output_data,
                                   batch_size=None,
                                   verbose=verbose,
-                                  sample_weight=None,
+                                  sample_weight=sample_weight,
                                   steps=None,
                                   callbacks=None,
                                   max_queue_size=10,
@@ -308,16 +321,14 @@ def test_network(network: Model,
     return metrics
 
 
-def test_network_generator(network: Model,
-                           test_set_generator: DatasetFileIterator,
-                           verbose: bool = True) -> dict:
-    """Evaluates all the test inputs according to the current network
+def evaluate_dataset_generator(network: Model,
+                               test_set_generator: DatasetFileIterator,
+                               verbose: bool = True) -> dict:
+    """ Evaluates all the test inputs according to the current network
 
-    Args:
-        network (Model): neural network model to be tested
-        test_set_generator (DatasetFileIterator): test set generator to be used for metrics evaluation
-        verbose (bool): display evaluation progress bar if True
-
+    :param network: neural network model to be tested
+    :param test_set_generator: test set generator to be used for metrics evaluation
+    :param verbose: display evaluation progress bar if True
     """
     result = network.evaluate_generator(generator=test_set_generator.directory_iterator,
                                         steps=None,
@@ -336,12 +347,56 @@ def test_network_generator(network: Model,
     return metrics
 
 
+def predict_dataset(network: Model,
+                    dataset: Dataset,
+                    verbose: bool = True) -> dict:
+    """ Gives the predictions for each entry in the dataset
+
+    :param network: neural network model to be tested
+    :param dataset: test set to be used for metrics evaluation
+    :param verbose: display evaluation progress bar if True
+    :return: map of performance metrics
+    """
+    predictions = network.predict(x=dataset.input_data,
+                                  batch_size=None,
+                                  verbose=verbose,
+                                  steps=None,
+                                  callbacks=None,
+                                  max_queue_size=10,
+                                  workers=1,
+                                  use_multiprocessing=False)
+
+    return predictions
+
+
+def predict_dataset_generator(network: Model,
+                              dataset_generator: DatasetFileIterator,
+                              verbose: bool = True) -> dict:
+    """ Gives the predictions for each entry from the dataset generator
+
+    :param network: neural network model to be tested
+    :param dataset_generator: test set to be used for metrics evaluation
+    :param verbose: display evaluation progress bar if True
+    :return: map of performance metrics
+    """
+    predictions = network.predict_generator(generator=dataset_generator,
+                                            batch_size=None,
+                                            verbose=verbose,
+                                            steps=None,
+                                            callbacks=None,
+                                            max_queue_size=10,
+                                            workers=1,
+                                            use_multiprocessing=False)
+
+    return predictions
+
+
 def build_filepath(filename: str,
                    path: str,
                    extension: str = '',
                    default_filename: str = ''):
-    """
-    Builds the file path from filename, path, and extension
+    """ Builds the file path from filename, path, and extension
+
     :param filename: operating system filename
     :param path: system path of the file
     :param extension: filename extension
@@ -366,8 +421,8 @@ def save_architecture_json(network: Model,
                            path: str,
                            filename: str = '',
                            verbose: bool = True):
-    """
-    Saves the model architecture as a JSON file
+    """ Saves the model architecture as a JSON file
+
     :param network: model whose architecture must be saved
     :param path: system path of the save directory
     :param filename: architecture file name
@@ -375,7 +430,7 @@ def save_architecture_json(network: Model,
     """
     model_filepath = build_filepath(filename=filename,
                                     path=path,
-                                    extension='.json',
+                                    extension=default_architecture_extension,
                                     default_filename=network.name)
     model_json = network.to_json()
 
@@ -393,8 +448,8 @@ def save_weights_h5(network: Model,
                     filename: str = '',
                     path: str = '',
                     verbose: bool = True):
-    """
-    Saves the model weights to a h5 file
+    """ Saves the model weights to a h5 file
+
     :param network: neural network model
     :param verbose: show save message in terminal
     :param filename: weights file name
@@ -402,7 +457,7 @@ def save_weights_h5(network: Model,
     """
     weights_filepath = build_filepath(filename=filename,
                                       path=path,
-                                      extension='.h5',
+                                      extension=default_weights_extension,
                                       default_filename=network.name)
 
     if verbose:
@@ -414,14 +469,15 @@ def save_weights_h5(network: Model,
         print('Save weights OK')
 
 
-def save_network_json(network: Model,
-                      path: str,
-                      root_name: str,
-                      verbose: bool = True):
-    """
-    Saves the model in the current state to a JSON file. The model is saved in 2 files:
-    1. a JSON file, containing the architecture (.json)
-    2. the binary H5 (pickle) file, containing the weights (.h5)
+def save_network(network: Model,
+                 path: str,
+                 root_name: str,
+                 verbose: bool = True):
+    """ Saves the model in the current state in 2 files:
+
+    - a JSON file, containing the architecture (.json)
+    - the binary H5 (pickle) file, containing the weights (.h5)
+
     :param network: model to be saved
     :param path: system path of the save directory
     :param root_name: root of the model and weights filenames
@@ -431,22 +487,22 @@ def save_network_json(network: Model,
         root_name = str_to_filename(network.name)
 
     save_architecture_json(network=network,
-                           filename=root_name + '.json',
+                           filename=root_name,
                            path=path,
                            verbose=verbose)
 
     save_weights_h5(network=network,
-                    filename=root_name + '.h5',
+                    filename=root_name,
                     path=path,
                     verbose=verbose)
 
 
-def load_network_json(architecture_filepath: str,
-                      weights_filepath: str,
-                      verbose: bool = True):
-    """
-    Loads a file containing a representation of a JSON object
+def load_network(architecture_filepath: str,
+                 weights_filepath: str,
+                 verbose: bool = True):
+    """ Loads a file containing a representation of a JSON object
     that describes the architecture of a neural network model
+
     :param architecture_filepath: architecture filename
     :param weights_filepath: weights filename
     :param verbose: show load message on terminal
@@ -469,34 +525,30 @@ def save_network_hdf5(network: Model,
                       path: str,
                       filename: str,
                       verbose: bool = True):
-    """Saves the model in the current state to a H5PY file
+    """ Saves the model in the current state to a H5PY file
 
-    Args:
-        network (Model): model to be saved
-        path (str): system path of the save directory
-        filename (str): saved model file name
-        verbose (bool): show save message in terminal
-
+    :param network: model to be saved
+    :param path: system path of the save directory
+    :param filename: saved model file name
+    :param verbose: show save message in terminal
     """
-    full_path = os.path.join(path, filename)
-    network.save(filepath=full_path)
+    filepath = os.path.join(path, filename)
+    network.save(filepath=filepath)
     if verbose:
-        print('Saved neural network model \"{}\" to file \"{}\"'.format(network.name, full_path))
+        print('Saved neural network model \"{}\" to file \"{}\"'.format(network.name, filepath))
 
 
 def load_network_hdf5(path: str,
                       filename: str,
                       verbose: bool = True):
-    """Loads a model in the state it was saved
+    """ Loads a model in the state it was saved
 
-    Args:
-        path (str): system path of the load directory
-        filename (str): file name of the model to be loaded
-        verbose (bool): show load message in terminal
-
+    :param path: system path of the load directory
+    :param filename: file name of the model to be loaded
+    :param verbose: show load message in terminal
     """
-    full_path = os.path.join(path, filename)
-    loaded_network = load_model(filepath=full_path, compile=False)
+    filepath = os.path.join(path, filename)
+    loaded_network = load_model(filepath=filepath, compile=False)
     if verbose:
-        print('Loaded neural network model from file \"{}\"'.format(full_path))
+        print('Loaded neural network model from file \"{}\"'.format(filepath))
     return loaded_network

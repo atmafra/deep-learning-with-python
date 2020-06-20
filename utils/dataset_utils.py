@@ -3,6 +3,8 @@ from math import ceil
 import numpy as np
 from keras_preprocessing.text import Tokenizer
 
+from text.one_hot_encoder import OneHotEncoder
+
 
 def separate_corpus(corpus: tuple):
     """ Splits a corpus tuple into train, test, and validation (optional) data sets
@@ -151,6 +153,7 @@ def three_way_split(dataset: np.array,
 def merge_datasets(dataset1: np.array,
                    dataset2: np.array):
     """ Returns a new dataset that merges the input and output data of the two datasets
+
     :param dataset1: first dataset
     :param dataset2: second dataset
     :return: merged dataset
@@ -197,14 +200,8 @@ def one_hot_encode_categories(sequence: np.array):
     """
     assert sequence is not None, 'No sequences to one-hot encode'
 
-    category_list = np.unique(sequence)
-    category_map = {category: i for i, category in enumerate(category_list)}
-    results = np.zeros((len(sequence), len(category_list)))
-    for i, category in enumerate(sequence):
-        category_index = category_map[category]
-        results[i, category_index] = 1.
-
-    return results
+    encoder = OneHotEncoder()
+    return encoder.encode(sequence=sequence)
 
 
 def normalize(training_data: np.array, test_data: np.array):
@@ -220,20 +217,3 @@ def normalize(training_data: np.array, test_data: np.array):
     # test dataset
     test_data -= mean
     test_data /= stddev
-
-
-def tokenize_text(texts: list,
-                  fit: bool,
-                  max_words: int):
-    """ Splits text reviews into tokens (words, in this particular case)
-    """
-    tokenizer = Tokenizer(num_words=max_words)
-    print('Tokenizing (maximum {} words)...'.format(max_words))
-    if fit:
-        print('Fitting tokenizer to the current dataset')
-        tokenizer.fit_on_texts(texts=texts)
-        word_index = tokenizer.word_index
-        print('Word index has {} unique tokens'.format(len(word_index)))
-
-    sequences = tokenizer.texts_to_sequences(texts=texts)
-    return sequences

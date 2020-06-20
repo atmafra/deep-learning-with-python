@@ -20,18 +20,20 @@ class Corpus:
     """
 
     def __init__(self,
-                 training_set: Dataset,
+                 training_set: Dataset = None,
                  test_set: Dataset = None,
                  validation_set: Dataset = None,
                  name: str = ''):
         """ Creates a new corpus
 
-        :param training_set: train set
+        :param training_set: training set
         :param test_set: test set
         :param validation_set: validation set
         :param name: corpus name
         """
-        self.training_set = training_set
+        self.__input_size = 0
+        self.__output_size = 0
+        self.training_set = training_set or None
         self.test_set = test_set or None
         self.validation_set = validation_set or None
         self.__name = name
@@ -162,10 +164,9 @@ class Corpus:
     @training_set.setter
     def training_set(self, training_set: Dataset):
         self.__training_set = training_set
-
-    @property
-    def size(self):
-        return self.training_set.length
+        if training_set is not None:
+            self.input_size = training_set.input_size
+            self.output_size = training_set.output_size
 
     @property
     def test_set(self):
@@ -174,6 +175,9 @@ class Corpus:
     @test_set.setter
     def test_set(self, test_set: Dataset):
         self.__test_set = test_set
+        if test_set is not None:
+            self.input_size = test_set.input_size
+            self.output_size = test_set.output_size
 
     @property
     def validation_set(self):
@@ -182,6 +186,9 @@ class Corpus:
     @validation_set.setter
     def validation_set(self, validation_set: Dataset):
         self.__validation_set = validation_set
+        if validation_set is not None:
+            self.input_size = validation_set.input_size
+            self.output_size = validation_set.output_size
 
     @property
     def name(self):
@@ -189,11 +196,34 @@ class Corpus:
 
     @property
     def input_size(self):
-        return self.training_set.input_size
+        return self.__input_size
+
+    @input_size.setter
+    def input_size(self, input_size: int):
+        if self.__input_size == 0:
+            self.__input_size = input_size
+        else:
+            if input_size != self.__input_size:
+                raise RuntimeError('Error checking input size: current is {}, trying to set to {}',
+                                   self.__input_size, input_size)
 
     @property
     def output_size(self):
-        return self.training_set.output_size
+        return self.__output_size
+
+    @output_size.setter
+    def output_size(self, output_size: int):
+        if self.__output_size == 0:
+            self.__output_size = output_size
+        else:
+            if output_size != self.__output_size:
+                raise RuntimeError('Error checking output size: current is {}, trying to set to {}',
+                                   self.__output_size, output_size)
+
+    @property
+    def length(self):
+        total_size = self.training_set.length + self.validation_set.length + self.test_set.length
+        return total_size
 
     @property
     def count_categories(self):

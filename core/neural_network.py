@@ -183,6 +183,15 @@ class NeuralNetwork():
         """
         net.save_weights_h5(network=self.model, path=path, filename=filename, verbose=verbose)
 
+    def load_weights(self, path: str, weights_filename: str, verbose: bool  = True):
+        """ Loads the neural network weights (status) from an H5 file
+
+        :param path: system path of the weights file
+        :param weights_filename: weights file name
+        :param verbose: show load messages in terminal
+        """
+        net.load_network_hdf5()
+
     def save_model(self, path: str, root_filename: str, verbose: bool = True):
         """ Saves the neural network architecture and weights in the same file system path
 
@@ -215,12 +224,14 @@ class NeuralNetwork():
               training_set: Dataset,
               training_configuration: TrainingConfiguration,
               validation_set: Dataset = None,
+              use_sample_weights: bool = False,
               display_progress_bars: bool = True):
         """ Trains the neural network
 
         :param training_set: training set
         :param training_configuration: train configuration hyperparameters
         :param validation_set: validation set (optional, depending on validation strategy)
+        :param use_sample_weights: use sample weights if defined
         :param display_progress_bars: display progress bars in terminal during train
         """
         if training_configuration is None:
@@ -234,6 +245,7 @@ class NeuralNetwork():
                                                  training_configuration=training_configuration.configuration,
                                                  training_set=training_set,
                                                  validation_set=None,
+                                                 use_sample_weights=use_sample_weights,
                                                  verbose=display_progress_bars)
 
         elif strategy == net.ValidationStrategy.CROSS_VALIDATION:
@@ -293,17 +305,21 @@ class NeuralNetwork():
                                                            verbose=display_progress_bars)
         return training_history
 
-    def evaluate(self, test_set: Dataset,
+    def evaluate(self,
+                 test_set: Dataset,
+                 use_sample_weights: bool = False,
                  display_progress_bars: bool = True):
         """ Evaluate the neural network
 
         :param test_set: validation set, used to assess performance metrics
+        :param use_sample_weights: use sample weights if available
         :param display_progress_bars: display progress bars in terminal during evaluation
         :return: test metrics object
         """
-        return net.test_network(network=self.model,
-                                test_set=test_set,
-                                verbose=display_progress_bars)
+        return net.evaluate_dataset(network=self.model,
+                                    test_set=test_set,
+                                    use_sample_weights=use_sample_weights,
+                                    verbose=display_progress_bars)
 
     def evaluate_generator(self, test_set_generator: DatasetFileIterator,
                            display_progress_bars: bool = True):
@@ -313,6 +329,32 @@ class NeuralNetwork():
         :param display_progress_bars: display progress bars in terminal during evaluation
         :return: test metrics object
         """
-        return net.test_network_generator(network=self.model,
-                                          test_set_generator=test_set_generator,
-                                          verbose=display_progress_bars)
+        return net.evaluate_dataset_generator(network=self.model,
+                                              test_set_generator=test_set_generator,
+                                              verbose=display_progress_bars)
+
+    def predict(self,
+                dataset: Dataset,
+                display_progress_bars: bool = True):
+        """ Estimates the output for all the elements of the dataset
+
+        :param dataset: input dataset from which to make predictions
+        :param display_progress_bars: display progress bars in terminal during evaluation
+        :return: predictions
+        """
+        return net.predict_dataset(network=self.model,
+                                   dataset=dataset,
+                                   verbose=display_progress_bars)
+
+    def predict_generator(self,
+                          dataset_generator: DatasetFileIterator,
+                          display_progress_bars: bool = True):
+        """ Estimates the output for all the elements of the dataset
+
+        :param dataset_generator: input dataset generator from which to make predictions
+        :param display_progress_bars: display progress bars in terminal during evaluation
+        :return: predictions
+        """
+        return net.predict_dataset_generator(network=self.model,
+                                             dataset_generator=dataset_generator,
+                                             verbose=display_progress_bars)

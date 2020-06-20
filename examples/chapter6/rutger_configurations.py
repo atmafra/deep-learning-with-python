@@ -18,7 +18,6 @@ output_activation = 'sigmoid'
 # global train parameters
 global_epochs = 10
 global_batch_size = 1000
-# global_validation_set_size = 10000
 shuffle = True
 
 # Training configuration
@@ -67,94 +66,92 @@ training_configuration_embeddings = TrainingConfiguration(configuration=training
 #     ]
 
 
-def get_network_configuration(input_length: int,
-                              vocabulary_size: int,
-                              embeddings_dimension: int,
-                              output_categories: int,
-                              recurrent_layer_type: str = 'SimpleRNN',
-                              recurrent_units: int = 100):
-    """ Network Configurations
+def get_neural_network(name: str,
+                       input_length: int,
+                       vocabulary_size: int,
+                       embeddings_dimension: int,
+                       output_categories: int,
+                       recurrent_layer_type: str = 'SimpleRNN',
+                       recurrent_units: int = 100,
+                       dropout_rate: float = 0.):
+    """ Configure and build the neural network
 
+    :param name: neural network name
     :param input_length: maximum number of tokens in the input
     :param vocabulary_size: vocabulary size, for one-hot encoding
     :param embeddings_dimension: dimension of the embeddings
     :param output_categories: number of distinct categories (intentions) in the output
     :param recurrent_layer_type: Recurrent Neural Network architecture (Flatten, SimpleRNN, GRU, LSTM, ...)
     :param recurrent_units: number of processing units of the recurrent layer
+    :param dropout_rate: dropout rate
     :return: list of neural network layers configuration
     """
     if recurrent_layer_type == 'Flatten':
         recurrent_layer_configuration = {'class_name': recurrent_layer_type}
     elif recurrent_layer_type == 'BILSTM':
-        recurrent_layer_configuration = {'class_name': 'Bidirectional', 'layer': {'class_name': 'LSTM', 'units': 64}}
+        recurrent_layer_configuration = {
+            'class_name': 'Bidirectional',
+            'layer': {
+                'class_name': 'LSTM',
+                'units': recurrent_units,
+                'dropout': dropout_rate,
+                'recurrent_dropout': dropout_rate,
+            }
+        }
     else:
-        recurrent_layer_configuration = {'class_name': recurrent_layer_type, 'units': recurrent_units}
+        recurrent_layer_configuration = {
+            'class_name': recurrent_layer_type,
+            'units': recurrent_units,
+            'dropout': dropout_rate,
+            'recurrent_dropout': dropout_rate
+        }
 
-    return [
+    configuration = [
         {'class_name': 'Embedding', 'input_dim': vocabulary_size, 'output_dim': embeddings_dimension,
          'input_length': input_length, 'name': 'embeddings'},
         recurrent_layer_configuration,
         {'class_name': 'Dense', 'units': output_categories, 'activation': 'softmax'}
     ]
 
-
-def get_neural_network(name: str,
-                       input_length: int,
-                       vocabulary_size: int,
-                       embeddings_dimension: int,
-                       output_categories: int,
-                       recurrent_layer_type: str,
-                       recurrent_units: int):
-    """ Creates the neural network model according to the configurations
-
-    :param name: neural network name
-    :param input_length: maximum number of tokens in the input
-    :param vocabulary_size: vocabulary size, for one-hot encoding
-    :param embeddings_dimension: dimension of the embeddings
-    :param output_categories: number of distinct categories (intentions) in the output
-    :param recurrent_layer_type: Recurrent Neural Network architecture (Flatten, SimpleRNN, GRU, LSTM, ...)
-    :param recurrent_units: number of processing units of the recurrent layer
-    :return: neural network created according to the configurations
-    """
-    configuration = get_network_configuration(input_length=input_length,
-                                              vocabulary_size=vocabulary_size,
-                                              embeddings_dimension=embeddings_dimension,
-                                              output_categories=output_categories,
-                                              recurrent_layer_type=recurrent_layer_type,
-                                              recurrent_units=recurrent_units)
-
     return NeuralNetwork.from_configurations(name=name, layers_configuration=configuration)
+
+
+def load_neural_network():
+    pass
 
 
 def load_experiment(corpus: Corpus,
                     network_name: str,
                     experiment_id: str,
-                    input_length: int,
                     vocabulary_size: int,
                     embeddings_dimension: int,
                     recurrent_layer_type: str = 'Flatten',
-                    recurrent_units: int = 0) -> Experiment:
-    """ Loads the Word Embeddings network experiment
+                    recurrent_units: int = 0,
+                    dropout_rate: float = 0.) -> Experiment:
+    """ Loads one Rutger Intent Detection experiment
 
     :param corpus: corpus (common to all experiments)
-    :param name: neural network name
-    :param input_length: number of tokens in the input
+    :param network_name: neural network name
+    :param experiment_id: experiment id for experiment plan indexing
     :param vocabulary_size: vocabulary size (in words)
     :param embeddings_dimension: dimension of the embeddings layer
     :param recurrent_layer_type: Recurrent Neural Network architecture (Flatten, SimpleRNN, GRU, LSTM, ...)
     :param recurrent_units: number of processing units of the recurrent layer
+    :param dropout_rate: dropout rate for the recurrent network
     :return: the Word Embeddings experiment
     """
-    experiment_name = 'Embeddings (input length = {}, embeddings dimension = {}, recurrent type = {})'. \
-        format(input_length, embeddings_dimension, recurrent_layer_type)
+    experiment_name = 'Rutger {} INPL = {}, VOCS = {}, EDIM = {}, RTYP = {} ({} units, DR = {})'. \
+        format(experiment_id, corpus.input_size, vocabulary_size, embeddings_dimension, recurrent_layer_type,
+               recurrent_units, dropout_rate)
 
     network = get_neural_network(name=network_name,
-                                 input_length=input_length,
+                                 input_length=corpus.input_size,
                                  vocabulary_size=vocabulary_size,
                                  embeddings_dimension=embeddings_dimension,
-                                 output_categories=corpus.training_set.output_size,
+                                 output_categories=corpus.output_size,
                                  recurrent_layer_type=recurrent_layer_type,
-                                 recurrent_units=recurrent_units)
+                                 recurrent_units=recurrent_units,
+                                 dropout_rate=dropout_rate)
 
     experiment = Experiment(name=experiment_name,
                             id=experiment_id,
@@ -203,7 +200,6 @@ def load_experiment(corpus: Corpus,
 
 
 def load_experiment_plan(corpus: Corpus,
-                         input_length: int,
                          vocabulary_size: int,
                          embeddings_dimension: int) -> ExperimentPlan:
     """ Loads all experiment configurations
@@ -217,7 +213,6 @@ def load_experiment_plan(corpus: Corpus,
     flatten_experiment = load_experiment(corpus=corpus,
                                          experiment_id='flatten',
                                          network_name='Flatten',
-                                         input_length=input_length,
                                          vocabulary_size=vocabulary_size,
                                          embeddings_dimension=embeddings_dimension,
                                          recurrent_layer_type='Flatten')
@@ -225,29 +220,38 @@ def load_experiment_plan(corpus: Corpus,
     simplernn_experiment = load_experiment(corpus=corpus,
                                            experiment_id='simplernn',
                                            network_name='SimpleRNN',
-                                           input_length=input_length,
                                            vocabulary_size=vocabulary_size,
                                            embeddings_dimension=embeddings_dimension,
                                            recurrent_layer_type='SimpleRNN',
-                                           recurrent_units=100)
+                                           recurrent_units=100,
+                                           dropout_rate=.4)
 
     lstm_experiment = load_experiment(corpus=corpus,
                                       experiment_id='lstm',
                                       network_name='LSTM',
-                                      input_length=input_length,
                                       vocabulary_size=vocabulary_size,
                                       embeddings_dimension=embeddings_dimension,
                                       recurrent_layer_type='LSTM',
-                                      recurrent_units=100)
+                                      recurrent_units=100,
+                                      dropout_rate=.4)
+
+    # bilstm_experiment = load_experiment(corpus=corpus,
+    #                                     experiment_id='bilstm',
+    #                                     network_name='BILSTM',
+    #                                     vocabulary_size=vocabulary_size,
+    #                                     embeddings_dimension=embeddings_dimension,
+    #                                     recurrent_layer_type='BILSTM',
+    #                                     recurrent_units=100,
+    #                                     dropout_rate=0.)
 
     bilstm_experiment = load_experiment(corpus=corpus,
-                                        experiment_id='bilstm',
-                                        network_name='BiLSTM',
-                                        input_length=input_length,
+                                        experiment_id='bilstm-dropout',
+                                        network_name='BILSTM with Dropout',
                                         vocabulary_size=vocabulary_size,
                                         embeddings_dimension=embeddings_dimension,
                                         recurrent_layer_type='BILSTM',
-                                        recurrent_units=100)
+                                        recurrent_units=100,
+                                        dropout_rate=0.4)
 
     # glove_experiment_1 = load_glove_experiment(corpus=corpus,
     #                                          input_length=input_length,
@@ -266,7 +270,7 @@ def load_experiment_plan(corpus: Corpus,
         flatten_experiment,
         simplernn_experiment,
         lstm_experiment,
-        bilstm_experiment,
+        bilstm_experiment
     ]
 
     experiment_plan = ExperimentPlan(name='Rutger Intent Detection', experiments=experiment_list)

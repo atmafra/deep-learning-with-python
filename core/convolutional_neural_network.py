@@ -70,13 +70,15 @@ class ConvolutionalNeuralNetwork(NeuralNetwork):
                     training_configuration: TrainingConfiguration,
                     fine_tuning_layers: set,
                     validation_set: Dataset = None,
+                    use_sample_weights: bool = False,
                     display_progress_bars: bool = True):
         """ Execute the fine tuning of the Convolutional Neural Network.
 
         :param training_set: training set
         :param training_configuration: training configuration hyperparameters
-        :param validation_set: validation set
         :param fine_tuning_layers: list of layers to unfreeze for fine tuning
+        :param validation_set: validation set
+        :param use_sample_weights: use sample weights if available
         :param display_progress_bars: display progress bars during fine tuning
         """
         if fine_tuning_layers is None:
@@ -89,6 +91,7 @@ class ConvolutionalNeuralNetwork(NeuralNetwork):
                                    training_set=training_set,
                                    training_configuration=training_configuration,
                                    validation_set=validation_set,
+                                   use_sample_weights=use_sample_weights,
                                    display_progress_bars=display_progress_bars)
 
     def fine_tuning_generator(self,
