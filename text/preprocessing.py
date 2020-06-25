@@ -1,6 +1,8 @@
+import json
+import os
 import re
 import nltk
-from keras_preprocessing.text import Tokenizer
+from keras_preprocessing.text import Tokenizer, tokenizer_from_json
 
 """ Preprocessing code copied from
 
@@ -67,6 +69,54 @@ def build_tokenizer(phrase_list: list,
         print('Word index has {} unique tokens'.format(len(word_index)))
 
     return tokenizer
+
+
+def save_tokenizer(tokenizer: Tokenizer,
+                   path: str,
+                   filename: str,
+                   verbose: bool = True):
+    """ Saves a tokenizer configuration to file
+
+    :param tokenizer: tokenizer
+    :param path: system path of the tokenizer file
+    :param filename: tokenizer filename
+    :param verbose: output progress messages in the terminal
+    """
+    if tokenizer is None:
+        raise RuntimeError('Cannot save tokenizer: no tokenizer object passed')
+
+    filepath = os.path.join(path, filename)
+    if verbose:
+        print('Saving tokenizer to file "{}"'.format(filepath))
+
+    with open(filepath, 'w') as file:
+        json.dump(tokenizer.to_json(), file)
+    file.close()
+
+
+def load_tokenizer(path: str,
+                   filename: str,
+                   verbose: bool = True):
+    """ Creates a new Tokenizer object from the configurations saved on a json file
+
+
+    :param path: system path of the tokenizer file
+    :param filename: tokenizer filename
+    :param verbose: output progress messages in the terminal
+    :return: loaded tokenizer
+    """
+    if not filename:
+        raise RuntimeError('Cannot load tokenizer: no file path passed')
+
+    filepath = os.path.join(path, filename)
+    if verbose:
+        print('Loading tokenizer from file "{}"'.format(filepath))
+
+    with open(filepath, 'r') as file:
+        tokenizer_configuration = json.load(file)
+    file.close()
+
+    return tokenizer_from_json(tokenizer_configuration)
 
 
 def tokenize_text(texts: list,

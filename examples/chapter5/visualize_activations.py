@@ -5,16 +5,16 @@ from keras import Model, models
 from keras.models import load_model
 from keras_preprocessing import image
 
-from core.network import create_model_from_file
+from core.network import load_architecture_json
 
 
 def get_model(model_path: str = 'models/cats_and_dogs',
               model_filename: str = 'cats-and-dogs-convolutional-with-dropout.json',
               weights_filename: str = 'cats-and-dogs-convolutional-with-dropout.h5'):
     model_filepath = os.path.join(model_path, model_filename)
-    model = create_model_from_file(model_filepath)
+    model = load_architecture_json(model_filepath)
     weights_filepath = os.path.join(model_path, weights_filename)
-    model.load_weights(weights_filepath)
+    model.load(weights_filepath)
     return model
 
 

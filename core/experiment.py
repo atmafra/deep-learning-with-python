@@ -1,15 +1,5 @@
-from keras.callbacks import History
+import time
 
-from core.convolutional_neural_network import ConvolutionalNeuralNetwork
-from core.corpus import CorpusType, Corpus, CorpusGenerator
-from core.datasets import Dataset
-from core.network import ValidationStrategy
-from core.neural_network import NeuralNetwork
-from core.training_configuration import TrainingConfiguration
-from utils.file_utils import str_to_filename
-from utils.history_utils import plot_loss, plot_accuracy, plot_loss_list, plot_accuracy_list, \
-    concatenate_history_metrics
-from utils.parameter_utils import get_parameter
 from keras.callbacks import History
 
 from core.convolutional_neural_network import ConvolutionalNeuralNetwork
@@ -188,8 +178,10 @@ class Experiment:
     def test_set(self, test_set):
         self.__test_set = test_set
 
-    def prepare_sets(self):
+    def prepare_sets(self, verbose: bool = True):
         """ Prepare the train and the validation sets for train
+
+        :param verbose: display progress messages in the terminal output
         """
         validation_strategy = self.training_configuration.validation_strategy
         validation_set_size = self.training_configuration.validation_set_size
@@ -199,33 +191,59 @@ class Experiment:
             else:
                 validation_set_size = 0
 
+        if verbose:
+            print('Preparing sets for training (strategy: {}, set size: {})'
+                  .format(validation_strategy, validation_set_size))
+
         if validation_strategy in (ValidationStrategy.NO_VALIDATION, ValidationStrategy.K_FOLD_CROSS_VALIDATION):
+            if verbose:
+                print('Using corpus training set and no validation set')
             self.training_set = self.corpus.training_set
             self.validation_set = None
 
         elif validation_strategy == ValidationStrategy.CROSS_VALIDATION:
             if validation_set_size > 0:
                 if self.corpus.validation_set is None or self.corpus.validation_set.length == 0:
+                    print('Empty validation set in cross validation. Splitting training set to get the validation set')
                     split, remain = self.corpus.split_training_set(size=validation_set_size)
                     self.training_set = remain
                     self.validation_set = split
                 else:
                     if self.corpus.validation_set.length != validation_set_size:
                         raise RuntimeError('Incompatible validation set sizes')
+                    print('Pre-defined validation set. Using corpus sets for training and validation')
                     self.training_set = self.corpus.training_set
                     self.validation_set = self.corpus.validation_set
 
         self.test_set = self.corpus.test_set
 
-    def training(self,
-                 use_sample_weights: bool = False,
-                 display_progress_bars: bool = True):
+        if verbose:
+            if self.training_set is not None:
+                print('Training set "{}" has {} samples'.format(self.training_set.name, self.training_set.length))
+            if self.validation_set is not None:
+                print('Validation set "{}" has {} samples'.format(self.validation_set.name, self.validation_set.length))
+            if self.test_set is not None:
+                print('Test set "{}" has {} samples'.format(self.test_set.name, self.test_set.length))
+
+    def train_model(self,
+                    use_sample_weights: bool = False,
+                    display_progress_bars: bool = True,
+                    verbose: bool = True):
         """ Train the neural network model
 
         :param use_sample_weights: use sample weights (if defined)
         :param display_progress_bars: display progress bars in terminal during evaluation
+        :param verbose: output progress messages in terminal
+        :return: training History object (which is also kept in self.training_history)
         """
+        start = time.localtime()
+        if verbose:
+            startstr = time.strftime("%H:%M:%S", start)
+            print('Starting training of model "{}" at {}'.format(self.neural_network.name, startstr))
+
         if self.corpus_type == CorpusType.CORPUS_DATASET:
+            if verbose:
+                print('Regular files training')
             self.training_history = \
                 self.neural_network.train(training_set=self.training_set,
                                           training_configuration=self.training_configuration,
@@ -234,10 +252,20 @@ class Experiment:
                                           display_progress_bars=display_progress_bars)
 
         else:
+            if verbose:
+                print('Generator training')
             self.training_history = \
                 self.neural_network.train_generator(corpus_files=self.corpus_files,
                                                     training_configuration=self.training_configuration,
                                                     display_progress_bars=display_progress_bars)
+
+        finish = time.localtime()
+        training_interval = time.mktime(finish) - time.mktime(start)
+        if verbose:
+            finishstr = time.strftime("%H:%M:%S", finish)
+            print('Model training finished at {} after {:0.2f} seconds training'.format(finishstr, training_interval))
+
+        return self.training_history
 
     def fine_tuning(self,
                     layer_names: set,
@@ -289,6 +317,21 @@ class Experiment:
                 self.neural_network.evaluate_generator(test_set_generator=self.corpus_files.test_set_files,
                                                        display_progress_bars=display_progress_bars)
 
+    def load_model(self,
+                   path: str,
+                   filename: str = None,
+                   verbose: bool = True):
+        """
+
+        :param path:
+        :param filename:
+        :param verbose:
+        :return:
+        """
+        if not filename:
+            filename = str_to_filename(self.name) + '.h5py'
+        self.__neural_network = NeuralNetwork.from_file(path=path, filename=filename, verbose=verbose)
+
     def run(self,
             train: bool = True,
             use_sample_weights: bool = False,
@@ -306,7 +349,8 @@ class Experiment:
             print_test_results: bool = True,
             save: bool = True,
             model_path: str = None,
-            display_progress_bars: bool = True):
+            display_progress_bars: bool = True,
+            verbose: bool = True):
         """ Runs the experiment
 
         :param train: executes the training step of the neural network
@@ -326,22 +370,25 @@ class Experiment:
         :param save: save the model (architecture and weights) after training and fine tuning
         :param model_path: system path for the saved model
         :param display_progress_bars: display progress bars during the training process
+        :param verbose: display progress messages in the console terminal
         """
         if (train or fine_tune or test) and self.corpus_type == CorpusType.CORPUS_DATASET:
-            self.prepare_sets()
+            self.prepare_sets(verbose=verbose)
 
         if train:
-            print("Starting training")
-            self.training(use_sample_weights=use_sample_weights, display_progress_bars=display_progress_bars)
-            print("Training finished successfully")
+            self.train_model(use_sample_weights=use_sample_weights,
+                             display_progress_bars=display_progress_bars,
+                             verbose=verbose)
 
-            if test_after_training:
+            if fine_tune and test_after_training:
                 print("Starting test after training")
                 self.evaluation(display_progress_bars=display_progress_bars)
                 print("Test finished successfully")
                 if print_training_results:
                     print("Test results after training")
                     self.print_test_results()
+        else:
+            self.load_model(path=model_path, verbose=verbose)
 
         if fine_tune:
             print("Starting fine tuning")
@@ -351,9 +398,10 @@ class Experiment:
             print("Fine tuning finished successfully")
 
         if save:
-            self.save_model(path=model_path,
-                            root_filename=str_to_filename(self.name),
-                            verbose=True)
+            self.neural_network.save(path=model_path, verbose=verbose)
+            # self.neural_network.save_architecture_and_weights(path=model_path,
+            #                                                   root_filename=str_to_filename(self.name),
+            #                                                   verbose=True)
 
         if test:
             print("Starting final tests")
@@ -386,40 +434,24 @@ class Experiment:
                 self.plot_fine_tuning_accuracy(training_smooth_factor=training_plot_smooth_factor,
                                                validation_smooth_factor=validation_plot_smooth_factor)
 
-    def save_architecture(self,
-                          path: str,
-                          filename: str = '',
-                          verbose: bool = True):
-        """ Saves the neural network in its current status to the file path and name
+    def load_architecture_and_weights(self,
+                                      path: str,
+                                      root_filename: str,
+                                      verbose: bool = True):
+        """ Loads a pre-trained neural network from files
 
-        :param path: system path of the save directory
-        :param filename: model file name
-        :param verbose: show save messages on terminal
+        :param path: system path of the model file
+        :param root_filename: common file name for architecture and weights files (extensions are different)
+        :param verbose: display progress messages in terminal output
+        :return: loaded model (also kept in self.model)
         """
-        self.neural_network.save_architecture(path=path, filename=filename, verbose=verbose)
+        if root_filename is None:
+            raise RuntimeError('Cannot load model: no architecture filename')
 
-    def save_weights(self, path: str,
-                     filename: str = '',
-                     verbose: bool = True):
-        """ Saves the model status (weights) to a binary H5 file
+        self.__neural_network = \
+            NeuralNetwork.from_architecture_and_weights(path=path, root_filename=root_filename, verbose=verbose)
 
-        :param path: system path of the save directory
-        :param filename: weights file name
-        :param verbose: show save message on terminal
-        """
-        self.neural_network.save_weights(path=path, filename=filename, verbose=verbose)
-
-    def save_model(self, path: str,
-                   root_filename: str = '',
-                   verbose: bool = True):
-        """ Saves the neural network architecture and weights
-
-        :param path: system path of the save directory
-        :param root_filename: model file name
-        :param verbose: show save messages on terminal
-        """
-        # save_network_hdf5(network=self.neural_network, path=path, file_name=name)
-        self.neural_network.save_model(path=path, root_filename=root_filename, verbose=verbose)
+        return self.neural_network
 
     def plot_training_loss(self,
                            training_smooth_factor: float = 0.,
@@ -578,25 +610,25 @@ class ExperimentPlan:
                            model_path=models_path,
                            display_progress_bars=display_progress_bars)
 
-        if plot_training_loss:
+        if train and plot_training_loss:
             self.plot_loss(title='Training Loss',
                            plot_training_series=True,
                            plot_validation_series=False,
                            smooth_factor=0.)
 
-        if plot_validation_loss:
+        if train and plot_validation_loss:
             self.plot_loss(title='Validation Loss',
                            plot_training_series=False,
                            plot_validation_series=True,
                            smooth_factor=0.)
 
-        if plot_training_accuracy:
+        if train and plot_training_accuracy:
             self.plot_accuracy(title='Training Accuracy',
                                plot_training_series=True,
                                plot_validation_series=False,
                                smooth_factor=0.)
 
-        if plot_validation_accuracy:
+        if train and plot_validation_accuracy:
             self.plot_accuracy(title='Validation Accuracy',
                                plot_training_series=False,
                                plot_validation_series=True,
@@ -630,13 +662,13 @@ class ExperimentPlan:
         :param display_progress_bars: display progress bars during the training process
         :return:
         """
-        predictions = []
+        experiment_list_predictions = []
         for experiment in self.experiment_list:
-            test_result = experiment.neural_network.predict(dataset=dataset,
+            experiment_predictions = experiment.neural_network.predict(dataset=dataset,
                                                             display_progress_bars=display_progress_bars)
-            predictions.append(test_result)
+            experiment_list_predictions.append(experiment_predictions)
 
-        return predictions
+        return experiment_list_predictions
 
     def get_history_list(self):
         """ Gets a list of all the training history objects of the experiments
@@ -727,10 +759,10 @@ class ExperimentPlan:
                 weights_filename = str_to_filename(experiment.name) + '.h5'
 
             if save_architecture:
-                experiment.save_architecture(path=path, filename=architecture_filename)
+                experiment.neural_network.save_architecture(path=path, filename=architecture_filename)
 
             if save_weights:
-                experiment.save_weights(path=path, filename=weights_filename)
+                experiment.neural_network.save_weights(path=path, filename=weights_filename)
 
             if has_file_names:
                 filename = next(filename_list)

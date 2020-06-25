@@ -1,11 +1,10 @@
-from keras import regularizers, optimizers, layers
+from keras import optimizers
 
 from core.corpus import Corpus
 from core.experiment import Experiment, ExperimentPlan
 from core.network import ValidationStrategy
 from core.neural_network import NeuralNetwork
 from core.training_configuration import TrainingConfiguration
-from embeddings.glove import glove
 
 num_words = 10000
 input_size = num_words
@@ -21,7 +20,7 @@ global_batch_size = 1000
 shuffle = True
 
 # Training configuration
-training_parameters_embeddings = {
+training_parameters_rutger = {
     'keras': {
         'compile': {
             'optimizer': optimizers.RMSprop(lr=0.001),
@@ -48,7 +47,7 @@ training_parameters_embeddings = {
 #         'strategy': ValidationStrategy.CROSS_VALIDATION,
 #         'set_size': global_validation_set_size}}
 
-training_configuration_embeddings = TrainingConfiguration(configuration=training_parameters_embeddings)
+training_configuration_rutger = TrainingConfiguration(configuration=training_parameters_rutger)
 
 
 # training_configuration_glove = TrainingConfiguration(configuration=training_parameters_glove)
@@ -116,12 +115,8 @@ def get_neural_network(name: str,
     return NeuralNetwork.from_configurations(name=name, layers_configuration=configuration)
 
 
-def load_neural_network():
-    pass
-
-
 def load_experiment(corpus: Corpus,
-                    network_name: str,
+                    # network_name: str,
                     experiment_id: str,
                     vocabulary_size: int,
                     embeddings_dimension: int,
@@ -131,7 +126,7 @@ def load_experiment(corpus: Corpus,
     """ Loads one Rutger Intent Detection experiment
 
     :param corpus: corpus (common to all experiments)
-    :param network_name: neural network name
+    # :param network_name: neural network name
     :param experiment_id: experiment id for experiment plan indexing
     :param vocabulary_size: vocabulary size (in words)
     :param embeddings_dimension: dimension of the embeddings layer
@@ -144,7 +139,7 @@ def load_experiment(corpus: Corpus,
         format(experiment_id, corpus.input_size, vocabulary_size, embeddings_dimension, recurrent_layer_type,
                recurrent_units, dropout_rate)
 
-    network = get_neural_network(name=network_name,
+    network = get_neural_network(name=experiment_name,
                                  input_length=corpus.input_size,
                                  vocabulary_size=vocabulary_size,
                                  embeddings_dimension=embeddings_dimension,
@@ -157,7 +152,7 @@ def load_experiment(corpus: Corpus,
                             id=experiment_id,
                             corpus=corpus,
                             neural_network=network,
-                            training_configuration=training_configuration_embeddings)
+                            training_configuration=training_configuration_rutger)
     return experiment
 
 
@@ -212,14 +207,12 @@ def load_experiment_plan(corpus: Corpus,
     """
     flatten_experiment = load_experiment(corpus=corpus,
                                          experiment_id='flatten',
-                                         network_name='Flatten',
                                          vocabulary_size=vocabulary_size,
                                          embeddings_dimension=embeddings_dimension,
                                          recurrent_layer_type='Flatten')
 
     simplernn_experiment = load_experiment(corpus=corpus,
                                            experiment_id='simplernn',
-                                           network_name='SimpleRNN',
                                            vocabulary_size=vocabulary_size,
                                            embeddings_dimension=embeddings_dimension,
                                            recurrent_layer_type='SimpleRNN',
@@ -228,25 +221,14 @@ def load_experiment_plan(corpus: Corpus,
 
     lstm_experiment = load_experiment(corpus=corpus,
                                       experiment_id='lstm',
-                                      network_name='LSTM',
                                       vocabulary_size=vocabulary_size,
                                       embeddings_dimension=embeddings_dimension,
                                       recurrent_layer_type='LSTM',
                                       recurrent_units=100,
                                       dropout_rate=.4)
 
-    # bilstm_experiment = load_experiment(corpus=corpus,
-    #                                     experiment_id='bilstm',
-    #                                     network_name='BILSTM',
-    #                                     vocabulary_size=vocabulary_size,
-    #                                     embeddings_dimension=embeddings_dimension,
-    #                                     recurrent_layer_type='BILSTM',
-    #                                     recurrent_units=100,
-    #                                     dropout_rate=0.)
-
     bilstm_experiment = load_experiment(corpus=corpus,
-                                        experiment_id='bilstm-dropout',
-                                        network_name='BILSTM with Dropout',
+                                        experiment_id='bilstm',
                                         vocabulary_size=vocabulary_size,
                                         embeddings_dimension=embeddings_dimension,
                                         recurrent_layer_type='BILSTM',
@@ -267,10 +249,10 @@ def load_experiment_plan(corpus: Corpus,
 
     # Experiment: effect of dropout with different rates
     experiment_list = [
-        flatten_experiment,
-        simplernn_experiment,
+        # flatten_experiment,
+        # simplernn_experiment,
         lstm_experiment,
-        bilstm_experiment
+        # bilstm_experiment
     ]
 
     experiment_plan = ExperimentPlan(name='Rutger Intent Detection', experiments=experiment_list)

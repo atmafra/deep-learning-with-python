@@ -107,9 +107,9 @@ def create_neural_network(corpus: Corpus,
         if not model_filename:
             model_filename = str_to_filename(network_name) + '.json'
 
-        return NeuralNetwork.from_file(path=model_path,
-                                       filename=model_filename,
-                                       verbose=True)
+        return NeuralNetwork.from_architecture_and_weights(path=model_path,
+                                                           filename=model_filename,
+                                                           verbose=True)
 
     raise RuntimeError('Unknown model source')
 

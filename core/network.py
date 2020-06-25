@@ -3,6 +3,7 @@ import sys
 from enum import Enum
 
 from keras import Model, Sequential
+from keras.engine.network import Network
 from keras.engine.saving import load_model, model_from_json
 from keras.layers.wrappers import Wrapper
 from keras.utils import Sequence, layer_utils
@@ -12,8 +13,8 @@ from core.datasets import Dataset, DatasetFileIterator
 from utils.file_utils import str_to_filename
 from utils.parameter_utils import extract_parameter
 
-default_architecture_extension='-arch.json'
-default_weights_extension='-wght.h5'
+default_architecture_extension = '-arch.json'
+default_weights_extension = '-wght.h5'
 
 
 class NetworkOutputType(Enum):
@@ -121,25 +122,6 @@ def append_model(base_model: Sequential,
     base_model.build()
 
 
-def create_model_from_file(filepath: str,
-                           verbose: bool = True):
-    """ Creates a new model from a JSON architecture file
-
-    :param filepath: fully qualified path to JSON file
-    :param verbose: display load messages in terminal
-    """
-    json_file = open(filepath, 'r')
-    network_architecture_json = json_file.read()
-    json_file.close()
-    model = model_from_json(network_architecture_json)
-    model.build()
-
-    if verbose:
-        print('Loaded model \"{}\" from file \"{}\"'.format(model.name, filepath))
-
-    return model
-
-
 def count_trainable_parameters(model: Model) -> int:
     if not Model:
         raise ValueError('Empty model to count trainable parameters')
@@ -216,15 +198,13 @@ def train_network_generator(network: Model,
                             training_configuration: dict,
                             validation_generator: Sequence = None,
                             verbose: bool = True):
-    """Train the neural network, returning the evolution of the train metrics
+    """ Train the neural network, returning the evolution of the training metrics
 
-    Args:
-        network (Model): neural network model to be trained
-        training_generator (Sequence): train set generator
-        training_configuration (dict): train algorithm parameters
-        validation_generator (Sequence): validation set generator
-        verbose (bool): display train progress bars if True
-
+    :param network: neural network model to be trained
+    :param training_generator: train set generator
+    :param training_configuration: train algorithm parameters
+    :param validation_generator: validation set generator
+    :param verbose: display train progress bars if True
     """
     validation = putl.get_parameter(training_configuration, 'validation')
     validation_strategy = putl.get_parameter(validation, 'strategy')
@@ -248,16 +228,14 @@ def train_network_k_fold(network: Model,
                          k: int,
                          shuffle: bool,
                          verbose: bool = True):
-    """Train the neural network model using k-fold cross-validation
+    """ Train the neural network model using k-fold cross-validation
 
-    Args:
-        network (Model): neural network model to be trained
-        training_configuration (dict): train parameters
-        training_set (Dataset): train data set
-        k (int): number of partitions in k-fold cross-validation
-        shuffle (bool): shuffle the train set before k splitting
-        verbose (bool): display train progress bars if True
-
+    :param network: neural network model to be trained
+    :param training_configuration: train parameters
+    :param training_set: train data set
+    :param k: number of partitions in k-fold cross-validation
+    :param shuffle: shuffle the train set before k splitting
+    :param verbose: display train progress bars if True
     """
     all_histories = []
     working_training_set = training_set.copy()
@@ -391,14 +369,14 @@ def predict_dataset_generator(network: Model,
     return predictions
 
 
-def build_filepath(filename: str,
-                   path: str,
+def build_filepath(path: str,
+                   filename: str,
                    extension: str = '',
                    default_filename: str = ''):
     """ Builds the file path from filename, path, and extension
 
-    :param filename: operating system filename
     :param path: system path of the file
+    :param filename: operating system filename
     :param extension: filename extension
     :param default_filename: default filename
     :return: complete system file path
@@ -417,25 +395,49 @@ def build_filepath(filename: str,
     return filepath
 
 
-def save_architecture_json(network: Model,
+def default_architecture_filename(path: str, model_name: str):
+    """ Returns the default architecture filename for the model
+
+    :param path: system path of the file
+    :param model_name: Keras model name
+    :return: complete system filepath
+    """
+    return build_filepath(path=path,
+                          extension=default_architecture_extension,
+                          default_filename=model_name)
+
+
+def default_weights_filename(path: str, model_name: str):
+    """ Returns the default weights filename for the model
+
+    :param path: system path of the file
+    :param model_name: Keras model name
+    :return: complete system filepath
+    """
+    return build_filepath(path=path,
+                          extension=default_weights_extension,
+                          default_filename=model_name)
+
+
+def save_architecture_json(model: Model,
                            path: str,
-                           filename: str = '',
+                           architecture_filename: str = '',
                            verbose: bool = True):
     """ Saves the model architecture as a JSON file
 
-    :param network: model whose architecture must be saved
+    :param model: model whose architecture must be saved
     :param path: system path of the save directory
-    :param filename: architecture file name
+    :param architecture_filename: architecture file name
     :param verbose: show save message in terminal
     """
-    model_filepath = build_filepath(filename=filename,
+    model_filepath = build_filepath(filename=architecture_filename,
                                     path=path,
                                     extension=default_architecture_extension,
-                                    default_filename=network.name)
-    model_json = network.to_json()
+                                    default_filename=model.name)
+    model_json = model.to_json()
 
     if verbose:
-        print('Saving network architecture \"{}\" to file \"{}\"...'.format(network.name, model_filepath))
+        print('Saving network architecture \"{}\" to file \"{}\"...'.format(model.name, model_filepath))
 
     with open(model_filepath, 'w') as json_file:
         json_file.write(model_json)
@@ -444,103 +446,169 @@ def save_architecture_json(network: Model,
         print('Save architecture OK')
 
 
-def save_weights_h5(network: Model,
-                    filename: str = '',
-                    path: str = '',
-                    verbose: bool = True):
-    """ Saves the model weights to a h5 file
+def load_architecture_json(path: str,
+                           architecture_filename: str,
+                           verbose: bool = True):
+    """ Creates and builds a new model from a JSON architecture file
 
-    :param network: neural network model
-    :param verbose: show save message in terminal
-    :param filename: weights file name
-    :param path: system path of the save directory
+    :param path: system path of the configuration file
+    :param architecture_filename: JSON file with the model architecture
+    :param verbose: display load messages in terminal
+    :return: Keras untrained model according to the JSON file architecture
     """
-    weights_filepath = build_filepath(filename=filename,
-                                      path=path,
-                                      extension=default_weights_extension,
-                                      default_filename=network.name)
+    if not architecture_filename:
+        raise RuntimeError('Cannot load architecture: no filepath passed')
+
+    filepath = os.path.join(path, architecture_filename)
+    if verbose:
+        print('Loading network architecture from file "{}"'.format(filepath))
+
+    json_file = open(filepath, 'r')
+    network_architecture_json = json_file.read()
+    json_file.close()
+    model = model_from_json(network_architecture_json)
+    model.build()
 
     if verbose:
-        print('Saving model \"{}\" weights to file \"{}\"...'.format(network.name, weights_filepath))
+        print('Loaded the archtecture of model \"{}\" from file \"{}\"'.format(model.name, filepath))
 
-    network.save_weights(filepath=weights_filepath, overwrite=True)
+    return model
+
+
+def save_weights(model: Model,
+                 path: str = '',
+                 weights_filename: str = '',
+                 verbose: bool = True):
+    """ Saves the model weights to a h5 file
+
+    :param model: neural network model
+    :param path: system path of the save directory
+    :param weights_filename: weights file name
+    :param verbose: show save message in terminal
+    """
+    weights_filepath = build_filepath(filename=weights_filename,
+                                      path=path,
+                                      extension=default_weights_extension,
+                                      default_filename=model.name)
+
+    if verbose:
+        print('Saving model \"{}\" weights to file \"{}\"...'.format(model.name, weights_filepath))
+
+    model.save_weights(weights_filepath, overwrite=True)
 
     if verbose:
         print('Save weights OK')
 
 
-def save_network(network: Model,
+def load_weights(model: Model,
                  path: str,
-                 root_name: str,
+                 weights_filename: str,
                  verbose: bool = True):
-    """ Saves the model in the current state in 2 files:
+    """ Loads a model with weights previously saved
+
+    :param model: pre-loaded Keras model
+    :param path: system path of the weights file
+    :param weights_filename: name of the file containing the weight values
+    :param verbose: display processing messages in the terminal output
+    :return: model loaded and built from the file
+    """
+    if not weights_filename:
+        raise RuntimeError('Cannot load weights: no weights filename passed')
+
+    filepath = os.path.join(path, weights_filename)
+    if verbose:
+        print('Loading model weights from file "{}"'.format(filepath))
+
+    model.load_weights(filepath)
+
+
+def save_architecture_and_weights(model: Model,
+                                  path: str,
+                                  architecture_filename: str,
+                                  weights_filename: str,
+                                  verbose: bool = True):
+    """ Saves the architecture and the weights in the current state in 2 files:
 
     - a JSON file, containing the architecture (.json)
     - the binary H5 (pickle) file, containing the weights (.h5)
 
-    :param network: model to be saved
+    :param model: model to be saved
     :param path: system path of the save directory
-    :param root_name: root of the model and weights filenames
+    :param architecture_filename: architecture filename
+    :param weights_filename: weights filename
     :param verbose: show save message in terminal
     """
-    if root_name is None:
-        root_name = str_to_filename(network.name)
+    if not architecture_filename:
+        architecture_filename = default_architecture_filename(path=path, model_name=model.name)
 
-    save_architecture_json(network=network,
-                           filename=root_name,
+    if not weights_filename:
+        weights_filename = default_weights_filename(path=path, model_name=model.name)
+
+    save_architecture_json(model=model,
                            path=path,
+                           architecture_filename=architecture_filename,
                            verbose=verbose)
 
-    save_weights_h5(network=network,
-                    filename=root_name,
-                    path=path,
-                    verbose=verbose)
+    save_weights(model=model,
+                 path=path,
+                 weights_filename=weights_filename,
+                 verbose=verbose)
 
 
-def load_network(architecture_filepath: str,
-                 weights_filepath: str,
-                 verbose: bool = True):
+def load_architecture_and_weights(path: str,
+                                  architecture_filename: str,
+                                  weights_filename: str,
+                                  verbose: bool = True):
     """ Loads a file containing a representation of a JSON object
     that describes the architecture of a neural network model
 
     :param architecture_filepath: architecture filename
-    :param weights_filepath: weights filename
+    :param path: weights filename
+    :param architecture_filename: JSON file containing the model architecture
+    :param weights_filename: filename of the saved weights
     :param verbose: show load message on terminal
     """
-    model = create_model_from_file(filepath=architecture_filepath, verbose=verbose)
+    model = load_architecture_json(path=path,
+                                   architecture_filename=architecture_filename,
+                                   verbose=verbose)
 
-    if weights_filepath is not None:
-        if weights_filepath != '':
-            model.load_weights(weights_filepath)
-        else:
-            raise RuntimeError('A full path must be specified in order to load pre-trained model weights')
+    load_weights(model=model,
+                 path=path,
+                 weights_filename=weights_filename,
+                 verbose=verbose)
 
-        if verbose:
-            print('Loaded weights from file \"{}\"'.format(weights_filepath))
+    if verbose:
+        print('Architecture and weights successfully loaded')
 
     return model
 
 
-def save_network_hdf5(network: Model,
-                      path: str,
-                      filename: str,
-                      verbose: bool = True):
+def save_model_hdf5(model: Model,
+                    path: str,
+                    filename: str = None,
+                    verbose: bool = True):
     """ Saves the model in the current state to a H5PY file
 
-    :param network: model to be saved
+    :param model: model to be saved
     :param path: system path of the save directory
-    :param filename: saved model file name
+    :param filename: saved model file name (if None, will be built using model name)
     :param verbose: show save message in terminal
     """
+    if not filename:
+        filename = str_to_filename(model.name) + '.h5py'
     filepath = os.path.join(path, filename)
-    network.save(filepath=filepath)
     if verbose:
-        print('Saved neural network model \"{}\" to file \"{}\"'.format(network.name, filepath))
+        print('Saving neural network model "{}" to file "{}"'.format(model.name, filepath))
+
+    model.save(filepath=filepath)
+
+    if verbose:
+        print('Model saved successfully')
 
 
-def load_network_hdf5(path: str,
-                      filename: str,
-                      verbose: bool = True):
+def load_model_hdf5(path: str,
+                    filename: str,
+                    verbose: bool = True):
     """ Loads a model in the state it was saved
 
     :param path: system path of the load directory
@@ -548,7 +616,8 @@ def load_network_hdf5(path: str,
     :param verbose: show load message in terminal
     """
     filepath = os.path.join(path, filename)
-    loaded_network = load_model(filepath=filepath, compile=False)
+    loaded_model = load_model(filepath, compile=True)
     if verbose:
-        print('Loaded neural network model from file \"{}\"'.format(filepath))
-    return loaded_network
+        print('Loaded neural network model from file "{}"'.format(filepath))
+
+    return loaded_model

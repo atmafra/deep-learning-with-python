@@ -1,6 +1,8 @@
 from core.file_structures import CorpusFileStructure
 from corpora.rutger import rutger
 from examples.chapter6.rutger_configurations import load_experiment_plan
+from text.one_hot_encoder import OneHotEncoder
+from text.preprocessing import save_tokenizer, load_tokenizer
 
 default_rutger_path = '../../corpora/rutger/data'
 default_rutger_golden_path = default_rutger_path + '/golden'
@@ -25,7 +27,9 @@ def run(build_corpus: bool = True,
         input_length: int = default_input_length,
         vocabulary_size: int = default_vocabulary_size,
         embeddings_dimension: int = default_embeddings_dimension,
-        train_model: bool = True):
+        train_models: bool = True,
+        test_models: bool = True,
+        save_models: bool = False):
     """ Runs the Rutger Intent Detection experiments
 
     :param build_corpus: build corpus (tries to load corpus if False)
@@ -37,7 +41,9 @@ def run(build_corpus: bool = True,
     :param input_length: maximum tokens per phrase (padding/truncation possible)
     :param vocabulary_size: maximum number of tokes to be kept by the tokenizer
     :param embeddings_dimension: number of units in the embeddings layer
-    :param train_model: execute the training of the neural network model
+    :param train_models: execute the training of the neural network model
+    :param test_models: evaluate the model
+    :param save_models: save the models after training
     """
     corpus_name = rutger.get_name(clean=clean,
                                   vocabulary_size=vocabulary_size,
@@ -48,7 +54,12 @@ def run(build_corpus: bool = True,
                                   test_set_share=test_set_share)
 
     corpus_file_structure = CorpusFileStructure.get_canonical(corpus_name=corpus_name, base_path=default_rutger_path)
-    output_encoder = None
+    corpus, tokenizer, output_encoder = None, None, None
+    tokenizer_path = '../../corpora/rutger/tokenizers'
+    tokenizer_filename = 'rutger-tokenizer.json'
+    output_encoder_path = '../../corpora/rutger/encoders'
+    encoder_filename = 'rutger-encoder.json'
+
     if build_corpus:
         corpus, tokenizer, output_encoder = \
             rutger.build_corpus(rutger_path=default_rutger_path,
@@ -64,53 +75,69 @@ def run(build_corpus: bool = True,
 
         print('Saving corpus "{}"'.format(corpus_name))
         corpus_file_structure.save_corpus(corpus)
+
+        save_tokenizer(tokenizer=tokenizer,
+                       path=tokenizer_path,
+                       filename=tokenizer_filename)
+
+        output_encoder.save_json_file(path=output_encoder_path,
+                                      filename=encoder_filename,
+                                      verbose=True)
     else:
         print('Loading corpus "{}"'.format(corpus_name))
         corpus = corpus_file_structure.load_corpus(corpus_name=corpus_name, datasets_base_name=corpus_name)
-        tokenizer = None
         print('Corpus has {} samples'.format(corpus.length))
 
-    if train_model:
-        rutger_experiment_plan = load_experiment_plan(corpus=corpus,
-                                                      vocabulary_size=vocabulary_size,
-                                                      embeddings_dimension=embeddings_dimension)
+        tokenizer = load_tokenizer(path=tokenizer_path,
+                                   filename=tokenizer_filename)
 
-        rutger_experiment_plan.run(train=True,
-                                   test=True,
-                                   use_sample_weights=True,
-                                   print_results=True,
-                                   plot_training_loss=True,
-                                   plot_validation_loss=True,
-                                   plot_training_accuracy=True,
-                                   plot_validation_accuracy=True,
-                                   display_progress_bars=True,
-                                   save_models=True,
-                                   models_path='models/rutger')
+        output_encoder = OneHotEncoder.from_json_file(path=output_encoder_path,
+                                                      filename=encoder_filename,
+                                                      verbose=True)
 
-        golden_dataset = rutger.build_golden_dataset(rutger_golden_path=default_rutger_golden_path,
-                                                     rutger_golden_filename=default_golden_filename,
-                                                     clean=clean,
-                                                     vocabulary_size=vocabulary_size,
-                                                     input_length=input_length,
-                                                     sampling_rate=1.,
-                                                     tokenizer=tokenizer,
-                                                     output_encoder=output_encoder,
-                                                     verbose=True)
+    rutger_experiment_plan = load_experiment_plan(corpus=corpus,
+                                                  vocabulary_size=vocabulary_size,
+                                                  embeddings_dimension=embeddings_dimension)
 
-        golden_results = rutger_experiment_plan.evaluate(dataset=golden_dataset,
-                                                         use_sample_weights=False,
-                                                         display_progress_bars=True)
+    rutger_experiment_plan.run(train=train_models,
+                               test=test_models,
+                               use_sample_weights=True,
+                               print_results=True,
+                               plot_training_loss=True,
+                               plot_validation_loss=True,
+                               plot_training_accuracy=True,
+                               plot_validation_accuracy=True,
+                               display_progress_bars=True,
+                               save_models=save_models,
+                               models_path='models/rutger')
 
-        with open('golden_results.txt', 'w') as f:
-            for item in golden_results:
-                f.write("{}".format(item))
+    golden_dataset = rutger.build_golden_dataset(rutger_golden_path=default_rutger_golden_path,
+                                                 rutger_golden_filename=default_golden_filename,
+                                                 clean=clean,
+                                                 vocabulary_size=vocabulary_size,
+                                                 input_length=input_length,
+                                                 sampling_rate=1.,
+                                                 tokenizer=tokenizer,
+                                                 output_encoder=output_encoder,
+                                                 verbose=True)
 
-        golden_predictions = rutger_experiment_plan.predict(dataset=golden_dataset,
-                                                            display_progress_bars=True)
+    golden_results = rutger_experiment_plan.evaluate(dataset=golden_dataset,
+                                                     use_sample_weights=False,
+                                                     display_progress_bars=True)
 
-        golden_categories = output_encoder.decode(encoded_sequence=golden_predictions)[0]
+    with open('golden_results.txt', 'w') as file:
+        for item in golden_results:
+            file.write("{}".format(item))
 
-        with open('golden_categories.txt', 'w') as f:
+    golden_predictions = rutger_experiment_plan.predict(dataset=golden_dataset,
+                                                        display_progress_bars=True)
+
+    for i, experiment in enumerate(rutger_experiment_plan.experiment_list):
+        experiment_predictions = golden_predictions[i]
+        golden_categories = output_encoder.decode(encoded_sequence=experiment_predictions)
+
+        predictions_filename = 'rutger-{}-golden_categories.txt'.format(experiment.id)
+        with open(predictions_filename, 'w') as file:
             for category in golden_categories:
-                f.write("{}\n".format(category))
-            f.writelines(golden_categories)
+                file.write("{}\n".format(category))
+            file.writelines(golden_categories)

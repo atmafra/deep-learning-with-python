@@ -30,4 +30,7 @@ if __name__ == '__main__':
         temperature_forecasting.run()
 
     if 'rutger' in experiments:
-        rutger.run(build_corpus=True, train_model=True)
+        rutger.run(build_corpus=False,
+                   train_models=True,
+                   save_models=True,
+                   test_models=True)

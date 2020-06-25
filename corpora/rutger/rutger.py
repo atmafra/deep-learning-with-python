@@ -9,7 +9,7 @@ from keras_preprocessing.text import Tokenizer
 from core.corpus import Corpus
 from core.datasets import Dataset
 from text.one_hot_encoder import OneHotEncoder
-from text.preprocessing import clean_text, tokenize_text, build_tokenizer
+from text.preprocessing import clean_text, tokenize_text, build_tokenizer, save_tokenizer
 from utils.dataset_utils import one_hot_encode_categories
 
 default_rutger_path = 'corpora/rutger/data'
@@ -86,19 +86,27 @@ def __clean(input_data: np.array):
 
 def __fit_tokenizer(input_data: list,
                     vocabulary_size: int,
+                    save: bool = False,
+                    path: str = None,
+                    filename: str = None,
                     verbose: bool = True):
-    """ Builds the global tokenizer
+    """ Builds the tokenizer
 
     :param input_data: list of input phrases
     :param vocabulary_size: maximum vocabulary size
     :param verbose: display log messages during execution
     :return: tokenizer object, fit to input data
     """
-    global global_tokenizer
-    global_tokenizer = build_tokenizer(phrase_list=input_data,
-                                       vocabulary_size=vocabulary_size,
-                                       verbose=verbose)
-    return global_tokenizer
+    tokenizer = build_tokenizer(phrase_list=input_data,
+                                vocabulary_size=vocabulary_size,
+                                verbose=verbose)
+
+    if save:
+        if not filename:
+            raise RuntimeError('Cannot save tokenizer: no filename passed')
+        save_tokenizer(tokenizer=tokenizer, path=path, filename=filename, verbose=verbose)
+
+    return tokenizer
 
 
 def __encode(input_data: np.array,

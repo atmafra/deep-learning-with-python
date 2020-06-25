@@ -68,17 +68,39 @@ class NeuralNetwork():
         return NeuralNetwork(model=model)
 
     @classmethod
-    def from_file(cls, path: str, filename: str, verbose: bool = True):
+    def from_architecture_and_weights(cls,
+                                      path: str,
+                                      root_filename: str,
+                                      verbose: bool = True):
         """ Creates a new neural network from JSON architecture file
 
         :param path: file path
-        :param filename: file name
+        :param root_filename: root file name (without extension)
         :param verbose: display load messages in terminal
         :return: a new NeuralNetwork object
         """
-        filepath = os.path.join(path, filename)
-        model = net.create_model_from_file(filepath=filepath, verbose=verbose)
+        architecture_filename, weights_filename = NeuralNetwork.get_filenames(root_filename=root_filename)
+        model = net.load_architecture_and_weights(path=path,
+                                                  architecture_filename=architecture_filename,
+                                                  weights_filename=weights_filename,
+                                                  verbose=verbose)
+
         return NeuralNetwork(model=model)
+
+    @classmethod
+    def from_file(cls,
+                  path: str,
+                  filename: str,
+                  verbose: bool = True):
+        """
+
+        :param path:
+        :param filename:
+        :param verbose:
+        :return: new NeuralNetwork object
+        """
+        model = net.load_model_hdf5(path=path, filename=filename, verbose=verbose)
+        return NeuralNetwork(model=model, name=model.name)
 
     def append_layers(self, layers_configuration: list):
         """ Appends a list of layers according to their configurations
@@ -165,6 +187,22 @@ class NeuralNetwork():
         """
         self.set_layers_trainable([layer_name], True)
 
+    @classmethod
+    def get_filenames(cls, root_filename: str):
+        """ Returns the architecture and weight filepaths
+
+        :param path: common system path
+        :param root_filename: root filename (common to architecture and weights, without extensions)
+        :return: architecture filepath, weights filepath
+        """
+        if not root_filename:
+            root_filename = 'network'
+
+        architecture_filename = root_filename + net.default_architecture_extension
+        weights_filename = root_filename + net.default_weights_extension
+
+        return architecture_filename, weights_filename
+
     def save_architecture(self, path: str, filename: str, verbose: bool = True):
         """ Saves the neural network architecture as a JSON file
 
@@ -172,7 +210,7 @@ class NeuralNetwork():
         :param filename: architecture file name
         :param verbose:  display save messages on terminal
         """
-        net.save_architecture_json(network=self.model, path=path, filename=filename, verbose=verbose)
+        net.save_architecture_json(model=self.model, path=path, architecture_filename=filename, verbose=verbose)
 
     def save_weights(self, path: str, filename: str, verbose: bool = True):
         """ Saves the neural network weights (status) as a H5 file
@@ -181,32 +219,59 @@ class NeuralNetwork():
         :param filename: weights file name
         :param verbose: show save messages in terminal
         """
-        net.save_weights_h5(network=self.model, path=path, filename=filename, verbose=verbose)
+        net.save_weights(model=self.model, path=path, weights_filename=filename, verbose=verbose)
 
-    def load_weights(self, path: str, weights_filename: str, verbose: bool  = True):
-        """ Loads the neural network weights (status) from an H5 file
+    def load_weights(self, path: str, weights_filename: str, verbose: bool = True):
+        """ Loads the weights from file
 
-        :param path: system path of the weights file
-        :param weights_filename: weights file name
-        :param verbose: show load messages in terminal
+        :param path: system path of the weights file directory
+        :param weights_filename: weights filename
+        :param verbose: display progress messages in terminal
         """
-        net.load_network_hdf5()
+        net.load_weights(model=self.model,
+                         path=path,
+                         weights_filename=weights_filename,
+                         verbose=verbose)
 
-    def save_model(self, path: str, root_filename: str, verbose: bool = True):
+    def save_architecture_and_weights(self,
+                                      path: str,
+                                      root_filename: str,
+                                      verbose: bool = True):
         """ Saves the neural network architecture and weights in the same file system path
 
         :param path: system path of the save directory
         :param root_filename: root file name (without extension)
         :param verbose: show save messages in terminal
         """
-        architecture_filename = ''
-        weights_filename = ''
-        if len(root_filename) > 0:
-            architecture_filename = root_filename + '.json'
-            weights_filename = root_filename + '.h5'
+        architecture_filename, weights_filename = NeuralNetwork.get_filenames(root_filename=root_filename)
+        net.save_architecture_and_weights(model=self.model,
+                                          path=path,
+                                          architecture_filename=architecture_filename,
+                                          weights_filename=weights_filename,
+                                          verbose=verbose)
 
-        self.save_architecture(path=path, filename=architecture_filename, verbose=verbose)
-        self.save_weights(path=path, filename=weights_filename, verbose=verbose)
+    def save(self, path: str,
+             filename: str = None,
+             verbose: bool = True):
+        """ Saves the entire model (architecture and weights) in a single HDF5 file
+
+        :param path: system path of the save directory
+        :param filename: file name
+        :param verbose: show save messages in terminal
+        """
+        net.save_model_hdf5(model=self.model,
+                            path=path,
+                            filename=filename,
+                            verbose=verbose)
+
+    def load(self, path: str, filename: str, verbose: bool = True):
+        """ Loads the neural network weights (status) from a single H5 file
+
+        :param path: system path of the weights file
+        :param filename: weights file name
+        :param verbose: show load messages in terminal
+        """
+        self.model = net.load_model_hdf5(path=path, filename=filename, verbose=verbose)
 
     @property
     def trainable_parameters_count(self):
